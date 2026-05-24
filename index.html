@@ -14,7 +14,8 @@
                 activeTab: 'accueil',
                 contactRayon: 'all',
                 contactService: '',
-                isLoggedIn: true,
+                isLoggedIn: false,
+                showAuthDropdown: false,
                 contactSuccess: false,
                 showToast: false,
                 toastTitle: '',
@@ -25,7 +26,7 @@
                 showCheckoutModal: false,
                 selectedPlan: null,
                 paymentSuccess: false,
-                activeSubscription: 'Croissance', // Formule actuelle de Sophie Martin
+                activeSubscription: null, // Pas d'abonnement par défaut
                 
                 formData: {
                     nom: '',
@@ -33,16 +34,37 @@
                     message: ''
                 },
                 checkoutForm: {
-                    cardNumber: '4242 •••• •••• 4242',
-                    cardExpiry: '12/28',
-                    cardCvc: '•••',
-                    cardName: 'Sophie Martin'
+                    cardNumber: '',
+                    cardExpiry: '',
+                    cardCvc: '',
+                    cardName: ''
                 },
                 clientInfo: {
-                    nom: "Sophie Martin",
-                    email: "sophie.martin@email.com",
-                    clientDepuis: "12 Mars 2025",
-                    idClient: "CLI-94820"
+                    nom: "",
+                    email: "",
+                    clientDepuis: "",
+                    idClient: ""
+                },
+                
+                // Formulaire de connexion/inscription
+                loginForm: {
+                    email: '',
+                    password: ''
+                },
+                registerForm: {
+                    nom: '',
+                    email: '',
+                    password: '',
+                    confirmPassword: ''
+                },
+                showRegisterForm: false,
+                
+                // Formulaire de commande E-commerce
+                showOrderForm: false,
+                orderForm: {
+                    objet: '',
+                    nomSite: '',
+                    description: ''
                 },
                 
                 // Plans d'abonnement globaux disponibles
@@ -53,8 +75,9 @@
                         priceMensuel: 29,
                         priceAnnuel: 23,
                         features: [
+                            'Équipements Électroniques Premium inclus',
+                            'Conseil d\'Installation Tech inclus',
                             'Accès prioritaire au rayon Accessoires',
-                            'Conseil d\'Installation Tech inclus (1/an)',
                             'Assistance administrative de base (1 dossier/mois)',
                             'Support par email sous 48h'
                         ],
@@ -121,8 +144,8 @@
                                 <path stroke-linecap="round" d="M19 9h3M19 12h3M19 15h3" />
                                </svg>`,
                         items: [
-                            { nom: 'Création de sites E-commerce', shortDesc: 'Propulsez votre activité grâce à une présence en ligne sur-mesure.', detail: 'Nous concevons des sites au design moderne, performants, sécurisés et entièrement adaptés aux mobiles (responsive). Vous lancez votre projet de vente en ligne ? Nous créons votre boutique e-commerce clé en main pour booster vos ventes dès le premier jour.', price: 49 },
-                            { nom: 'Optimisation SEO & Référencement', shortDesc: 'Positionnement de votre site en haut des résultats de recherche.', detail: 'Analyse de mots-clés, optimisation technique et rédaction de contenus optimisés.', price: 29 }
+                            { nom: 'Création de sites E-commerce', shortDesc: 'Propulsez votre activité grâce à une présence en ligne sur-mesure.', detail: 'Nous vendons des sites internet conçus spécialement pour vous, au design moderne, performants, sécurisés et entièrement adaptés aux mobiles (responsive). Pour lancer votre projet de vente en ligne, il vous suffit de passer commande : nous créons votre boutique e-commerce clé en main, personnalisée selon vos besoins, pour booster vos ventes dès le premier jour.', price: 49, fraisService: true },
+                            { nom: 'Optimisation SEO & Référencement', shortDesc: 'Positionnement de votre site en haut des résultats de recherche.', detail: 'Analyse de mots-clés, optimisation technique et rédaction de contenus optimisés.', price: 29, fraisService: true }
                         ]
                     },
                     {
@@ -141,8 +164,8 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18 14h.01M15 17h.01" />
                                </svg>`,
                         items: [
-                            { nom: 'Équipements Électroniques Premium', shortDesc: 'Une sélection des meilleurs accessoires de bureau et connectiques.', detail: 'Hubs USB-C internes, chargeurs rapides GaN et claviers ergonomiques haut de gamme.', price: 15 },
-                            { nom: 'Conseil d\'Installation Tech', shortDesc: 'Aide au choix et configuration de vos outils technologiques.', detail: 'Diagnostic complet pour équiper au mieux vos espaces de travail à la maison.', price: 19 }
+                            { nom: 'Équipements Électroniques Premium', shortDesc: 'Une sélection des meilleurs accessoires de bureau et connectiques.', detail: 'Hubs USB-C internes, chargeurs rapides GaN et claviers ergonomiques haut de gamme.', price: 5 },
+                            { nom: 'Conseil d\'Installation Tech', shortDesc: 'Aide au choix et configuration de vos outils technologiques.', detail: 'Diagnostic complet pour équiper au mieux vos espaces de travail à la maison.', price: 7, fraisService: true }
                         ]
                     },
                     {
@@ -192,14 +215,12 @@
                         ]
                     }
                 ],
-                // Liste de départ pré-remplie
+                // Liste de départ vide (l'utilisateur doit s'inscrire)
                 servicesUtilises: [],
 
                 init() {
-                    this.servicesUtilises = [
-                        { id: 'srv-1', rayon: 'conseil', rayonName: 'Conseil & Aide', nom: 'Coaching Professionnel', description: 'Session hebdomadaire de développement d\'activité (Inclus formule Croissance)', statut: 'Actif', renouvellement: 'Mensuel', icon: this.catalogue.find(c => c.id === 'conseil').iconInline },
-                        { id: 'srv-3', rayon: 'digital', rayonName: 'Digital & Web', nom: 'Optimisation SEO & Référencement', description: 'Optimisation mensuelle du référencement (Inclus formule Croissance)', statut: 'Actif', renouvellement: 'Mensuel', icon: this.catalogue.find(c => c.id === 'digital').iconInline }
-                    ];
+                    // Aucun service pré-chargé - l'utilisateur doit créer un compte
+                    this.servicesUtilises = [];
                 },
 
                 // Savoir si le service est actif ou non
@@ -233,8 +254,23 @@
                     this.paymentSuccess = false;
                 },
 
-                // Finaliser le paiement simulé
-                processPayment() {
+                // Finaliser le paiement et envoyer via Formspree
+                async processPayment() {
+                    try {
+                        await fetch('https://formspree.io/f/xbdazkbd', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({
+                                _type: 'Paiement / Abonnement',
+                                formule: this.selectedPlan ? this.selectedPlan.name : '',
+                                type: this.selectedPlan && this.selectedPlan.isIndividual ? 'Service individuel' : 'Formule globale',
+                                cycle: this.billingCycle,
+                                nom_carte: this.checkoutForm.cardName,
+                                email_client: this.clientInfo.email || '',
+                                nom_client: this.clientInfo.nom || ''
+                            })
+                        });
+                    } catch (e) {}
                     this.paymentSuccess = true;
                     setTimeout(() => {
                         this.showCheckoutModal = false;
@@ -354,26 +390,115 @@
                     this.activeTab = 'contact';
                 },
 
-                // Simulation de soumission de formulaire
-                submitContact(event) {
-                    this.contactSuccess = true;
-                    this.triggerToast("Formulaire envoyé", `Votre demande concernant le service ${this.contactService} a bien été reçue.`);
-                    setTimeout(() => {
-                        this.contactSuccess = false;
-                        this.contactService = '';
-                        this.formData.nom = '';
-                        this.formData.email = '';
-                        this.formData.message = '';
-                    }, 4000);
+                // Soumission du formulaire de contact via Formspree
+                async submitContact(event) {
+                    try {
+                        const response = await fetch('https://formspree.io/f/xbdazkbd', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({
+                                _type: 'Contact',
+                                rayon: this.contactRayon,
+                                service: this.contactService,
+                                nom: this.formData.nom,
+                                email: this.formData.email,
+                                message: this.formData.message
+                            })
+                        });
+                        if (response.ok) {
+                            this.contactSuccess = true;
+                            this.triggerToast("Formulaire envoye", "Votre demande concernant le service " + this.contactService + " a bien ete recue.");
+                            setTimeout(() => {
+                                this.contactSuccess = false;
+                                this.contactService = '';
+                                this.formData.nom = '';
+                                this.formData.email = '';
+                                this.formData.message = '';
+                            }, 4000);
+                        } else {
+                            this.triggerToast("Erreur", "L'envoi a echoue. Veuillez reessayer.");
+                        }
+                    } catch (error) {
+                        this.triggerToast("Erreur", "Impossible d'envoyer le formulaire. Verifiez votre connexion.");
+                    }
                 },
 
-                // Connexion / déconnexion
-                toggleLogin() {
-                    this.isLoggedIn = !this.isLoggedIn;
-                    if (this.isLoggedIn) {
-                        this.triggerToast("Bienvenue", "Connexion simulée à votre espace client.");
-                    } else {
-                        this.triggerToast("Déconnecté", "Vous êtes maintenant hors ligne.");
+                // Connexion manuelle
+                handleLogin() {
+                    if (!this.loginForm.email || !this.loginForm.password) {
+                        this.triggerToast("Erreur", "Veuillez remplir tous les champs.");
+                        return;
+                    }
+                    // Simuler une connexion reussie
+                    this.isLoggedIn = true;
+                    this.clientInfo.email = this.loginForm.email;
+                    this.clientInfo.nom = this.loginForm.email.split('@')[0];
+                    this.clientInfo.clientDepuis = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    this.clientInfo.idClient = 'CLI-' + Math.floor(Math.random() * 90000 + 10000);
+                    this.triggerToast("Bienvenue", "Connexion reussie a votre espace client.");
+                    this.loginForm.email = '';
+                    this.loginForm.password = '';
+                },
+
+                // Inscription manuelle
+                handleRegister() {
+                    if (!this.registerForm.nom || !this.registerForm.email || !this.registerForm.password || !this.registerForm.confirmPassword) {
+                        this.triggerToast("Erreur", "Veuillez remplir tous les champs.");
+                        return;
+                    }
+                    if (this.registerForm.password !== this.registerForm.confirmPassword) {
+                        this.triggerToast("Erreur", "Les mots de passe ne correspondent pas.");
+                        return;
+                    }
+                    // Simuler une inscription reussie
+                    this.isLoggedIn = true;
+                    this.clientInfo.nom = this.registerForm.nom;
+                    this.clientInfo.email = this.registerForm.email;
+                    this.clientInfo.clientDepuis = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                    this.clientInfo.idClient = 'CLI-' + Math.floor(Math.random() * 90000 + 10000);
+                    this.triggerToast("Compte cree", "Votre compte a ete cree avec succes. Bienvenue !");
+                    this.registerForm.nom = '';
+                    this.registerForm.email = '';
+                    this.registerForm.password = '';
+                    this.registerForm.confirmPassword = '';
+                    this.showRegisterForm = false;
+                },
+
+                // Deconnexion
+                logout() {
+                    this.isLoggedIn = false;
+                    this.clientInfo = { nom: "", email: "", clientDepuis: "", idClient: "" };
+                    this.servicesUtilises = [];
+                    this.activeSubscription = null;
+                    this.triggerToast("Deconnecte", "Vous etes maintenant hors ligne.");
+                },
+
+                // Soumettre une commande de site E-commerce via Formspree
+                async submitOrder() {
+                    if (!this.orderForm.objet || !this.orderForm.nomSite || !this.orderForm.description) {
+                        this.triggerToast("Erreur", "Veuillez remplir tous les champs de la commande.");
+                        return;
+                    }
+                    try {
+                        const response = await fetch('https://formspree.io/f/xbdazkbd', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({
+                                _type: 'Commande E-commerce',
+                                objet: this.orderForm.objet,
+                                nom_du_site: this.orderForm.nomSite,
+                                description: this.orderForm.description
+                            })
+                        });
+                        if (response.ok) {
+                            this.triggerToast("Commande envoyee", "Votre demande de creation de site '" + this.orderForm.nomSite + "' a ete envoyee. Nous vous contacterons sous 24h.");
+                            this.orderForm = { objet: '', nomSite: '', description: '' };
+                            this.showOrderForm = false;
+                        } else {
+                            this.triggerToast("Erreur", "L'envoi a echoue. Veuillez reessayer.");
+                        }
+                    } catch (error) {
+                        this.triggerToast("Erreur", "Impossible d'envoyer la commande. Verifiez votre connexion.");
                     }
                 },
 
@@ -395,7 +520,7 @@
     </script>
 
     <!-- Chargement d'Alpine.js -->
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3/dist/cdn.min.js"></script>
 
     <script>
         tailwind.config = {
@@ -473,12 +598,52 @@
                 </nav>
 
                 <!-- Connexion Client -->
-                <div>
-                    <button @click="toggleLogin()" 
-                            :class="isLoggedIn ? 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200' : 'bg-indigo-600 text-white border-transparent hover:bg-indigo-700 shadow-sm'"
-                            class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition-all"
-                            x-text="isLoggedIn ? 'Se déconnecter' : 'Espace Client'">
-                    </button>
+                <div class="relative">
+                    <!-- Si connecte : bouton deconnexion -->
+                    <template x-if="isLoggedIn">
+                        <button @click="logout()" 
+                                class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 transition-all">
+                            Se deconnecter
+                        </button>
+                    </template>
+
+                    <!-- Si non connecte : bouton avec dropdown -->
+                    <template x-if="!isLoggedIn">
+                        <div>
+                            <button @click="showAuthDropdown = !showAuthDropdown" 
+                                    class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border bg-indigo-600 text-white border-transparent hover:bg-indigo-700 shadow-sm transition-all">
+                                Espace Client
+                            </button>
+
+                            <!-- Dropdown menu -->
+                            <div x-show="showAuthDropdown" 
+                                 @click.away="showAuthDropdown = false"
+                                 x-transition:enter="transition ease-out duration-150"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-100"
+                                 x-transition:leave-start="opacity-100 scale-100"
+                                 x-transition:leave-end="opacity-0 scale-95"
+                                 class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden z-50">
+                                
+                                <button @click="activeTab = 'espace-client'; showRegisterForm = false; showAuthDropdown = false" 
+                                        class="w-full text-left px-5 py-3.5 text-sm font-semibold text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition flex items-center gap-3 border-b border-slate-100">
+                                    <svg class="w-5 h-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                    </svg>
+                                    Se connecter
+                                </button>
+                                
+                                <button @click="activeTab = 'espace-client'; showRegisterForm = true; showAuthDropdown = false" 
+                                        class="w-full text-left px-5 py-3.5 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center gap-3">
+                                    <svg class="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                    </svg>
+                                    Creer un compte
+                                </button>
+                            </div>
+                        </div>
+                    </template>
                 </div>
 
             </div>
@@ -804,15 +969,27 @@
                                         <div class="flex justify-between items-start mb-4 gap-2">
                                             <div>
                                                 <h3 class="text-base sm:text-lg font-bold text-slate-900" x-text="item.nom"></h3>
-                                                <!-- Affichage du prix individuel de l'abonnement mensuel ou annuel -->
-                                                <span class="text-xs text-indigo-600 font-extrabold" x-text="'Abonnement : ' + (billingCycle === 'mensuel' ? (item.priceMensuel || item.price) : (item.priceAnnuel || Math.round(item.price * 0.8))) + ' € / mois'"></span>
-                                                
-                                                <!-- Mention claire du total annuel si facturation annuelle active -->
-                                                <template x-if="billingCycle === 'annuel' && item.priceAnnuelTotal">
-                                                    <span class="text-[10px] text-slate-400 block" x-text="'soit ' + item.priceAnnuelTotal + ' € / an'"></span>
+                                                <!-- Affichage du prix : frais de service annuels -->
+                                                <template x-if="item.fraisService">
+                                                    <div>
+                                                        <span class="text-xs text-indigo-600 font-extrabold" x-text="'Frais de service : ' + item.price + ' EUR / an (appliques chaque annee)'"></span>
+                                                        <span class="text-[10px] text-slate-500 block mt-0.5">Le prix du site sera communique par devis personnalise</span>
+                                                    </div>
                                                 </template>
-                                                <template x-if="billingCycle === 'annuel' && !item.priceAnnuelTotal && (item.priceAnnuel || item.price)">
-                                                    <span class="text-[10px] text-slate-400 block" x-text="'soit ' + ((item.priceAnnuel || Math.round(item.price * 0.8)) * 12) + ' € / an'"></span>
+                                                
+                                                <!-- Affichage normal du prix pour les autres services -->
+                                                <template x-if="!item.fraisService">
+                                                    <div>
+                                                        <span class="text-xs text-indigo-600 font-extrabold" x-text="'Abonnement : ' + (billingCycle === 'mensuel' ? (item.priceMensuel || item.price) : (item.priceAnnuel || Math.round(item.price * 0.8))) + ' € / mois'"></span>
+                                                        
+                                                        <!-- Mention claire du total annuel si facturation annuelle active -->
+                                                        <template x-if="billingCycle === 'annuel' && item.priceAnnuelTotal">
+                                                            <span class="text-[10px] text-slate-400 block" x-text="'soit ' + item.priceAnnuelTotal + ' € / an'"></span>
+                                                        </template>
+                                                        <template x-if="billingCycle === 'annuel' && !item.priceAnnuelTotal && (item.priceAnnuel || item.price)">
+                                                            <span class="text-[10px] text-slate-400 block" x-text="'soit ' + ((item.priceAnnuel || Math.round(item.price * 0.8)) * 12) + ' € / an'"></span>
+                                                        </template>
+                                                    </div>
                                                 </template>
                                             </div>
                                             <template x-if="isServiceActive(item.nom)">
@@ -825,12 +1002,50 @@
                                         <p class="text-xs text-slate-500 leading-relaxed" x-text="item.detail"></p>
                                     </div>
 
+                                    <!-- Formulaire de commande (visible uniquement pour E-commerce) -->
+                                    <template x-if="item.nom === 'Création de sites E-commerce' && showOrderForm">
+                                        <div class="mt-6 bg-indigo-50 border border-indigo-200 rounded-2xl p-5 space-y-4">
+                                            <h4 class="text-sm font-black text-slate-800">Passer commande - Site E-commerce</h4>
+                                            <p class="text-xs text-slate-500">Remplissez les informations ci-dessous pour nous decrire votre projet.</p>
+                                            
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-600 mb-1">Objet</label>
+                                                <input type="text" x-model="orderForm.objet" placeholder="Ex: Boutique de vetements en ligne" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white text-slate-700 focus:outline-none focus:border-indigo-500">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-600 mb-1">Nom du site souhaite</label>
+                                                <input type="text" x-model="orderForm.nomSite" placeholder="Ex: MaModeBoutique.fr" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white text-slate-700 focus:outline-none focus:border-indigo-500">
+                                            </div>
+                                            <div>
+                                                <label class="block text-xs font-bold text-slate-600 mb-1">Description - decrivez tout ce que vous souhaitez</label>
+                                                <textarea x-model="orderForm.description" rows="5" placeholder="Decrivez votre projet en detail : le type de produits, les couleurs souhaitees, les fonctionnalites (panier, paiement, blog...), le design, les pages necessaires, etc." class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white text-slate-700 focus:outline-none focus:border-indigo-500 resize-none"></textarea>
+                                            </div>
+                                            <div class="flex gap-3">
+                                                <button @click="submitOrder()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow-sm">
+                                                    Envoyer ma commande
+                                                </button>
+                                                <button @click="showOrderForm = false" class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-5 py-2.5 rounded-xl transition">
+                                                    Annuler
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
+
                                     <div class="mt-8 pt-4 border-t border-slate-200 flex flex-wrap gap-2 items-center justify-between">
+                                        <!-- Bouton Passer commande (uniquement pour E-commerce) -->
+                                        <template x-if="item.nom === 'Création de sites E-commerce'">
+                                            <button @click="showOrderForm = !showOrderForm"
+                                                    :class="showOrderForm ? 'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200' : 'bg-amber-500 text-white border-transparent hover:bg-amber-600 shadow-sm'"
+                                                    class="text-xs font-bold px-4 py-2.5 rounded-xl border transition">
+                                                <span x-text="showOrderForm ? 'Fermer le formulaire' : 'Passer commande'"></span>
+                                            </button>
+                                        </template>
+
                                         <!-- Bouton dynamique : Souscrire ou Se réabonner -->
                                         <button @click="toggleService(item, rayon)"
                                                 :class="isServiceActive(item.nom) ? 'bg-rose-100 text-rose-700 border-rose-200 hover:bg-rose-200' : 'bg-indigo-600 text-white border-transparent hover:bg-indigo-750 shadow-sm'"
                                                 class="text-xs font-bold px-4 py-2.5 rounded-xl border transition">
-                                            <span x-text="isServiceActive(item.nom) ? '❌ Retirer de mon suivi' : '💳 S\'abonner & Payer'"></span>
+                                            <span x-text="isServiceActive(item.nom) ? 'Retirer de mon suivi' : 'S\'abonner & Payer'"></span>
                                         </button>
 
                                         <!-- Cache le bouton "Demander un devis" s'il s'agit du rayon Le Reste du Monde (id: 'monde') -->
@@ -855,30 +1070,71 @@
         <div x-show="activeTab === 'espace-client'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fadeIn" x-cloak>
             
             <!-- Écran de Connexion (si non connecté) -->
-            <div x-show="!isLoggedIn" class="max-w-md mx-auto bg-white rounded-3xl p-8 border border-slate-200 shadow-md text-center">
+            <div x-show="!isLoggedIn" class="max-w-md mx-auto bg-white rounded-3xl p-8 border border-slate-200 shadow-md">
                 <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
                     <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                 </div>
-                <h2 class="text-2xl font-black text-slate-900 mb-2">Mon Espace Suivi Sésame</h2>
-                <p class="text-sm text-slate-500 mb-8">
-                    Connectez-vous pour voir vos services actifs issus de tous nos rayons.
+                <h2 class="text-2xl font-black text-slate-900 mb-2 text-center">Mon Espace Suivi Sesame</h2>
+                <p class="text-sm text-slate-500 mb-8 text-center">
+                    Connectez-vous ou creez un compte pour acceder a vos services.
                 </p>
 
-                <div class="space-y-4">
+                <!-- Formulaire de connexion -->
+                <div x-show="!showRegisterForm" class="space-y-4">
                     <div class="text-left">
-                        <label class="block text-xs font-bold text-slate-600 mb-1">Identifiant client ou Email</label>
-                        <input type="text" placeholder="sophie.martin@email.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500" disabled>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Email</label>
+                        <input type="email" x-model="loginForm.email" placeholder="votre@email.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500">
                     </div>
                     <div class="text-left">
                         <label class="block text-xs font-bold text-slate-600 mb-1">Mot de passe</label>
-                        <input type="password" placeholder="••••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500" disabled>
+                        <input type="password" x-model="loginForm.password" placeholder="Votre mot de passe" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500">
                     </div>
 
                     <div class="pt-2">
-                        <button @click="isLoggedIn = true" class="w-full bg-indigo-600 hover:bg-indigo-750 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md">
-                            Connexion (Simuler accès)
+                        <button @click="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md">
+                            Se connecter
+                        </button>
+                    </div>
+
+                    <div class="text-center pt-4 border-t border-slate-100">
+                        <p class="text-xs text-slate-500 mb-2">Vous n'avez pas encore de compte ?</p>
+                        <button @click="showRegisterForm = true" class="text-indigo-600 font-bold text-sm hover:underline">
+                            Creer un compte
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Formulaire d'inscription -->
+                <div x-show="showRegisterForm" class="space-y-4">
+                    <div class="text-left">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Nom complet</label>
+                        <input type="text" x-model="registerForm.nom" placeholder="Votre nom et prenom" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="text-left">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Email</label>
+                        <input type="email" x-model="registerForm.email" placeholder="votre@email.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="text-left">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Mot de passe</label>
+                        <input type="password" x-model="registerForm.password" placeholder="Choisissez un mot de passe" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div class="text-left">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">Confirmer le mot de passe</label>
+                        <input type="password" x-model="registerForm.confirmPassword" placeholder="Confirmez votre mot de passe" class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-slate-50 text-slate-700 focus:outline-none focus:border-indigo-500">
+                    </div>
+
+                    <div class="pt-2">
+                        <button @click="handleRegister()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl text-sm transition shadow-md">
+                            Creer mon compte
+                        </button>
+                    </div>
+
+                    <div class="text-center pt-4 border-t border-slate-100">
+                        <p class="text-xs text-slate-500 mb-2">Vous avez deja un compte ?</p>
+                        <button @click="showRegisterForm = false" class="text-indigo-600 font-bold text-sm hover:underline">
+                            Se connecter
                         </button>
                     </div>
                 </div>
@@ -903,11 +1159,11 @@
                     <div class="flex gap-4 items-center bg-slate-950/80 p-4 rounded-2xl border border-slate-800 self-stretch sm:self-auto justify-between">
                         <div class="text-right">
                             <div class="text-xs text-slate-400">Offre Actuelle</div>
-                            <div class="text-base sm:text-lg font-black text-emerald-400">Formule <span x-text="activeSubscription"></span></div>
+                            <div class="text-base sm:text-lg font-black text-emerald-400">Formule <span x-text="activeSubscription || 'Aucune'"></span></div>
                         </div>
                         <div class="w-1.5 h-10 bg-indigo-500 rounded-full"></div>
-                        <button @click="isLoggedIn = false" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/20 text-xs font-bold px-3 py-2 rounded-lg transition">
-                            Se déconnecter
+                        <button @click="logout()" class="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/20 text-xs font-bold px-3 py-2 rounded-lg transition">
+                            Se deconnecter
                         </button>
                     </div>
                 </div>
@@ -1358,3 +1614,4 @@
     </div>
 </body>
 </html>
+
