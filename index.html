@@ -1627,14 +1627,18 @@
             }
         }
 
-        // TRIGGER EXPRESS PAYMENT (20 EURO) FROM THE SERVICES SECTION
+        // TRIGGER EXPRESS PAYMENT (80.50 EURO) FROM THE SERVICES SECTION
         function triggerExpressPayment() {
             const radioExpress = document.getElementById('radio-express');
             if (radioExpress) {
                 radioExpress.checked = true;
                 updatePaymentLink();
             }
-            showToast("Option Sélectionnée !", "L'option express à 20€ est activée dans la zone de paiement.");
+            
+           if (typeof showToast === "function") {
+           showToast("Option Sélectionnée !", "L'option express à 80.50€ est activée dans la zone de paiement.");
+            }
+            
             const paymentSection = document.getElementById('paiement-global');
             if (paymentSection) {
                 paymentSection.scrollIntoView({ behavior: 'smooth' });
