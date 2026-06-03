@@ -59,6 +59,71 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #be813b;
     }
+
+    /* Styles pour la modale et le bouton CodePlay */
+    /* Floutage de l'arrière-plan */
+    .modal-overlay {
+        backdrop-filter: blur(8px);
+        transition: all 0.3s ease-in-out;
+    }
+    
+    /* Effet d'apparition de la fenêtre */
+    .modal-content {
+        transform: scale(0.95);
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .modal-active .modal-overlay {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    
+    .modal-active .modal-content {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    /* Style du bouton */
+    .mon-bouton-style {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+    }
+
+    .mon-bouton-style:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -2px rgba(79, 70, 229, 0.05);
+        filter: brightness(1.1);
+    }
+
+    .mon-bouton-style:active {
+        transform: translateY(0);
+    }
+
+    /* Animation de chargement */
+    .spinner {
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #4f46e5;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body class="bg-sesame-50 text-sesame-950 min-h-screen">
@@ -752,7 +817,7 @@
                     </p>
                     <div className="flex flex-wrap gap-4 pt-4 items-center">
                       <button 
-                        onClick={() => navigateTo('services')}
+                        onClick={() => navigateTo('home')}
                         className="bg-sesame-600 hover:bg-sesame-700 text-white font-bold px-8 py-4 rounded-2xl shadow-xl transition transform hover:-translate-y-0.5">
                         Découvrir nos Piliers
                       </button>
@@ -776,6 +841,11 @@
                         📝 Devis Gratuit
                       </button>
 
+                      {/* BOUTON D'ACTIVATION DU MODAL CODEPLAY */}
+                      <button id="btnOpenCodePlay" className="mon-bouton-style">
+                           Ouvrir CodePlay Multi-IA 🚀
+                      </button>
+
                       {!user && (
                         <button 
                           onClick={() => { setShowAuthModal(true); setAuthMode('register'); }}
@@ -783,6 +853,7 @@
                           S'inscrire gratuitement
                         </button>
                       )}
+                      
                     </div>
                   </div>
 
@@ -837,7 +908,7 @@
 
                 <div className="grid md:grid-cols-3 gap-8 items-stretch">
                   
-                  {/* PILIER 1: Digital & Web - VERSION TOTALEMENT AMÉLIORÉE STYLE SOMBRE DE LUXE (COMME SUR VOTRE IMAGE) */}
+                  {/* PILIER 1: Digital & Web */}
                   <div 
                     onClick={() => trackServiceView("SERVICES Digital & Web")}
                     className="bg-[#0B132B] rounded-3xl p-8 border border-slate-800 shadow-2xl flex flex-col justify-between hover:shadow-[0_0_30px_rgba(99,102,241,0.2)] transition duration-500 cursor-pointer">
@@ -882,7 +953,7 @@
                     </div>
                   </div>
 
-                  {/* PILIER 2: Conseil & Aide - DESIGN SOMBRE DE LUXE POPULAIRE (COMME SUR VOTRE SECONDE IMAGE) */}
+                  {/* PILIER 2: Conseil & Aide */}
                   <div 
                     onClick={() => trackServiceView("SERVICES Conseil & Aide")}
                     className="bg-[#0B132B] rounded-3xl p-8 border border-slate-800 shadow-2xl flex flex-col justify-between hover:shadow-[0_0_30px_rgba(16,185,129,0.2)] transition duration-500 cursor-pointer relative">
@@ -927,7 +998,7 @@
                     </div>
                   </div>
 
-                  {/* PILIER 3: Le Reste du Monde - DESIGN SOMBRE DE LUXE (COMME SUR VOTRE TROISIÈME IMAGE) */}
+                  {/* PILIER 3: Le Reste du Monde */}
                   <div 
                     onClick={() => trackServiceView("SERVICES Le Reste du Monde")}
                     className="bg-[#0B132B] rounded-3xl p-8 border border-slate-800 shadow-2xl flex flex-col justify-between hover:shadow-[0_0_30px_rgba(99,102,241,0.2)] transition duration-500 cursor-pointer">
@@ -976,7 +1047,7 @@
               </section>
             )}
 
-            {/* SECTION QUESTIONS FRÉQUENTES (FAQ) - DESIGN ADAPTÉ EXACTEMENT SELON L'IMAGE */}
+            {/* SECTION QUESTIONS FRÉQUENTES (FAQ) */}
             {activeTab === 'home' && (
               <section className="py-16 px-6 max-w-4xl mx-auto space-y-10">
                 <div className="text-center space-y-3">
@@ -1021,7 +1092,7 @@
               </section>
             )}
 
-            {/* Suivi des actions en mode défilable (Affiche l'historique complet pour le suivi client en bas de page) */}
+            {/* Suivi des actions en mode défilable */}
             {user && (
               <section className="py-12 px-6 max-w-7xl mx-auto border-t border-sesame-200/50 space-y-6">
                 <div className="flex justify-between items-center">
@@ -1100,7 +1171,7 @@
               <div>
                 <h5 className="text-white text-sm font-black mb-4 uppercase tracking-wider">Espace Client</h5>
                 <p className="text-xs text-sesame-400 leading-relaxed mb-3">
-                  Pilotez vos services et vérifiez l'historique complet de vos activités en temps réel.
+                  Pilotez vos services et verifiez l'historique complet de vos activités en temps réel.
                 </p>
                 {user ? (
                   <button 
@@ -1473,5 +1544,119 @@
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<App />);
   </script>
+
+  <!-- FENÊTRE MODALE CODEPLAY -->
+  <div id="codeplayModal" class="fixed inset-0 z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;" aria-hidden="true">
+      <!-- Arrière-plan sombre -->
+      <div id="modalOverlay" class="absolute inset-0 bg-slate-950/80 modal-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(2, 6, 23, 0.8);"></div>
+      
+      <!-- Structure principale de la fenêtre -->
+      <div class="relative bg-slate-900 w-11/12 max-w-6xl h-[85vh] rounded-2xl border border-slate-800 shadow-2xl flex flex-col z-10 modal-content overflow-hidden" style="position: relative; display: flex; flex-direction: column; width: 91.6%; max-width: 72rem; height: 85vh; background-color: #0f172a; border-radius: 1rem; border: 1px solid #1e293b; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);">
+          
+          <!-- En-tête avec bouton Fermer et ouvrir dans un nouvel onglet -->
+          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/50" style="display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-bottom: 1px solid #1e293b; background-color: rgba(2, 6, 23, 0.5);">
+              <div class="flex items-center gap-3" style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div style="display: flex; gap: 0.35rem;">
+                      <div style="width: 12px; height: 12px; background-color: #ef4444; border-radius: 9999px;"></div>
+                      <div style="width: 12px; height: 12px; background-color: #eab308; border-radius: 9999px;"></div>
+                      <div style="width: 12px; height: 12px; background-color: #22c55e; border-radius: 9999px;"></div>
+                  </div>
+                  <span style="font-weight: 600; font-size: 0.875rem; color: #cbd5e1; font-family: sans-serif; margin-left: 0.5rem;">CodePlay Multi-IA Workspace</span>
+              </div>
+              
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <!-- Lien pour ouvrir en plein écran si l'utilisateur préfère -->
+                  <a href="https://teleprime4k.github.io/CodePlay-Multi-IA/" target="_blank" title="Ouvrir dans un nouvel onglet" style="color: #94a3b8; padding: 0.5rem; border-radius: 0.375rem; display: inline-flex; justify-content: center; align-items: center; transition: background 0.2s;">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width: 1.25rem; height: 1.25rem;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                      </svg>
+                  </a>
+                  <!-- Bouton fermer -->
+                  <button id="btnCloseCodePlay" title="Fermer" style="background: none; border: none; color: #94a3b8; cursor: pointer; padding: 0.5rem; border-radius: 0.375rem; display: inline-flex; justify-content: center; align-items: center; transition: all 0.2s;">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" style="width: 1.25rem; height: 1.25rem;">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                      </svg>
+                  </button>
+              </div>
+          </div>
+          
+          <!-- Corps de la fenêtre (Iframe de chargement) -->
+          <div style="flex-grow: 1; position: relative; background-color: #020617;">
+              <!-- Indicateur de chargement temporaire -->
+              <div id="iframeLoader" style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #020617; z-index: 20; transition: opacity 0.3s; font-family: sans-serif;">
+                  <div class="spinner" style="margin-bottom: 1rem;"></div>
+                  <p style="color: #94a3b8; font-size: 0.875rem;">Lancement de CodePlay Multi-IA...</p>
+              </div>
+              
+              <!-- Iframe (votre lien GitHub Pages) -->
+              <iframe 
+                  id="codeplayIframe"
+                  src="" 
+                  data-src="https://teleprime4k.github.io/CodePlay-Multi-IA/"
+                  style="width: 100%; height: 100%; border: none; opacity: 0; transition: opacity 0.5s; z-index: 10;"
+                  allow="clipboard-read; clipboard-write; camera; microphone; geolocation"
+                  sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-downloads">
+              </iframe>
+          </div>
+      </div>
+  </div>
+
+  <!-- SCRIPT DE CONTRÔLE DE LA POP-UP -->
+  <script>
+      document.addEventListener('DOMContentLoaded', () => {
+          const modal = document.getElementById('codeplayModal');
+          const overlay = document.getElementById('modalOverlay');
+          const btnClose = document.getElementById('btnCloseCodePlay');
+          const iframe = document.getElementById('codeplayIframe');
+          const loader = document.getElementById('iframeLoader');
+
+          // Fonction pour ouvrir la fenêtre
+          function openModal() {
+              modal.classList.remove('pointer-events-none', 'opacity-0');
+              modal.classList.add('modal-active');
+              document.body.style.overflow = 'hidden'; // Empêche de faire défiler le site en arrière-plan
+              
+              // On charge l'iframe uniquement quand l'utilisateur clique (économie de bande passante)
+              if (!iframe.src) {
+                  const targetUrl = iframe.getAttribute('data-src');
+                  iframe.src = targetUrl;
+                  
+                  // Disparition de l'écran de chargement quand l'application est prête
+                  iframe.onload = () => {
+                      loader.style.opacity = '0';
+                      loader.style.pointerEvents = 'none';
+                      iframe.style.opacity = '1';
+                  };
+              }
+          }
+
+          // Fonction pour fermer la fenêtre
+          function closeModal() {
+              modal.classList.add('pointer-events-none', 'opacity-0');
+              modal.classList.remove('modal-active');
+              document.body.style.overflow = ''; // Réactive le défilement normal
+          }
+
+          // Écouteur global pour intercepter le clic sur le bouton généré par React
+          document.addEventListener('click', (e) => {
+              const btn = e.target.closest('#btnOpenCodePlay');
+              if (btn) {
+                  e.preventDefault();
+                  openModal();
+              }
+          });
+
+          if (btnClose) btnClose.addEventListener('click', closeModal);
+          if (overlay) overlay.addEventListener('click', closeModal);
+
+          // Permet de fermer la pop-up en appuyant sur la touche "Échap" (Esc) du clavier
+          document.addEventListener('keydown', (e) => {
+              if (e.key === 'Escape' && !modal.classList.contains('pointer-events-none')) {
+                  closeModal();
+              }
+          });
+      });
+  </script>
+
 </body>
 </html>
