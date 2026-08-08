@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sésame Ouvre-Toi</title>
-
-    <link rel="icon" type="image/png" href="assets/icons/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg" />
-    <link rel="shortcut icon" href="assets/icons/favicon.ico" />
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png" />
-    <link rel="manifest" href="assets/icons/site.webmanifest" />
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -193,6 +187,44 @@
         </div>
     </div>
 
+    <!-- MODAL MES INFORMATIONS PERSONNELLES (CLIENT) -->
+    <div id="my-personal-info-modal" class="fixed inset-0 z-[94] hidden flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm">
+        <div class="bg-[#0f172a] border border-cyan-500/40 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-[0_0_35px_rgba(6,182,212,0.18)]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+                <div><h3 class="text-sm font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="user-pen" class="w-5 h-5 text-cyan-400"></i> Mes informations personnelles</h3><p class="text-[9px] text-slate-500 mt-1">Vos informations réelles restent privées.</p></div>
+                <button onclick="window.closeMyPersonalInformation()" class="p-2 text-slate-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form onsubmit="window.savePersonalInformation(event, false, true)" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div><label class="block text-[9px] uppercase text-slate-500 mb-1">Prénom</label><input id="my-personal-first-name" required maxlength="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" /></div>
+                <div><label class="block text-[9px] uppercase text-slate-500 mb-1">Nom</label><input id="my-personal-last-name" required maxlength="60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" /></div>
+                <div><label class="block text-[9px] uppercase text-slate-500 mb-1">E-mail de contact</label><input id="my-personal-contact-email" type="email" required maxlength="120" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" /></div>
+                <div><label class="block text-[9px] uppercase text-slate-500 mb-1">Téléphone <span class="normal-case text-slate-600">(facultatif)</span></label><input id="my-personal-phone" type="tel" maxlength="25" placeholder="+32 470 00 00 00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500" /></div>
+                <button class="sm:col-span-2 py-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white text-xs font-bold uppercase">Enregistrer mes informations</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL INFORMATIONS PERSONNELLES CLIENT (ADMIN UNIQUEMENT) -->
+    <div id="client-personal-info-modal" class="fixed inset-0 z-[95] hidden flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm">
+        <div class="bg-[#0f172a] border border-cyan-500/40 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-[0_0_35px_rgba(6,182,212,0.18)]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+                <div><h3 class="text-sm font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-400"></i> Informations personnelles du client</h3><p class="text-[9px] text-red-400 mt-1">Données privées — accès administrateur uniquement</p></div>
+                <button onclick="window.closeClientPersonalInfo()" class="p-2 text-slate-500 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">Prénom</span><strong id="info-first-name" class="block text-white mt-1"></strong></div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">Nom</span><strong id="info-last-name" class="block text-white mt-1"></strong></div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">E-mail de connexion</span><strong id="info-login-email" class="block text-cyan-300 mt-1 break-all"></strong></div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">E-mail de contact</span><strong id="info-contact-email" class="block text-cyan-300 mt-1 break-all"></strong></div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">Téléphone</span><strong id="info-phone" class="block text-white mt-1"></strong></div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">Pseudonyme du groupe</span><strong id="info-pseudo" class="block text-emerald-300 mt-1"></strong></div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">Compte créé le</span><strong id="info-created-at" class="block text-white mt-1"></strong></div>
+                <div class="bg-slate-950 border border-slate-800 rounded-lg p-3"><span class="text-[8px] text-slate-500 uppercase">Vérification</span><strong id="info-verification" class="block text-emerald-300 mt-1"></strong></div>
+            </div>
+            <button onclick="window.closeClientPersonalInfo()" class="w-full mt-5 py-2.5 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white text-xs uppercase font-bold">Fermer</button>
+        </div>
+    </div>
+
     <!-- MODAL DE CONFIRMATION CUSTOM CYBERPUNK -->
     <div id="confirm-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm">
         <div class="bg-[#0f172a] border border-red-500/40 rounded-xl w-full max-w-sm p-5 sm:p-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
@@ -215,7 +247,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, addDoc, deleteDoc, query, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, onSnapshot, addDoc, deleteDoc, query, where, getDocs, arrayUnion } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // ==========================================
         // 1. CONFIGURATION FIREBASE
@@ -305,7 +337,9 @@
             authError: '',
             authSuccessMessage: '', // Bandeau de succès d'inscription
             preventAutoLogin: false, // Flag pour empêcher la connexion automatique après inscription
-            authRole: 'client',      
+            authRole: 'client',
+            firstName: '',
+            lastName: '',
             email: '',
             password: '',
             adminSecret: '',
@@ -317,6 +351,9 @@
             allProfiles: [],
             allQuotes: [],
             allMessages: [],
+            allClientMessages: [],
+            allCommunityMembers: [],
+            allNews: [],
             allTransactions: [], // Chiffre d'affaires admin
             stripeLinks: {}, // Stocke les liens d'administration généraux
             globalAnnouncement: null, // Message de notification globale diffusé
@@ -327,6 +364,9 @@
             manualTimeMode: false,   // Suit si l'utilisateur a figé l'heure manuellement
             adminSelectedClient: null,
             adminSearchQuery: '', 
+            adminChatSearchQuery: '',
+            selectedPeerClientId: '',
+            adminSelectedPeerConversation: '',
             firestoreBlocked: false,
             perfStart: performance.now(),
             
@@ -352,7 +392,9 @@
 
             // Nouveaux filtres analytiques pour le Registre Financier (Mois & Année)
             adminFinanceYearFilter: "all",
-            adminFinanceMonthFilter: "all"
+            adminFinanceMonthFilter: "all",
+            editingNewsId: '',
+            editingNewsImage: ''
         };
 
         let unsubProfile = null;
@@ -360,6 +402,9 @@
         let unsubAdminProfiles = null;
         let unsubAdminQuotes = null;
         let unsubAdminMessages = null;
+        let unsubClientMessages = null;
+        let unsubCommunityMembers = null;
+        let unsubNews = null;
         let unsubAllTransactions = null;
         let unsubStripeConfig = null;
         let unsubAnnouncement = null;
@@ -459,6 +504,10 @@
 
         // Extraire de manière élégante le prénom de l'utilisateur à partir de son email
         window.getClientName = (email) => {
+            const profile = window.appState.allProfiles.find(p => p.email === email) ||
+                (window.appState.profile?.email === email ? window.appState.profile : null);
+            const fullName = [profile?.firstName, profile?.lastName].filter(Boolean).join(' ').trim();
+            if (fullName) return fullName;
             if (!email) return "Client";
             const part = email.split('@')[0];
             return part.split(/[._-]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
@@ -503,6 +552,9 @@
                 root.innerHTML = getPermissionDiagnosticScreenHTML();
             } else if (!window.appState.user) {
                 root.innerHTML = getAuthScreenHTML();
+            } else if (!window.appState.isAdmin && window.appState.profile &&
+                (!window.appState.profile.firstName?.trim() || !window.appState.profile.lastName?.trim())) {
+                root.innerHTML = getRequiredProfileCompletionHTML();
             } else {
                 root.innerHTML = getMainDashboardHTML();
             }
@@ -529,14 +581,6 @@
         // ==========================================
         onAuthStateChanged(auth, async (currentUser) => {
             // Sécurité anti-login automatique après inscription
-            if (currentUser && window.appState.preventAutoLogin) {
-                window.appState.preventAutoLogin = false;
-                await signOut(auth);
-                window.appState.loadingAuth = false;
-                renderApp();
-                return;
-            }
-
             window.appState.user = currentUser;
             window.appState.firestoreBlocked = false; 
             window.appState.authLoading = false; 
@@ -545,12 +589,27 @@
                 window.appState.isAdmin = currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
 
                 try {
+                    if (!window.appState.isAdmin) {
+                        const blockedRef = doc(db, 'artifacts', appId, 'public', 'data', 'blockedAccounts', currentUser.uid);
+                        const blockedSnap = await getDoc(blockedRef);
+                        if (blockedSnap.exists()) {
+                            window.appState.authError = "Ce compte a été supprimé et bloqué par l’administrateur Sésame.";
+                            await signOut(auth);
+                            return;
+                        }
+                    }
                     const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', currentUser.uid);
                     const snap = await getDoc(profileRef);
                     
                     if (!snap.exists()) {
                         await setDoc(profileRef, {
                             email: currentUser.email,
+                            firstName: '',
+                            lastName: '',
+                            contactEmail: currentUser.email,
+                            phone: '',
+                            authVerified: true,
+                            lastAuthenticatedAt: Date.now(),
                             status: window.appState.isAdmin ? 'active' : 'inactive',
                             usageTotal: 0,
                             createdAt: Date.now(),
@@ -562,6 +621,14 @@
                                 'custom-app': { status: 'inactive', subEnd: null, freeReactivationUsed: false },
                                 'ux-design': { status: 'inactive', subEnd: null, freeReactivationUsed: false }
                             }
+                        });
+                    } else {
+                        const existingProfile = snap.data();
+                        await updateDoc(profileRef, existingProfile.verificationRejected === true ? {
+                            lastAuthenticatedAt: Date.now()
+                        } : {
+                            authVerified: true,
+                            lastAuthenticatedAt: Date.now()
                         });
                     }
 
@@ -586,6 +653,9 @@
                                 window.appState.profile = data;
                                 renderApp();
                             }
+                        } else if (!window.appState.isAdmin) {
+                            window.appState.authError = "Votre profil a été supprimé par l’administrateur.";
+                            signOut(auth);
                         }
                     }, (err) => {
                         console.error("Erreur de synchronisation du profil:", err);
@@ -671,8 +741,13 @@
 
             try {
                 const profilesCol = collection(db, 'artifacts', appId, 'public', 'data', 'profiles');
-                unsubAdminProfiles = onSnapshot(profilesCol, (snap) => {
-                    window.appState.allProfiles = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const profilesSource = window.appState.isAdmin
+                    ? profilesCol
+                    : doc(db, 'artifacts', appId, 'public', 'data', 'profiles', auth.currentUser.uid);
+                unsubAdminProfiles = onSnapshot(profilesSource, (snap) => {
+                    window.appState.allProfiles = window.appState.isAdmin
+                        ? snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                        : (snap.exists() ? [{ id: snap.id, ...snap.data() }] : []);
                     renderApp();
                 }, handlePermissionError);
 
@@ -685,10 +760,36 @@
                 }, handlePermissionError);
 
                 const messagesCol = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
-                unsubAdminMessages = onSnapshot(messagesCol, (snap) => {
+                const messagesSource = window.appState.isAdmin
+                    ? messagesCol
+                    : query(messagesCol, where('userId', '==', auth.currentUser.uid));
+                unsubAdminMessages = onSnapshot(messagesSource, (snap) => {
                     const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     msgs.sort((a, b) => a.timestamp - b.timestamp);
                     window.appState.allMessages = msgs;
+                    renderApp();
+                }, handlePermissionError);
+
+                const clientMessagesCol = collection(db, 'artifacts', appId, 'public', 'data', 'clientChats');
+                const clientMessagesSource = query(clientMessagesCol, where('groupId', '==', 'sesame-community'));
+                unsubClientMessages = onSnapshot(clientMessagesSource, (snap) => {
+                    const messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    window.appState.allClientMessages = messages.sort((a, b) => a.timestamp - b.timestamp);
+                    renderApp();
+                }, handlePermissionError);
+
+                const communityMembersCol = collection(db, 'artifacts', appId, 'public', 'data', 'communityMembers');
+                unsubCommunityMembers = onSnapshot(communityMembersCol, (snap) => {
+                    window.appState.allCommunityMembers = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                        .filter(member => member.joined === true)
+                        .sort((a, b) => (a.pseudo || '').localeCompare(b.pseudo || '', 'fr'));
+                    renderApp();
+                }, handlePermissionError);
+
+                const newsCol = collection(db, 'artifacts', appId, 'public', 'data', 'news');
+                unsubNews = onSnapshot(newsCol, (snap) => {
+                    window.appState.allNews = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+                        .sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
                     renderApp();
                 }, handlePermissionError);
 
@@ -710,6 +811,9 @@
             if(unsubAdminProfiles) { unsubAdminProfiles(); unsubAdminProfiles = null; }
             if(unsubAdminQuotes) { unsubAdminQuotes(); unsubAdminQuotes = null; }
             if(unsubAdminMessages) { unsubAdminMessages(); unsubAdminMessages = null; }
+            if(unsubClientMessages) { unsubClientMessages(); unsubClientMessages = null; }
+            if(unsubCommunityMembers) { unsubCommunityMembers(); unsubCommunityMembers = null; }
+            if(unsubNews) { unsubNews(); unsubNews = null; }
             if(unsubAllTransactions) { unsubAllTransactions(); unsubAllTransactions = null; }
         }
 
@@ -762,8 +866,9 @@
             window.appState.payingCustomPrice = null;
         };
 
-        // Ouvre le vrai lien de paiement Stripe configuré par l'admin + Simule le Webhook d'activation
-        window.redirectToStripeLink = () => {
+        // Ouvre Stripe sans jamais activer le service dans le navigateur.
+        // L'activation doit exclusivement être effectuée par un webhook Stripe sécurisé côté serveur.
+        window.redirectToStripeLink = async () => {
             const sId = window.appState.payingServiceId;
             const qId = window.appState.payingQuoteId;
             const customPrice = window.appState.payingCustomPrice;
@@ -772,71 +877,40 @@
             const customStripeUrl = window.appState.profile?.stripeLinks?.[sId];
             const stripeUrl = customStripeUrl || window.appState.stripeLinks[sId] || "https://stripe.com";
             
-            window.showToast("Redirection vers Stripe Checkout... Validation automatique par Webhook dans 3s !");
-            window.open(stripeUrl, '_blank');
+            const user = window.appState.user;
+            if (!user || !sId || !/^https:\/\//i.test(stripeUrl)) {
+                window.showToast("Lien Stripe invalide ou session expirée.", "error");
+                return;
+            }
 
-            // Simulation de webhook d'arrière-plan résolvant le paiement Stripe après 3 secondes
-            setTimeout(async () => {
-                const user = window.appState.user;
-                if(!user) return;
-                
-                try {
-                    const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid);
-                    const userServices = { ...window.appState.profile.services };
-                    
-                    const service = SERVICES_DATA.find(s => s.id === sId);
-                    const finalPrice = customPrice !== null ? customPrice : (service ? service.price : 0);
-                    const serviceName = service ? service.name : "Service Sésame";
-                    
-                    const durationDays = service && service.durationDays > 0 ? service.durationDays : 30; // 30 jours par défaut pour les devis approuvés
-                    let subEnd = window.getVirtualTimestamp() + (durationDays * 24 * 60 * 60 * 1000);
-
-                    // 1. Ajouter la transaction financière au log public Sésame
-                    const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
-                    await addDoc(txRef, {
-                        userId: user.uid,
-                        userEmail: user.email,
-                        serviceId: sId,
-                        offerName: serviceName,
-                        price: finalPrice,
-                        date: window.getVirtualTimestamp(),
-                        detail: qId ? "Paiement de devis approuvé opéré via Stripe" : "Paiement d'abonnement opéré via Stripe"
-                    });
-
-                    // 2. Activer le service au niveau du profil client
-                    userServices[sId] = {
-                        status: 'active',
-                        subEnd: subEnd,
-                        freeReactivationUsed: false
-                    };
-                    await updateDoc(profileRef, { services: userServices });
-
-                    // 3. Si c'est un paiement de devis, mettre à jour le statut du devis
-                    if(qId) {
-                        const quoteRef = doc(db, 'artifacts', appId, 'public', 'data', 'quotes', qId);
-                        await updateDoc(quoteRef, { status: 'approved_paid' });
-
-                        // Notification système automatique sur la passerelle tchat administrable
-                        const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
-                        await addDoc(msgRef, {
-                            userId: user.uid,
-                            userEmail: user.email,
-                            text: `[Système Webhook] L'agent a validé le devis pour "${serviceName}" au tarif de ${finalPrice.toFixed(2)} € par paiement Stripe Checkout.`,
-                            sender: 'user',
-                            timestamp: window.getVirtualTimestamp()
-                        });
-                    }
-
-                    window.showToast(`Paiement Stripe confirmé ! Le module [${serviceName}] est désormais actif.`);
-                    window.closePaymentModal();
-                    renderApp();
-
-                } catch(err) {
-                    console.error("Erreur de finalisation Stripe Webhook : ", err);
-                    window.showToast("Erreur d'enregistrement Stripe Webhook.", "error");
-                }
-            }, 3000);
+            try {
+                const service = SERVICES_DATA.find(s => s.id === sId);
+                const pendingRef = collection(db, 'artifacts', appId, 'public', 'data', 'paymentRequests');
+                await addDoc(pendingRef, {
+                    userId: user.uid,
+                    userEmail: user.email,
+                    serviceId: sId,
+                    quoteId: qId || null,
+                    expectedAmount: customPrice,
+                    serviceName: service?.name || 'Service Sésame',
+                    status: 'pending',
+                    createdAt: Date.now(),
+                    activationSource: 'stripe_webhook_only'
+                });
+                const checkoutUrl = new URL(stripeUrl);
+                checkoutUrl.searchParams.set('client_reference_id', user.uid);
+                window.open(checkoutUrl.toString(), '_blank', 'noopener,noreferrer');
+                window.showToast("Paiement en attente : le service sera activé uniquement après confirmation réelle de Stripe.");
+                window.closePaymentModal();
+            } catch (err) {
+                console.error("Erreur de création de la demande de paiement :", err);
+                window.showToast("Impossible de préparer le paiement Stripe.", "error");
+            }
         };
+
+        window.escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+        })[char]);
 
         // Désactivation d'un service
         window.handleServiceDeactivation = async (sId) => {
@@ -1041,6 +1115,8 @@
                     userEmail: window.appState.user.email,
                     text: text,
                     sender: 'user',
+                    readByAdmin: false,
+                    readByClient: true,
                     timestamp: window.getVirtualTimestamp() 
                 });
             } catch (err) {
@@ -1060,6 +1136,14 @@
                 const stripeClientId = window.appState.selectedStripeClientId;
                 
                 if (stripeClientId) {
+                    const verifiedClient = window.appState.allProfiles.find(client =>
+                        client.id === stripeClientId && client.email !== ADMIN_EMAIL && client.authVerified === true);
+                    if (!verifiedClient) {
+                        window.appState.selectedStripeClientId = '';
+                        window.showToast("Ce compte client n’est pas vérifié par Firebase.", "error");
+                        renderApp();
+                        return;
+                    }
                     // Mode personnalisé par client : on enregistre le lien directement dans le profil de ce client
                     const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', stripeClientId);
                     const snap = await getDoc(clientRef);
@@ -1102,6 +1186,8 @@
             window.appState.email = '';
             window.appState.password = '';
             window.appState.adminSecret = '';
+            window.appState.firstName = '';
+            window.appState.lastName = '';
             window.appState.authLoading = false; 
             renderApp();
         };
@@ -1112,14 +1198,20 @@
             const emailInput = document.getElementById('auth-email');
             const passwordInput = document.getElementById('auth-password');
             const secretInput = document.getElementById('auth-secret');
+            const firstNameInput = document.getElementById('auth-first-name');
+            const lastNameInput = document.getElementById('auth-last-name');
             
             const email = emailInput ? emailInput.value.trim() : '';
             const password = passwordInput ? passwordInput.value : '';
             const adminSecret = secretInput ? secretInput.value.trim() : '';
+            const firstName = firstNameInput ? firstNameInput.value.trim() : '';
+            const lastName = lastNameInput ? lastNameInput.value.trim() : '';
             
             window.appState.email = email;
             window.appState.password = password;
             window.appState.adminSecret = adminSecret;
+            window.appState.firstName = firstName;
+            window.appState.lastName = lastName;
             
             window.appState.authLoading = true;
             window.appState.authError = '';
@@ -1150,15 +1242,34 @@
                     renderApp();
                     return;
                 }
+                if (!isLoginMode && (!firstName || !lastName)) {
+                    window.appState.authError = "Le prénom et le nom sont obligatoires pour créer un compte client.";
+                    window.appState.authLoading = false;
+                    renderApp();
+                    return;
+                }
             }
 
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
-                    // Activation du flag pour couper la connexion auto et renvoyer à l'écran de login
-                    window.appState.preventAutoLogin = true;
-                    await createUserWithEmailAndPassword(auth, email, password);
+                    const credential = await createUserWithEmailAndPassword(auth, email, password);
+                    const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', credential.user.uid);
+                    await setDoc(profileRef, {
+                        email,
+                        firstName: authRole === 'client' ? firstName : 'Administrateur',
+                        lastName: authRole === 'client' ? lastName : 'Principal',
+                        contactEmail: email,
+                        phone: '',
+                        authVerified: true,
+                        lastAuthenticatedAt: Date.now(),
+                        status: authRole === 'admin' ? 'active' : 'inactive',
+                        usageTotal: 0,
+                        createdAt: Date.now(),
+                        services: Object.fromEntries(SERVICES_DATA.map(s => [s.id, { status: 'inactive', subEnd: null, freeReactivationUsed: false }]))
+                    }, { merge: true });
+                    await signOut(auth);
                     
                     // Succès d'enregistrement, on bascule vers la vue connexion
                     window.appState.isLoginMode = true; 
@@ -1208,9 +1319,11 @@
             const container = document.getElementById('admin-clients-table-body');
             if(container) {
                 const { allProfiles } = window.appState;
-                const filtered = allProfiles.filter(client => 
-                    client.email.toLowerCase().includes(queryVal.toLowerCase()) ||
-                    window.getClientName(client.email).toLowerCase().includes(queryVal.toLowerCase())
+                const filtered = allProfiles.filter(client =>
+                    client.email !== ADMIN_EMAIL && client.authVerified === true && (
+                        client.email.toLowerCase().includes(queryVal.toLowerCase()) ||
+                        window.getClientName(client.email).toLowerCase().includes(queryVal.toLowerCase())
+                    )
                 );
                 
                 if(filtered.length === 0) {
@@ -1239,6 +1352,8 @@
                           <td class="p-4 text-xs text-slate-400 font-mono">${daysRemaining}j restants</td>
                           <td class="p-4 text-xs text-cyan-400 font-mono">${client.usageTotal || 0} cycles</td>
                           <td class="p-4 flex gap-2">
+                            <button onclick="window.openClientPersonalInfo('${client.id}')" title="Consulter les informations personnelles"
+                              class="px-2 py-1 bg-cyan-950/50 hover:bg-cyan-900/50 border border-cyan-500/30 text-cyan-300 rounded text-[10px] font-bold">Infos</button>
                             <button onclick="window.adminAddDays('${client.id}', 7)" title="Prolonger de 7 jours"
                               class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 text-cyan-400 rounded text-[11px] transition-all flex items-center gap-1 min-h-[28px]">
                               +7j
@@ -1260,7 +1375,7 @@
         };
 
         function getAuthScreenHTML() {
-            const { isLoginMode, authLoading, authError, authSuccessMessage, authRole, email, password, adminSecret, showPassword } = window.appState;
+            const { isLoginMode, authLoading, authError, authSuccessMessage, authRole, email, password, adminSecret, showPassword, firstName, lastName } = window.appState;
             const showSecret = !isLoginMode && authRole === 'admin';
 
             return `
@@ -1323,6 +1438,21 @@
                 </div>` : ''}
                 
                 <form onsubmit="window.submitAuth(event)" class="space-y-4 font-mono">
+                  ${!isLoginMode && authRole === 'client' ? `
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-slate-400 text-xs mb-1 uppercase">Prénom</label>
+                      <input id="auth-first-name" type="text" required maxlength="60" value="${firstName}"
+                        oninput="window.handleAuthInput('firstName', this.value)"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="Prénom" />
+                    </div>
+                    <div>
+                      <label class="block text-slate-400 text-xs mb-1 uppercase">Nom</label>
+                      <input id="auth-last-name" type="text" required maxlength="60" value="${lastName}"
+                        oninput="window.handleAuthInput('lastName', this.value)"
+                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="Nom" />
+                    </div>
+                  </div>` : ''}
                   <div>
                     <label class="block text-slate-400 text-xs mb-1 uppercase font-mono">Identifiant Réseau</label>
                     <input id="auth-email" type="email" required
@@ -1374,6 +1504,26 @@
             </div>`;
         }
 
+        function getRequiredProfileCompletionHTML() {
+            const profile = window.appState.profile || {};
+            return `
+            <div class="min-h-screen bg-[#030712] flex items-center justify-center p-4">
+                <div class="w-full max-w-md bg-slate-900 border border-cyan-500/40 rounded-2xl p-6 sm:p-8 shadow-[0_0_35px_rgba(6,182,212,0.15)]">
+                    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-950 border border-cyan-500/30 flex items-center justify-center"><i data-lucide="contact-round" class="w-6 h-6 text-cyan-400"></i></div>
+                    <h2 class="text-xl text-white font-bold text-center uppercase font-mono">Informations obligatoires</h2>
+                    <p class="text-xs text-slate-400 text-center mt-2 mb-6">Pour continuer vers votre espace client, renseignez votre nom et votre prénom réels. Ils resteront privés et visibles uniquement par vous et l’administrateur.</p>
+                    <form onsubmit="window.savePersonalInformation(event, true)" class="space-y-4">
+                        <div><label class="block text-[10px] uppercase text-slate-500 mb-1">Prénom</label><input id="personal-first-name" required maxlength="60" value="${window.escapeHTML(profile.firstName || '')}" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-cyan-500" /></div>
+                        <div><label class="block text-[10px] uppercase text-slate-500 mb-1">Nom</label><input id="personal-last-name" required maxlength="60" value="${window.escapeHTML(profile.lastName || '')}" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-cyan-500" /></div>
+                        <div><label class="block text-[10px] uppercase text-slate-500 mb-1">E-mail de contact</label><input id="personal-contact-email" type="email" required maxlength="120" value="${window.escapeHTML(profile.contactEmail || window.appState.user?.email || '')}" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-cyan-500" /></div>
+                        <div><label class="block text-[10px] uppercase text-slate-500 mb-1">Téléphone <span class="normal-case text-slate-600">(facultatif)</span></label><input id="personal-phone" type="tel" maxlength="25" value="${window.escapeHTML(profile.phone || '')}" placeholder="+32 470 00 00 00" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-cyan-500" /></div>
+                        <button class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white font-bold uppercase text-xs">Enregistrer et continuer</button>
+                    </form>
+                    <button onclick="window.handleLogout()" class="w-full mt-3 py-2 text-xs text-slate-500 hover:text-red-400">Se déconnecter</button>
+                </div>
+            </div>`;
+        }
+
         function getPermissionDiagnosticScreenHTML() {
             return `
             <div class="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-mono relative overflow-y-auto">
@@ -1413,7 +1563,51 @@
 service cloud.firestore {
   match /databases/{database}/documents {
     match /artifacts/sesameouvretoi/public/data/{collectionName}/{documentId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null &amp;&amp;
+        collectionName != 'clientChats' &amp;&amp; collectionName != 'profiles' &amp;&amp;
+        collectionName != 'communityMembers' &amp;&amp; collectionName != 'messages' &amp;&amp;
+        collectionName != 'news' &amp;&amp; collectionName != 'blockedAccounts';
+    }
+    match /artifacts/sesameouvretoi/public/data/profiles/{profileId} {
+      allow read, write: if request.auth != null &amp;&amp;
+        (request.auth.uid == profileId || request.auth.token.email == 'dpstay@1.net');
+    }
+    match /artifacts/sesameouvretoi/public/data/blockedAccounts/{accountId} {
+      allow read: if request.auth != null &amp;&amp;
+        (request.auth.uid == accountId || request.auth.token.email == 'dpstay@1.net');
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/communityMembers/{memberId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        (request.auth.uid == memberId || request.auth.token.email == 'dpstay@1.net');
+    }
+    match /artifacts/sesameouvretoi/public/data/messages/{messageId} {
+      allow read: if request.auth != null &amp;&amp;
+        (resource.data.userId == request.auth.uid || request.auth.token.email == 'dpstay@1.net');
+      allow create: if request.auth != null &amp;&amp;
+        (request.resource.data.userId == request.auth.uid || request.auth.token.email == 'dpstay@1.net');
+      allow update: if request.auth != null &amp;&amp;
+        (resource.data.userId == request.auth.uid || request.auth.token.email == 'dpstay@1.net');
+      allow delete: if request.auth != null &amp;&amp; request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/news/{newsId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/clientChats/{messageId} {
+      allow read: if request.auth != null &amp;&amp; resource.data.groupId == 'sesame-community';
+      allow create: if request.auth != null &amp;&amp;
+        request.resource.data.groupId == 'sesame-community' &amp;&amp;
+        request.resource.data.senderId == request.auth.uid &amp;&amp;
+        (request.auth.token.email == 'dpstay@1.net' ||
+         get(/databases/$(database)/documents/artifacts/sesameouvretoi/public/data/profiles/$(request.auth.uid)).data.communityChatJoined == true);
+      allow update: if request.auth != null &amp;&amp;
+        (request.auth.token.email == 'dpstay@1.net' ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']));
+      allow delete: if request.auth != null &amp;&amp; request.auth.token.email == 'dpstay@1.net';
     }
   }
 }</pre>
@@ -1445,6 +1639,10 @@ service cloud.firestore {
                 'custom-app': { status: 'inactive', subEnd: null },
                 'ux-design': { status: 'inactive', subEnd: null }
             };
+            const firebaseClientProfiles = window.appState.allProfiles.filter(client =>
+                client.email !== ADMIN_EMAIL && client.authVerified === true);
+            const unverifiedClientProfiles = window.appState.allProfiles.filter(client =>
+                client.email && client.email !== ADMIN_EMAIL && client.authVerified !== true);
 
             // ----------------------------------------------------
             // CALCUL DES KPI ET STATISTIQUES FINANCIÈRES
@@ -1637,6 +1835,14 @@ service cloud.firestore {
             // Résoudre la discussion tchat Admin et injecter l'avatar du client actif dans le tchat
             const selectedClientProfile = window.appState.allProfiles.find(p => p.id === adminSelectedClient);
             const selectedClientName = selectedClientProfile ? window.getClientName(selectedClientProfile.email).toUpperCase() : 'AGENT';
+            const unreadSupportMessages = window.appState.allMessages.filter(m => isAdmin
+                ? m.sender === 'user' && m.readByAdmin === false
+                : m.userId === user.uid && m.sender === 'admin' && m.readByClient === false);
+            const communityJoined = isAdmin || profile?.communityChatJoined === true;
+            const communityMessages = window.appState.allClientMessages.filter(m => m.groupId === 'sesame-community');
+            const communityMembers = window.appState.allCommunityMembers;
+            const unreadPeerMessages = communityJoined ? communityMessages.filter(m =>
+                m.senderId !== user.uid && !(m.readBy || []).includes(user.uid)) : [];
 
             // Identification du fuseau horaire
             const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
@@ -1674,12 +1880,12 @@ service cloud.firestore {
                                 <span class="text-xs sm:text-sm font-semibold text-white tracking-wide truncate">
                                     ${isAdmin ? 'Administrateur Principal' : window.getClientName(user.email)}
                                 </span>
-                                <span class="px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-black tracking-wider ${isAdmin ? 'bg-amber-500 text-slate-950 font-mono' : 'bg-cyan-950 text-cyan-400 border border-cyan-800/50 font-mono'}">
-                                    ${isAdmin ? 'ADMIN' : 'CLIENT'}
-                                </span>
+                                <span class="px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-black tracking-wider ${isAdmin ? 'bg-amber-500 text-slate-950' : 'bg-cyan-950 text-cyan-400 border border-cyan-800/50'} font-mono">${isAdmin ? 'ADMIN' : 'CLIENT'}</span>
                             </div>
                             <p class="text-[10px] sm:text-[11px] text-slate-500 font-mono mt-0.5 truncate max-w-[200px] sm:max-w-none">${user.email}</p>
                         </div>
+
+                        ${!isAdmin ? `<button onclick="window.openMyPersonalInformation()" title="Mes informations personnelles" class="p-2 sm:p-2.5 text-cyan-400 hover:text-cyan-300 rounded-xl hover:bg-cyan-950/40 border border-transparent hover:border-cyan-500/30 transition-all min-w-[38px] min-h-[38px] flex items-center justify-center"><i data-lucide="user-pen" class="w-5 h-5"></i></button>` : ''}
                         
                         <div class="h-8 w-[1px] bg-slate-800/80"></div>
 
@@ -1689,8 +1895,28 @@ service cloud.firestore {
                     </div>
                 </header>
 
+                ${unreadSupportMessages.length ? `
+                <button onclick="window.openUnreadSupportNotification()"
+                    class="relative z-20 w-full text-left bg-gradient-to-r from-purple-950/80 to-cyan-950/70 border border-purple-500/60 p-4 rounded-2xl shadow-[0_0_22px_rgba(168,85,247,0.2)] flex items-center justify-between gap-3 animate-pulse">
+                    <span class="flex items-center gap-3 min-w-0">
+                        <span class="p-2 bg-purple-900/70 rounded-lg"><i data-lucide="bell-ring" class="w-5 h-5 text-purple-200"></i></span>
+                        <span class="min-w-0">
+                            <strong class="block text-white text-xs uppercase font-mono">${unreadSupportMessages.length} nouveau${unreadSupportMessages.length > 1 ? 'x' : ''} message${unreadSupportMessages.length > 1 ? 's' : ''}</strong>
+                            <span class="block text-[10px] text-purple-200 truncate">${isAdmin ? `Message de ${window.getClientName(unreadSupportMessages[0].userEmail)}` : 'Réponse du support Sésame'} — cliquez ici pour ouvrir et retirer la notification.</span>
+                        </span>
+                    </span>
+                    <span class="text-[9px] uppercase text-cyan-300 font-bold shrink-0">Ouvrir</span>
+                </button>` : ''}
+
+                ${unreadPeerMessages.length ? `
+                <button onclick="window.openUnreadPeerNotification()" class="relative z-20 w-full text-left bg-emerald-950/80 border border-emerald-500/50 p-3 rounded-2xl flex items-center justify-between gap-3">
+                    <span class="flex items-center gap-2 min-w-0"><i data-lucide="message-circle-more" class="w-5 h-5 text-emerald-400"></i>
+                    <span class="text-xs text-emerald-100 truncate"><strong>${unreadPeerMessages.length} nouveau${unreadPeerMessages.length > 1 ? 'x' : ''} message${unreadPeerMessages.length > 1 ? 's' : ''}</strong> dans le Groupe Sésame — ${window.escapeHTML(unreadPeerMessages[0].senderRole === 'admin' ? 'Administrateur Sésame' : unreadPeerMessages[0].senderPseudo || 'Membre')}</span></span>
+                    <span class="text-[9px] uppercase font-bold text-emerald-300">Ouvrir</span>
+                </button>` : ''}
+
                 <!-- BANNIÈRE DE NOTIFICATION GLOBALE (Totalement optimisée pour mobile) -->
-                ${!isAdmin && globalAnnouncement && globalAnnouncement.text ? `
+                ${!isAdmin && globalAnnouncement && globalAnnouncement.text && profile?.dismissedAnnouncementId !== (globalAnnouncement.id || String(globalAnnouncement.timestamp)) ? `
                 <div class="relative bg-gradient-to-r from-amber-950/40 to-yellow-950/30 border border-amber-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 overflow-hidden z-10 animate-pulse">
                     <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
                     <div class="flex items-start sm:items-center gap-3">
@@ -1702,7 +1928,13 @@ service cloud.firestore {
                             <p class="text-xs text-amber-100 font-medium mt-0.5 leading-relaxed">${globalAnnouncement.text}</p>
                         </div>
                     </div>
-                    <span class="text-[9px] sm:text-[10px] text-slate-500 font-mono shrink-0 text-right self-end sm:self-auto">${new Date(globalAnnouncement.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                    <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
+                        <span class="text-[9px] sm:text-[10px] text-slate-500 font-mono">${new Date(globalAnnouncement.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                        <button onclick="window.dismissNetworkAnnouncement()"
+                            class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 text-[9px] font-black uppercase tracking-wider transition-colors flex items-center gap-1.5 min-h-[30px]">
+                            <i data-lucide="check" class="w-3.5 h-3.5"></i> Lu — Fermer
+                        </button>
+                    </div>
                 </div>
                 ` : ''}
 
@@ -1817,7 +2049,7 @@ service cloud.firestore {
                                         </button>
                                     `).join('')}
                                     
-                                    <a href="https://teleprime4k.github.io/Teleprime4k/" target="_blank" 
+                                    <a href="https://pimpmydrawing.com" target="_blank" 
                                         class="ml-1 px-3 py-1.5 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 hover:border-purple-500/60 text-purple-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 uppercase tracking-wider shadow-[0_0_10px_rgba(168,85,247,0.15)] shrink-0 min-h-[30px]"
                                         title="Visiter Pimp My Drawing pour des ressources vectorielles CAO gratuites">
                                         <i data-lucide="palette" class="w-3 h-3 text-purple-400"></i> Pimp CAD
@@ -1935,7 +2167,7 @@ service cloud.firestore {
                                        </div>`
                                     : clientMessages.map(m => `
                                         <div class="flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}">
-                                            <span class="text-[8px] text-slate-500 mb-0.5 font-mono">${m.sender === 'user' ? 'Vous' : 'Admin'} - ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                            <span class="text-[8px] text-slate-500 mb-0.5 font-mono">${m.sender === 'user' ? `Vous (${window.getClientName(user.email)})` : 'Administrateur Sésame'} - ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                             <div class="p-2.5 rounded-lg max-w-[85%] leading-relaxed ${m.sender === 'user' ? 'bg-cyan-950/60 text-cyan-200 border border-cyan-500/20' : 'bg-purple-950/60 text-purple-200 border border-purple-500/20'}">
                                                 ${m.text}
                                             </div>
@@ -1978,6 +2210,106 @@ service cloud.firestore {
 
                     </div>
                 </div>
+
+                <!-- ESPACE ACTUALITÉS SÉSAME -->
+                <section class="relative z-10 bg-[#0b1322]/95 border border-cyan-500/25 rounded-2xl p-4 sm:p-6 shadow-xl w-full">
+                    <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-5">
+                        <div>
+                            <h3 class="text-sm font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="newspaper" class="w-5 h-5 text-cyan-400"></i> Actualités Sésame</h3>
+                            <p class="text-[10px] text-slate-500 mt-1">Informations, nouveautés et annonces publiées par l’administration.</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/20 text-[9px] text-cyan-300 font-bold">${window.appState.allNews.length} publication${window.appState.allNews.length > 1 ? 's' : ''}</span>
+                    </div>
+
+                    ${isAdmin ? `
+                    <form onsubmit="window.adminSaveNews(event)" class="mb-6 p-4 bg-slate-950/70 border border-purple-500/20 rounded-xl grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-[9px] uppercase text-slate-500 mb-1">Titre de l’actualité</label>
+                                <input id="news-title" maxlength="120" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Titre de la publication" />
+                            </div>
+                            <div>
+                                <label class="block text-[9px] uppercase text-slate-500 mb-1">Image</label>
+                                <input id="news-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="window.prepareNewsImage(this.files[0])" class="w-full text-[10px] text-slate-400 file:bg-purple-600 file:text-white file:border-0 file:rounded file:px-3 file:py-2" />
+                                <p class="text-[8px] text-slate-600 mt-1">JPG, PNG, WEBP ou GIF — maximum 550 Ko.</p>
+                            </div>
+                            <img id="news-image-preview" src="${window.appState.editingNewsImage || ''}" alt="Aperçu" class="w-full h-32 object-cover rounded-lg border border-slate-800 ${window.appState.editingNewsImage ? '' : 'hidden'}" />
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <div class="flex-1">
+                                <label class="block text-[9px] uppercase text-slate-500 mb-1">Informations</label>
+                                <textarea id="news-content" maxlength="3000" required rows="7" class="w-full h-full min-h-[150px] bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 resize-y" placeholder="Rédigez le contenu de l’actualité…"></textarea>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs text-white font-bold uppercase">${window.appState.editingNewsId ? 'Enregistrer les modifications' : 'Publier l’actualité'}</button>
+                                ${window.appState.editingNewsId ? `<button type="button" onclick="window.cancelNewsEdit()" class="px-4 py-2.5 bg-slate-800 rounded-lg text-xs text-slate-300">Annuler</button>` : ''}
+                            </div>
+                        </div>
+                    </form>` : ''}
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        ${window.appState.allNews.length ? window.appState.allNews.map(news => `
+                            <article class="bg-slate-950/70 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+                                ${news.image ? `<img src="${news.image}" alt="${window.escapeHTML(news.title)}" class="w-full h-44 object-cover" />` : `<div class="h-28 bg-gradient-to-br from-cyan-950 to-purple-950 flex items-center justify-center"><i data-lucide="newspaper" class="w-10 h-10 text-cyan-700"></i></div>`}
+                                <div class="p-4 flex flex-col flex-1">
+                                    <span class="text-[8px] text-cyan-500 uppercase font-mono">${new Date(news.publishedAt).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})}</span>
+                                    <h4 class="text-sm font-bold text-white mt-1 mb-2">${window.escapeHTML(news.title)}</h4>
+                                    <p class="text-xs text-slate-400 whitespace-pre-wrap break-words leading-relaxed flex-1">${window.escapeHTML(news.content)}</p>
+                                    ${isAdmin ? `<div class="flex gap-2 mt-4 pt-3 border-t border-slate-800">
+                                        <button onclick="window.editNews('${news.id}')" class="flex-1 py-1.5 bg-cyan-950 text-cyan-300 border border-cyan-500/20 rounded text-[9px] uppercase font-bold">Modifier</button>
+                                        <button onclick="window.deleteNews('${news.id}')" class="flex-1 py-1.5 bg-red-950 text-red-300 border border-red-500/20 rounded text-[9px] uppercase font-bold">Supprimer</button>
+                                    </div>` : ''}
+                                </div>
+                            </article>`).join('') : `<div class="md:col-span-2 xl:col-span-3 py-10 text-center text-xs text-slate-600 italic">Aucune actualité publiée pour le moment.</div>`}
+                    </div>
+                </section>
+
+                <!-- GROUPE COMMUNAUTAIRE SÉSAME, SUPERVISÉ PAR L'ADMIN -->
+                <section class="relative z-10 bg-[#0b1322]/95 border border-emerald-500/25 rounded-2xl p-4 sm:p-6 shadow-xl w-full">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
+                        <div>
+                            <h3 class="text-sm font-bold text-white uppercase font-mono flex items-center gap-2">
+                                <i data-lucide="messages-square" class="w-5 h-5 text-emerald-400"></i>
+                                Groupe communautaire Sésame
+                            </h3>
+                            <p class="text-[10px] text-slate-500 mt-1">Salon commun des clients, supervisé par l’administrateur pour la sécurité.</p>
+                        </div>
+                        ${!isAdmin ? (communityJoined ? `
+                        <button onclick="window.leaveCommunityChat()" class="px-3 py-2 bg-red-950/50 hover:bg-red-900/50 border border-red-500/30 rounded-lg text-[10px] text-red-300 font-bold uppercase">Quitter le groupe</button>` : `
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input id="community-pseudo-input" type="text" minlength="3" maxlength="24" autocomplete="off" placeholder="Choisissez un pseudonyme"
+                                class="bg-slate-950 border border-emerald-900/60 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                            <button onclick="window.joinCommunityChat()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs text-white font-bold uppercase shadow-[0_0_12px_rgba(16,185,129,0.25)]">Rejoindre</button>
+                        </div>`) : '<span class="px-3 py-1.5 rounded-full bg-purple-950 border border-purple-500/30 text-[9px] text-purple-300 uppercase font-bold">Administrateur · Modérateur</span>'}
+                    </div>
+                    <div class="grid grid-cols-1 ${isAdmin ? 'md:grid-cols-4' : ''} gap-4 min-h-[310px]">
+                        ${isAdmin ? `<div class="md:col-span-1 space-y-2 max-h-[330px] overflow-y-auto pr-1">
+                            <span class="text-[9px] uppercase font-bold text-slate-500">Membres (${communityMembers.length})</span>
+                            ${communityMembers.length ? communityMembers.map(member => {
+                                const privateProfile = isAdmin ? window.appState.allProfiles.find(p => p.id === member.id) : null;
+                                return `<div class="p-2.5 rounded-lg border bg-slate-950 border-slate-800 text-[10px] text-slate-300 flex items-start gap-2"><span class="w-2 h-2 mt-1 rounded-full bg-emerald-500"></span><span><strong class="block text-emerald-300">${window.escapeHTML(member.pseudo)}</strong>${isAdmin && privateProfile ? `<small class="block text-[8px] text-slate-500">${window.escapeHTML(window.getClientName(privateProfile.email))} · ${window.escapeHTML(privateProfile.email)}</small>` : ''}</span></div>`;
+                            }).join('') : '<p class="text-[10px] text-slate-600 italic">Aucun client inscrit.</p>'}
+                        </div>` : ''}
+                        <div class="${isAdmin ? 'md:col-span-3' : ''} flex flex-col min-h-[300px]">
+                            ${communityJoined ? `
+                                <div id="peer-chat-box" class="flex-1 max-h-[270px] overflow-y-auto bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-3">
+                                    ${communityMessages.length ? communityMessages.map(m => {
+                                        const ownMessage = m.senderId === user.uid;
+                                        return `<div class="flex flex-col ${ownMessage ? 'items-end' : 'items-start'}">
+                                            <span class="text-[8px] text-slate-500 mb-1">${m.senderRole === 'admin' ? 'Administrateur Sésame' : window.escapeHTML(m.senderPseudo || 'Ancien membre')}${isAdmin && m.senderRole !== 'admin' ? (() => { const p = window.appState.allProfiles.find(profile => profile.id === m.senderId); return p ? ` — ${window.escapeHTML(window.getClientName(p.email))}` : ''; })() : ''} · ${new Date(m.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                            <div class="max-w-[85%] p-2.5 rounded-lg text-xs break-words ${m.senderRole === 'admin' ? 'bg-purple-950 text-purple-200 border border-purple-500/30' : ownMessage ? 'bg-emerald-950 text-emerald-200 border border-emerald-500/30' : 'bg-slate-900 text-slate-200 border border-slate-700'}">${window.escapeHTML(m.text)}</div>
+                                            ${isAdmin ? `<button onclick="window.adminDeleteCommunityMessage('${m.id}')" class="mt-1 text-[8px] text-red-500 hover:text-red-300 uppercase">Supprimer</button>` : ''}
+                                        </div>`;
+                                    }).join('') : '<p class="text-center text-xs text-slate-600 italic mt-20">Commencez la conversation.</p>'}
+                                </div>
+                                <form onsubmit="window.sendPeerMessage(event)" class="flex gap-2 mt-3">
+                                    <input id="peer-chat-input" maxlength="1000" required autocomplete="off" placeholder="Écrire un message dans le groupe…" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                                    <button class="px-4 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white"><i data-lucide="send" class="w-4 h-4"></i></button>
+                                </form>`
+                            : `<div class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3"><i data-lucide="users" class="w-10 h-10 text-emerald-700"></i><p class="text-xs text-slate-500">Rejoignez le groupe Sésame pour lire les échanges et discuter avec tous les clients.</p></div>`}
+                        </div>
+                    </div>
+                </section>
 
                 <!-- CONSOLE D'ADMINISTRATION GLOBALE EN BAS -->
                 ${isAdmin ? `
@@ -2035,14 +2367,26 @@ service cloud.firestore {
                         <!-- 2. Messagerie de Support Client -->
                         <div class="bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Messagerie de Support Client</h4>
+                            <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5">
+                                <i data-lucide="search" class="w-4 h-4 text-purple-400"></i>
+                                <input type="search" value="${window.appState.adminChatSearchQuery}" oninput="window.searchAdminConversations(this.value)"
+                                    placeholder="Recharger par nom ou adresse e-mail..."
+                                    class="w-full bg-transparent py-2 text-[10px] text-white focus:outline-none font-mono" />
+                            </div>
                             <div class="grid grid-cols-3 gap-3 h-[300px]">
                                 <div class="col-span-1 border-r border-slate-800/80 pr-2 space-y-2 overflow-y-auto">
                                     <span class="text-[9px] uppercase font-bold text-slate-500 font-mono block">Canaux</span>
-                                    ${[...new Set(window.appState.allMessages.filter(m => m.userId && m.userId !== 'admin').map(m => m.userId))].map(uId => {
+                                    ${[...new Set(window.appState.allMessages.filter(m => m.userId && m.userId !== 'admin').map(m => m.userId))].filter(uId => {
+                                        const p = window.appState.allProfiles.find(profile => profile.id === uId);
+                                        const email = p?.email || window.appState.allMessages.find(m => m.userId === uId)?.userEmail || '';
+                                        const search = window.appState.adminChatSearchQuery.toLowerCase().trim();
+                                        return !search || email.toLowerCase().includes(search) || window.getClientName(email).toLowerCase().includes(search);
+                                    }).map(uId => {
                                         const clientProfile = window.appState.allProfiles.find(p => p.id === uId);
                                         const cEmail = clientProfile ? clientProfile.email : (window.appState.allMessages.find(m => m.userId === uId && m.sender === 'user')?.userEmail || "Inconnu");
                                         const cName = window.getClientName(cEmail);
                                         const isSelected = window.appState.adminSelectedClient === uId;
+                                        const unreadCount = window.appState.allMessages.filter(m => m.userId === uId && m.sender === 'user' && m.readByAdmin === false).length;
                                         return `
                                         <button onclick="window.adminSelectChatUser('${uId}')"
                                             class="w-full text-left p-2 rounded-lg border transition-all flex flex-col min-h-[44px] justify-center ${
@@ -2052,6 +2396,7 @@ service cloud.firestore {
                                             }">
                                             <div class="text-[10px] font-bold truncate text-slate-200 w-full">${cName}</div>
                                             <div class="text-[8px] text-slate-500 font-mono truncate w-full mt-0.5">${cEmail}</div>
+                                            ${unreadCount ? `<span class="mt-1 self-start px-1.5 py-0.5 rounded-full bg-red-600 text-white text-[8px]">${unreadCount} nouveau${unreadCount > 1 ? 'x' : ''}</span>` : ''}
                                         </button>`;
                                     }).join('')}
                                 </div>
@@ -2073,7 +2418,7 @@ service cloud.firestore {
                                                 .sort((a, b) => a.timestamp - b.timestamp)
                                                 .map(m => `
                                                 <div class="flex flex-col ${m.sender === 'admin' ? 'items-end' : 'items-start'}">
-                                                    <span class="text-[8px] text-slate-500">${m.sender === 'admin' ? 'Vous (Admin)' : 'Client'}</span>
+                                                    <span class="text-[8px] text-slate-500">${m.sender === 'admin' ? 'Vous — Administrateur Sésame' : `${window.getClientName(m.userEmail)} — Client`}</span>
                                                     <div class="p-2 rounded bg-slate-900 text-slate-200 mt-0.5 max-w-[90%] break-all">
                                                         ${m.text}
                                                     </div>
@@ -2146,7 +2491,7 @@ service cloud.firestore {
                                     <select id="service-client-select" onchange="window.adminChangeServiceClient(this.value)"
                                         class="w-full bg-slate-950 border border-slate-850 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 min-h-[36px]">
                                         <option value="">-- Choisir un client --</option>
-                                        ${window.appState.allProfiles.filter(p => p.email !== ADMIN_EMAIL).map(p => `
+                                        ${firebaseClientProfiles.map(p => `
                                             <option value="${p.id}" ${window.appState.selectedServiceClientId === p.id ? 'selected' : ''}>
                                                 ${window.getClientName(p.email)} (${p.email})
                                             </option>
@@ -2156,13 +2501,14 @@ service cloud.firestore {
 
                                 <div class="space-y-2 flex-1 overflow-y-auto max-h-[160px] pr-1 no-scrollbar">
                                     ${(() => {
-                                        const sClient = window.appState.allProfiles.find(p => p.id === window.appState.selectedServiceClientId);
+                                        const sClient = firebaseClientProfiles.find(p => p.id === window.appState.selectedServiceClientId);
                                         if (!sClient) return `<p class="text-slate-600 text-center italic text-[9px] mt-6">Choisissez un client pour gérer ses services.</p>`;
                                         
                                         const clientServices = sClient.services || {};
                                         return SERVICES_DATA.map(s => {
                                             const sState = clientServices[s.id] || { status: 'inactive', subEnd: null };
                                             const isActive = sState.status === 'active' && sState.subEnd > virtualDate;
+                                            const remainingDays = isActive ? Math.max(1, Math.ceil((sState.subEnd - virtualDate) / 86400000)) : 0;
                                             
                                             return `
                                             <div class="flex items-center justify-between p-2 bg-slate-900 border border-slate-800 rounded-lg gap-2">
@@ -2172,6 +2518,11 @@ service cloud.firestore {
                                                         ${isActive ? 'Actif' : 'Inactif'}
                                                     </span>
                                                 </div>
+                                                <div class="flex items-center gap-1 shrink-0">
+                                                ${isActive ? `<input id="service-days-${sClient.id}-${s.id}" type="number" min="1" max="3650" value="${remainingDays}" title="Jours restants"
+                                                    class="w-14 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[9px] text-white text-center" />
+                                                <button onclick="window.adminSetServiceDays('${sClient.id}', '${s.id}')" title="Enregistrer les jours"
+                                                    class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-500/30">Jours</button>` : ''}
                                                 <button onclick="window.adminToggleClientService('${sClient.id}', '${s.id}', ${isActive})"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded transition-all shrink-0 ${
                                                         isActive 
@@ -2180,6 +2531,7 @@ service cloud.firestore {
                                                     }">
                                                     ${isActive ? 'Couper' : 'Activer'}
                                                 </button>
+                                                </div>
                                             </div>`;
                                         }).join('');
                                     })()}
@@ -2287,7 +2639,7 @@ service cloud.firestore {
                                     <select onchange="window.adminChangeStripeClient(this.value)"
                                         class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-purple-500 flex-1 sm:flex-none min-h-[28px]">
                                         <option value="">🌍 Global (Par Défaut)</option>
-                                        ${window.appState.allProfiles.filter(p => p.email !== ADMIN_EMAIL).map(p => `
+                                        ${firebaseClientProfiles.map(p => `
                                             <option value="${p.id}" ${window.appState.selectedStripeClientId === p.id ? 'selected' : ''}>
                                                 👤 ${window.getClientName(p.email)}
                                             </option>
@@ -2299,8 +2651,9 @@ service cloud.firestore {
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto no-scrollbar pr-1">
                                 ${(() => {
                                     // Résoudre la source des liens à afficher dans les champs d'édition
-                                    const stripeClientId = window.appState.selectedStripeClientId;
-                                    const stripeClient = window.appState.allProfiles.find(p => p.id === stripeClientId);
+                                    const selectedStripeClientId = window.appState.selectedStripeClientId;
+                                    const stripeClient = firebaseClientProfiles.find(p => p.id === selectedStripeClientId);
+                                    const stripeClientId = stripeClient ? selectedStripeClientId : '';
                                     const sourceLinks = stripeClientId ? (stripeClient?.stripeLinks || {}) : stripeLinks;
 
                                     return SERVICES_DATA.map(s => {
@@ -2319,6 +2672,20 @@ service cloud.firestore {
                                     }).join('');
                                 })()}
                             </div>
+                            ${(() => {
+                                const selectedStripeClientId = window.appState.selectedStripeClientId;
+                                const stripeClient = firebaseClientProfiles.find(p => p.id === selectedStripeClientId);
+                                const stripeClientId = stripeClient ? selectedStripeClientId : '';
+                                const sourceLinks = stripeClientId ? (stripeClient?.stripeLinks || {}) : stripeLinks;
+                                return `<div class="mt-3 pt-3 border-t border-slate-800 bg-purple-950/20 p-3 rounded-lg">
+                                    <div class="flex justify-between text-[10px] font-bold mb-1">
+                                        <span class="text-white">Lien PIMP CAD</span><span class="text-purple-400 uppercase">${stripeClientId ? 'Client' : 'Global'}</span>
+                                    </div>
+                                    <input type="url" placeholder="https://..." value="${sourceLinks['pimp-cad'] || ''}"
+                                        onchange="window.updateStripeLinkValue('pimp-cad', this.value)"
+                                        class="w-full bg-slate-950 border border-purple-900/60 rounded px-2 py-1.5 text-slate-300 focus:outline-none focus:border-purple-500 text-[9px]" />
+                                </div>`;
+                            })()}
                         </div>
 
                         <!-- AJUSTEMENT DE TARIFS COMPTES CLIENTS AVEC PRIX BARRÉS -->
@@ -2372,6 +2739,32 @@ service cloud.firestore {
 
                     </div>
 
+                    <!-- VALIDATION MANUELLE DES PROFILS NON VÉRIFIÉS -->
+                    <div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 sm:p-5 mt-4 w-full">
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <div>
+                                <h4 class="text-xs font-bold text-amber-300 uppercase font-mono flex items-center gap-2"><i data-lucide="user-round-check" class="w-4 h-4"></i> Profils en attente de vérification</h4>
+                                <p class="text-[9px] text-slate-500 mt-1">Après validation, le client apparaîtra dans les services, les liens Stripe et la gestion des comptes.</p>
+                            </div>
+                            <span class="px-2 py-1 rounded-full bg-amber-950 border border-amber-500/30 text-[9px] text-amber-300 font-bold">${unverifiedClientProfiles.length}</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 max-h-[220px] overflow-y-auto">
+                            ${unverifiedClientProfiles.length ? unverifiedClientProfiles.map(client => `
+                                <div class="bg-slate-950/80 border border-slate-800 rounded-lg p-3 flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <strong class="block text-xs text-white truncate">${window.escapeHTML([client.firstName, client.lastName].filter(Boolean).join(' ') || 'Client sans nom')}</strong>
+                                        <span class="block text-[9px] text-slate-500 truncate">${window.escapeHTML(client.email)}</span>
+                                        <span class="block text-[8px] ${client.verificationRejected ? 'text-red-500' : 'text-amber-500'} mt-1">${client.verificationRejected ? 'Vérification refusée' : 'Non vérifié'}</span>
+                                    </div>
+                                    <div class="shrink-0 flex flex-col gap-1">
+                                        <button onclick="window.adminVerifyClientProfile('${client.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded text-[8px] text-white uppercase font-black">Vérifier</button>
+                                        ${!client.verificationRejected ? `<button onclick="window.adminRejectClientProfile('${client.id}')" class="px-3 py-1.5 bg-amber-700 hover:bg-amber-600 rounded text-[8px] text-white uppercase font-black">Refuser</button>` : ''}
+                                        <button onclick="window.adminDeleteClientProfile('${client.id}')" class="px-3 py-1.5 bg-red-700 hover:bg-red-600 rounded text-[8px] text-white uppercase font-black">Supprimer</button>
+                                    </div>
+                                </div>`).join('') : `<p class="md:col-span-2 xl:col-span-3 py-5 text-center text-[10px] text-emerald-500 italic">Tous les profils clients sont vérifiés.</p>`}
+                        </div>
+                    </div>
+
                     <!-- MOTEUR DE RECHERCHE DE CLIENTS ADMIN -->
                     <div class="bg-slate-950/40 border border-[#1e293b]/70 p-3 sm:p-4 rounded-xl flex items-center gap-3 mt-4 w-full">
                         <i data-lucide="search" class="w-5 h-5 text-purple-400 shrink-0"></i>
@@ -2383,7 +2776,7 @@ service cloud.firestore {
                     <!-- TABLEAU RECAPITULATIF DES COMPTES CLIENTS -->
                     <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl space-y-4 mt-6 w-full">
                         <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2 border-b border-slate-800 pb-3">
-                           <i data-lucide="user-check" class="text-cyan-400 w-5 h-5"></i> Gestion des Comptes Clients (${window.appState.allProfiles.length})
+                           <i data-lucide="user-check" class="text-cyan-400 w-5 h-5"></i> Gestion des Comptes Clients Firebase (${firebaseClientProfiles.length})
                         </h3>
                         <div class="overflow-x-auto w-full no-scrollbar">
                             <table class="w-full text-left border-collapse min-w-[650px] w-full">
@@ -2397,8 +2790,8 @@ service cloud.firestore {
                                   </tr>
                                 </thead>
                                 <tbody id="admin-clients-table-body">
-                                  ${window.appState.allProfiles.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-slate-500 font-mono italic">Aucun profil client détecté en base de données.</td></tr>` : 
-                                    window.appState.allProfiles.map(client => {
+                                  ${firebaseClientProfiles.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-slate-500 font-mono italic">Aucun compte client Firebase vérifié.</td></tr>` : 
+                                    firebaseClientProfiles.map(client => {
                                         const isActive = client.status === 'active' && client.subEnd > window.appState.virtualDate;
                                         const daysRemaining = client.subEnd ? Math.max(0, Math.ceil((client.subEnd - window.appState.virtualDate) / (1000 * 60 * 60 * 24))) : 0;
                                         
@@ -2421,6 +2814,8 @@ service cloud.firestore {
                                           <td class="p-3 text-[11px] sm:text-xs text-slate-400">${daysRemaining}j restants</td>
                                           <td class="p-3 text-[11px] sm:text-xs text-cyan-400">${client.usageTotal || 0} cycles</td>
                                           <td class="p-3 flex gap-1.5">
+                                            <button onclick="window.openClientPersonalInfo('${client.id}')" title="Consulter les informations personnelles"
+                                              class="px-2 py-1 bg-cyan-950/50 hover:bg-cyan-900/50 border border-cyan-500/30 text-cyan-300 rounded text-[9px] font-bold">Infos</button>
                                             <button onclick="window.adminAddDays('${client.id}', 7)" title="Prolonger de 7 jours"
                                               class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 text-cyan-400 rounded text-[10px] transition-all flex items-center gap-1 min-h-[28px]">
                                               +7j
@@ -2452,6 +2847,23 @@ service cloud.firestore {
             renderApp();
         };
 
+        window.openUnreadSupportNotification = async () => {
+            const unread = window.appState.allMessages.filter(m => window.appState.isAdmin
+                ? m.sender === 'user' && m.readByAdmin === false
+                : m.userId === window.appState.user?.uid && m.sender === 'admin' && m.readByClient === false);
+            if (!unread.length) return;
+            if (window.appState.isAdmin) {
+                window.appState.adminSelectedClient = unread[0].userId;
+                await Promise.all(unread.filter(m => m.userId === unread[0].userId).map(m =>
+                    updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', m.id), { readByAdmin: true })));
+            } else {
+                await Promise.all(unread.map(m =>
+                    updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', m.id), { readByClient: true })));
+            }
+            renderApp();
+            setTimeout(() => document.getElementById(window.appState.isAdmin ? 'admin-chat-box' : 'client-chat-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+        };
+
         window.adminSendSupportMessage = async (e) => {
             e.preventDefault();
             const input = document.getElementById('admin-chat-input');
@@ -2468,9 +2880,12 @@ service cloud.firestore {
                 const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
                 await addDoc(msgRef, {
                     userId: targetUserId,
-                    userEmail: 'admin@sesame.com',
+                    userEmail: window.appState.user?.email || ADMIN_EMAIL,
                     text: text,
                     sender: 'admin',
+                    senderName: 'Administrateur Sésame',
+                    readByAdmin: true,
+                    readByClient: false,
                     timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now() 
                 });
             } catch(e) {
@@ -2485,6 +2900,228 @@ service cloud.firestore {
         window.adminChangeCredClient = (clientId) => {
             window.appState.selectedCredClientId = clientId;
             renderApp();
+        };
+
+        window.searchAdminConversations = (value) => {
+            window.appState.adminChatSearchQuery = value || '';
+            renderApp();
+        };
+
+        window.selectPeerClient = (clientId) => {
+            window.appState.selectedPeerClientId = clientId || '';
+            renderApp();
+            setTimeout(() => document.getElementById('peer-chat-box')?.scrollTo(0, 999999), 50);
+        };
+
+        window.openUnreadPeerNotification = async () => {
+            const user = window.appState.user;
+            if (!user) return;
+            const unread = window.appState.allClientMessages.filter(m => m.groupId === 'sesame-community' && m.senderId !== user.uid && !(m.readBy || []).includes(user.uid));
+            if (!unread.length) return;
+            await Promise.all(unread.map(m =>
+                updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'clientChats', m.id), { readBy: arrayUnion(user.uid) })));
+            renderApp();
+            setTimeout(() => document.getElementById('peer-chat-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+        };
+
+        window.adminSelectPeerConversation = (conversationId) => {
+            window.appState.adminSelectedPeerConversation = conversationId || '';
+            renderApp();
+            setTimeout(() => document.getElementById('peer-chat-box')?.scrollTo(0, 999999), 50);
+        };
+
+        window.sendPeerMessage = async (event) => {
+            event.preventDefault();
+            const input = document.getElementById('peer-chat-input');
+            const user = window.appState.user;
+            const text = input?.value.trim();
+            if (!user || !text) return;
+
+            if (!window.appState.isAdmin && window.appState.profile?.communityChatJoined !== true) {
+                window.showToast("Vous devez rejoindre le groupe avant d’écrire.", "error");
+                return;
+            }
+
+            input.disabled = true;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'clientChats'), {
+                    groupId: 'sesame-community',
+                    groupName: 'Groupe Sésame',
+                    senderId: user.uid,
+                    senderPseudo: window.appState.isAdmin ? 'Administrateur Sésame' : window.appState.profile?.communityPseudo,
+                    senderRole: window.appState.isAdmin ? 'admin' : 'client',
+                    text: text.slice(0, 1000),
+                    timestamp: window.getVirtualTimestamp(),
+                    readBy: [user.uid]
+                });
+                input.value = '';
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible d’envoyer ce message. Vérifiez les règles Firestore.", "error");
+            } finally {
+                input.disabled = false;
+                input.focus();
+            }
+        };
+
+        window.joinCommunityChat = async () => {
+            const user = window.appState.user;
+            if (!user || window.appState.isAdmin) return;
+            const input = document.getElementById('community-pseudo-input');
+            const pseudo = input?.value.trim().replace(/\s+/g, ' ');
+            if (!pseudo || pseudo.length < 3 || pseudo.length > 24 || !/^[\p{L}\p{N}_ .-]+$/u.test(pseudo)) {
+                window.showToast("Choisissez un pseudonyme de 3 à 24 caractères (lettres, chiffres, espace, tiret, point ou _).", "error");
+                return;
+            }
+            try {
+                const pseudoLower = pseudo.toLocaleLowerCase('fr');
+                const membersRef = collection(db, 'artifacts', appId, 'public', 'data', 'communityMembers');
+                const duplicateSnap = await getDocs(query(membersRef, where('pseudoLower', '==', pseudoLower)));
+                if (duplicateSnap.docs.some(member => member.id !== user.uid && member.data().joined === true)) {
+                    window.showToast("Ce pseudonyme est déjà utilisé. Choisissez-en un autre.", "error");
+                    return;
+                }
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'communityMembers', user.uid), {
+                    pseudo,
+                    pseudoLower,
+                    joined: true,
+                    joinedAt: Date.now()
+                });
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid), {
+                        communityChatJoined: true,
+                        communityPseudo: pseudo,
+                        communityChatJoinedAt: Date.now()
+                    });
+                } catch (profileError) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'communityMembers', user.uid));
+                    throw profileError;
+                }
+                window.showToast(`Bienvenue dans le Groupe Sésame, ${pseudo} !`);
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible de rejoindre le groupe.", "error");
+            }
+        };
+
+        window.leaveCommunityChat = async () => {
+            const user = window.appState.user;
+            if (!user || window.appState.isAdmin) return;
+            window.showCyberConfirm("Voulez-vous vraiment quitter le Groupe Sésame ?", async () => {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid), {
+                        communityChatJoined: false,
+                        communityChatLeftAt: Date.now()
+                    });
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'communityMembers', user.uid));
+                    window.showToast("Vous avez quitté le groupe.");
+                } catch (error) {
+                    window.showToast("Impossible de quitter le groupe.", "error");
+                }
+            });
+        };
+
+        window.adminDeleteCommunityMessage = (messageId) => {
+            if (!window.appState.isAdmin) return;
+            window.showCyberConfirm("Supprimer définitivement ce message du groupe ?", async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'clientChats', messageId));
+                    window.showToast("Message supprimé par la modération.");
+                } catch (error) {
+                    window.showToast("Suppression impossible.", "error");
+                }
+            });
+        };
+
+        window.prepareNewsImage = (file) => {
+            if (!file) return;
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (!allowedTypes.includes(file.type) || file.size > 550 * 1024) {
+                window.showToast("Image refusée : format JPG/PNG/WEBP/GIF et 550 Ko maximum.", "error");
+                const input = document.getElementById('news-image-file');
+                if (input) input.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = event => {
+                window.appState.editingNewsImage = event.target.result;
+                const preview = document.getElementById('news-image-preview');
+                if (preview) {
+                    preview.src = event.target.result;
+                    preview.classList.remove('hidden');
+                }
+            };
+            reader.onerror = () => window.showToast("Impossible de lire cette image.", "error");
+            reader.readAsDataURL(file);
+        };
+
+        window.adminSaveNews = async (event) => {
+            event.preventDefault();
+            if (!window.appState.isAdmin) return;
+            const title = document.getElementById('news-title')?.value.trim();
+            const content = document.getElementById('news-content')?.value.trim();
+            if (!title || !content) {
+                window.showToast("Le titre et les informations sont obligatoires.", "error");
+                return;
+            }
+            try {
+                const newsData = {
+                    title: title.slice(0, 120),
+                    content: content.slice(0, 3000),
+                    image: window.appState.editingNewsImage || '',
+                    updatedAt: Date.now(),
+                    authorRole: 'admin'
+                };
+                if (window.appState.editingNewsId) {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'news', window.appState.editingNewsId), newsData);
+                    window.showToast("Actualité modifiée avec succès.");
+                } else {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'news'), {
+                        ...newsData,
+                        publishedAt: Date.now()
+                    });
+                    window.showToast("Actualité publiée avec succès.");
+                }
+                window.cancelNewsEdit();
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible d’enregistrer l’actualité.", "error");
+            }
+        };
+
+        window.editNews = (newsId) => {
+            if (!window.appState.isAdmin) return;
+            const news = window.appState.allNews.find(item => item.id === newsId);
+            if (!news) return;
+            window.appState.editingNewsId = newsId;
+            window.appState.editingNewsImage = news.image || '';
+            renderApp();
+            setTimeout(() => {
+                const titleInput = document.getElementById('news-title');
+                const contentInput = document.getElementById('news-content');
+                if (titleInput) titleInput.value = news.title || '';
+                if (contentInput) contentInput.value = news.content || '';
+                titleInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 50);
+        };
+
+        window.cancelNewsEdit = () => {
+            window.appState.editingNewsId = '';
+            window.appState.editingNewsImage = '';
+            renderApp();
+        };
+
+        window.deleteNews = (newsId) => {
+            if (!window.appState.isAdmin) return;
+            window.showCyberConfirm("Supprimer définitivement cette actualité ?", async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'news', newsId));
+                    if (window.appState.editingNewsId === newsId) window.cancelNewsEdit();
+                    window.showToast("Actualité supprimée.");
+                } catch (error) {
+                    window.showToast("Suppression de l’actualité impossible.", "error");
+                }
+            });
         };
 
         // L'administrateur change le client pour le contrôle direct des services
@@ -2551,6 +3188,185 @@ service cloud.firestore {
             } catch(e) {
                 console.error(e);
                 window.showToast("Erreur lors de la mise à jour du service client.", "error");
+            }
+        };
+
+        window.adminVerifyClientProfile = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            const client = window.appState.allProfiles.find(profile =>
+                profile.id === clientId && profile.email !== ADMIN_EMAIL && profile.authVerified !== true);
+            if (!client) {
+                window.showToast("Ce profil est introuvable ou déjà vérifié.", "error");
+                return;
+            }
+            window.showCyberConfirm(`Confirmer la vérification administrative du profil ${client.email} ?`, async () => {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), {
+                        authVerified: true,
+                        verificationRejected: false,
+                        authVerificationSource: 'admin_manual_review',
+                        authVerifiedAt: Date.now(),
+                        authVerifiedBy: window.appState.user?.email || ADMIN_EMAIL
+                    });
+                    window.showToast("Profil vérifié : il est maintenant disponible dans les sélections clients.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible de vérifier ce profil.", "error");
+                }
+            });
+        };
+
+        window.openClientPersonalInfo = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && profile.email !== ADMIN_EMAIL);
+            const modal = document.getElementById('client-personal-info-modal');
+            if (!client || !modal) {
+                window.showToast("Informations client introuvables.", "error");
+                return;
+            }
+            const setText = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = value || 'Non renseigné';
+            };
+            setText('info-first-name', client.firstName);
+            setText('info-last-name', client.lastName);
+            setText('info-login-email', client.email);
+            setText('info-contact-email', client.contactEmail || client.email);
+            setText('info-phone', client.phone || 'Non renseigné');
+            setText('info-pseudo', client.communityPseudo || 'Non inscrit au groupe');
+            setText('info-created-at', client.createdAt ? new Date(client.createdAt).toLocaleString('fr-FR') : 'Date inconnue');
+            setText('info-verification', client.authVerified
+                ? `${client.authVerificationSource === 'admin_manual_review' ? 'Validé par l’administrateur' : 'Confirmé par Firebase'}${client.authVerifiedAt ? ` — ${new Date(client.authVerifiedAt).toLocaleDateString('fr-FR')}` : ''}`
+                : (client.verificationRejected ? 'Vérification refusée' : 'Non vérifié'));
+            modal.classList.remove('hidden');
+            lucide.createIcons({ root: modal });
+        };
+
+        window.closeClientPersonalInfo = () => {
+            document.getElementById('client-personal-info-modal')?.classList.add('hidden');
+        };
+
+        window.adminRejectClientProfile = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && profile.email !== ADMIN_EMAIL);
+            if (!client) return;
+            window.showCyberConfirm(`Refuser la vérification du profil ${client.email} ?`, async () => {
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), {
+                        authVerified: false,
+                        verificationRejected: true,
+                        verificationRejectedAt: Date.now(),
+                        verificationRejectedBy: window.appState.user?.email || ADMIN_EMAIL
+                    });
+                    window.showToast("Vérification refusée. Le profil reste exclu des sélections clients.");
+                } catch (error) {
+                    window.showToast("Impossible de refuser cette vérification.", "error");
+                }
+            });
+        };
+
+        window.adminDeleteClientProfile = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && profile.email !== ADMIN_EMAIL);
+            if (!client) return;
+            window.showCyberConfirm(`Supprimer définitivement du site le profil ${client.email} et bloquer sa reconnexion ?`, async () => {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'blockedAccounts', clientId), {
+                        email: client.email,
+                        blockedAt: Date.now(),
+                        blockedBy: window.appState.user?.email || ADMIN_EMAIL,
+                        reason: 'profile_deleted_by_admin'
+                    });
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'communityMembers', clientId)).catch(() => {});
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId));
+                    window.showToast("Profil supprimé du site et compte bloqué.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Suppression du profil impossible.", "error");
+                }
+            });
+        };
+
+        window.openMyPersonalInformation = () => {
+            if (window.appState.isAdmin) return;
+            const modal = document.getElementById('my-personal-info-modal');
+            const profile = window.appState.profile || {};
+            if (!modal) return;
+            const setValue = (id, value) => { const input = document.getElementById(id); if (input) input.value = value || ''; };
+            setValue('my-personal-first-name', profile.firstName);
+            setValue('my-personal-last-name', profile.lastName);
+            setValue('my-personal-contact-email', profile.contactEmail || window.appState.user?.email);
+            setValue('my-personal-phone', profile.phone);
+            modal.classList.remove('hidden');
+            lucide.createIcons({ root: modal });
+        };
+
+        window.closeMyPersonalInformation = () => {
+            document.getElementById('my-personal-info-modal')?.classList.add('hidden');
+        };
+
+        window.savePersonalInformation = async (event, requiredCompletion = false, fromHeaderModal = false) => {
+            event.preventDefault();
+            const user = window.appState.user;
+            if (!user || window.appState.isAdmin) return;
+            const prefix = fromHeaderModal ? 'my-personal-' : 'personal-';
+            const firstName = document.getElementById(`${prefix}first-name`)?.value.trim().replace(/\s+/g, ' ');
+            const lastName = document.getElementById(`${prefix}last-name`)?.value.trim().replace(/\s+/g, ' ');
+            const contactEmail = document.getElementById(`${prefix}contact-email`)?.value.trim().toLowerCase();
+            const phone = document.getElementById(`${prefix}phone`)?.value.trim().replace(/\s+/g, ' ') || '';
+            const validName = value => value && value.length >= 2 && value.length <= 60 && /^[\p{L}][\p{L} .'-]*$/u.test(value);
+            if (!validName(firstName) || !validName(lastName)) {
+                window.showToast("Nom et prénom obligatoires : 2 à 60 caractères, lettres, espaces, apostrophes ou tirets.", "error");
+                return;
+            }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(contactEmail || '')) {
+                window.showToast("Indiquez une adresse e-mail de contact valide.", "error");
+                return;
+            }
+            if (phone && !/^[+\d][\d\s().-]{5,24}$/.test(phone)) {
+                window.showToast("Le numéro de téléphone est invalide. Vous pouvez aussi laisser ce champ vide.", "error");
+                return;
+            }
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid), {
+                    firstName,
+                    lastName,
+                    contactEmail,
+                    phone,
+                    personalInfoCompleted: true,
+                    personalInfoUpdatedAt: Date.now()
+                });
+                window.showToast(requiredCompletion ? "Informations enregistrées. Bienvenue dans votre espace client !" : "Informations personnelles modifiées.");
+                if (fromHeaderModal) window.closeMyPersonalInformation();
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible d’enregistrer vos informations.", "error");
+            }
+        };
+
+        window.adminSetServiceDays = async (clientId, serviceId) => {
+            const input = document.getElementById(`service-days-${clientId}-${serviceId}`);
+            const days = Number.parseInt(input?.value, 10);
+            if (!Number.isInteger(days) || days < 1 || days > 3650) {
+                window.showToast("Indiquez un nombre de jours entre 1 et 3650.", "error");
+                return;
+            }
+            try {
+                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                const snap = await getDoc(clientRef);
+                if (!snap.exists()) throw new Error('Profil introuvable');
+                const services = { ...(snap.data().services || {}) };
+                services[serviceId] = {
+                    ...(services[serviceId] || {}),
+                    status: 'active',
+                    subEnd: Date.now() + (days * 86400000),
+                    correctedByAdminAt: Date.now()
+                };
+                await updateDoc(clientRef, { services });
+                window.showToast(`Durée corrigée : ${days} jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}.`);
+            } catch (err) {
+                console.error(err);
+                window.showToast("Impossible de modifier les jours.", "error");
             }
         };
 
@@ -2674,6 +3490,24 @@ service cloud.firestore {
         };
 
         // L'administrateur publie une notification d'information globale à tous les clients
+        window.dismissNetworkAnnouncement = async () => {
+            const announcement = window.appState.globalAnnouncement;
+            const user = window.appState.user;
+            if (!announcement || !user || window.appState.isAdmin) return;
+            try {
+                const announcementId = announcement.id || String(announcement.timestamp);
+                const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid);
+                await updateDoc(profileRef, {
+                    dismissedAnnouncementId: announcementId,
+                    dismissedAnnouncementAt: Date.now()
+                });
+                window.showToast("Notification marquée comme lue.");
+            } catch (e) {
+                console.error(e);
+                window.showToast("Impossible de fermer la notification.", "error");
+            }
+        };
+
         window.adminPublishAnnouncement = async () => {
             const announceTextarea = document.getElementById('announcement-text');
             if(!announceTextarea) return;
@@ -2687,6 +3521,7 @@ service cloud.firestore {
             try {
                 const announceRef = doc(db, 'artifacts', appId, 'public', 'data', 'announcements', 'global');
                 await setDoc(announceRef, {
+                    id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`),
                     text: text,
                     timestamp: window.getVirtualTimestamp()
                 });
