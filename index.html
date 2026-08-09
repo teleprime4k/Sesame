@@ -142,6 +142,27 @@
             border-color: rgba(34, 211, 238, .28);
             box-shadow: 0 12px 34px rgba(0, 0, 0, .38);
         }
+        /* Sur ordinateur, toutes les cartes KPI restent visibles sans défilement. */
+        @media (min-width: 1024px) {
+            .kpi-auto-carousel {
+                display: grid !important;
+                grid-template-columns: repeat(6, minmax(0, 1fr));
+                overflow: visible;
+                gap: 12px;
+                padding: 3px 0 10px;
+                cursor: default;
+                touch-action: auto;
+                user-select: auto;
+                mask-image: none;
+                -webkit-mask-image: none;
+            }
+            .kpi-auto-carousel.is-dragging { cursor: default; }
+            .kpi-auto-carousel > * {
+                min-width: 0;
+                width: 100%;
+                min-height: 142px;
+            }
+        }
         @media (max-width: 767px) {
             html { scroll-behavior: auto; }
             body { padding-bottom: 92px !important; }
@@ -732,6 +753,9 @@
         function initKpiCarousel() {
             const carousel = document.getElementById('overview-section');
             if (!carousel) return;
+
+            // La grille PC affiche déjà toutes les cartes : aucun geste de défilement requis.
+            if (window.matchMedia('(min-width: 1024px)').matches) return;
 
             let dragging = false;
             let dragPointerId = null;
