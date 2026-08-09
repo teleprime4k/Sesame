@@ -53,6 +53,45 @@
         .neon-border-purple {
             box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
         }
+
+        /* Navigation et densité optimisées pour téléphones */
+        .mobile-anchor { scroll-margin-top: 88px; }
+        .mobile-nav-shell { display: none; }
+        .mobile-shortcuts-sheet { display: none; }
+        @media (max-width: 767px) {
+            html { scroll-behavior: smooth; }
+            body { padding-bottom: 92px !important; }
+            #dashboard-top { padding: 10px; gap: 12px; }
+            #dashboard-header { position: sticky; top: 8px; z-index: 35; padding: 10px 12px; border-radius: 14px; }
+            #dashboard-header .mobile-brand-subtitle { display: none; }
+            #dashboard-header .mobile-account-email { max-width: 128px; }
+            #dashboard-header .mobile-profile-row { border-top: 0; padding-top: 0; }
+            .mobile-compact-section { padding: 14px !important; border-radius: 14px !important; }
+            .mobile-compact-section > div:first-child p { display: none; }
+            .mobile-kpi-strip { display: flex !important; overflow-x: auto; gap: 8px; padding-bottom: 2px; scroll-snap-type: x proximity; }
+            .mobile-kpi-strip > * { min-width: 138px; scroll-snap-align: start; }
+            .mobile-real-date-card { min-width: 190px !important; }
+            .mobile-nav-shell {
+                display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+                position: fixed; z-index: 80; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
+                padding: 7px 5px; border: 1px solid rgba(51,65,85,.9); border-radius: 18px;
+                background: rgba(8,15,29,.94); backdrop-filter: blur(18px);
+                box-shadow: 0 12px 40px rgba(0,0,0,.55);
+            }
+            .mobile-nav-button { min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #94a3b8; font-size: 9px; font-weight: 700; }
+            .mobile-nav-button:active { color: #22d3ee; transform: scale(.96); }
+            .mobile-nav-button svg { width: 19px; height: 19px; }
+            .mobile-shortcuts-sheet:not(.hidden) { display: flex; }
+            .mobile-shortcut-grid button { min-height: 82px; }
+            #toast-container { bottom: 88px; left: 12px; right: 12px; max-width: none; }
+            .mobile-route-hidden { display: none !important; }
+            .mobile-route-active { animation: mobileRouteIn .22s ease-out; }
+            .mobile-route-active-parent { display: flex !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; overflow: visible !important; }
+        }
+        @keyframes mobileRouteIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body class="bg-[#030712] text-slate-300 font-sans overflow-y-auto min-h-screen w-full pb-12" id="app">
@@ -351,11 +390,13 @@
             allProfiles: [],
             allQuotes: [],
             allMessages: [],
+            presence: {},
             allClientMessages: [],
             allCommunityMembers: [],
             allNews: [],
             allTransactions: [], // Chiffre d'affaires admin
             stripeLinks: {}, // Stocke les liens d'administration généraux
+            pimpCardUrl: '', // Lien PIMP CARD indépendant des liens Stripe
             globalAnnouncement: null, // Message de notification globale diffusé
             
             // Filtres & UI
@@ -407,7 +448,61 @@
         let unsubNews = null;
         let unsubAllTransactions = null;
         let unsubStripeConfig = null;
+        let unsubPimpCardConfig = null;
         let unsubAnnouncement = null;
+        let unsubPresence = null;
+        let presenceHeartbeat = null;
+        let presenceExpiryTimer = null;
+
+        const PRESENCE_TIMEOUT_MS = 70000;
+
+        function presenceDocumentId(user = auth.currentUser) {
+            if (!user) return '';
+            return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : user.uid;
+        }
+
+        function isUserOnline(userId) {
+            const presence = window.appState.presence?.[userId];
+            return presence?.online === true && (Date.now() - Number(presence.lastSeen || 0)) < PRESENCE_TIMEOUT_MS;
+        }
+
+        async function publishPresence(online) {
+            const currentUser = auth.currentUser;
+            const presenceId = presenceDocumentId(currentUser);
+            if (!currentUser || !presenceId) return;
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'presence', presenceId), {
+                    uid: currentUser.uid,
+                    role: window.appState.isAdmin ? 'admin' : 'client',
+                    online: online === true,
+                    lastSeen: Date.now()
+                }, { merge: true });
+            } catch (error) {
+                console.warn('Présence non mise à jour:', error.message);
+            }
+        }
+
+        function startPresence() {
+            if (presenceHeartbeat) clearInterval(presenceHeartbeat);
+            publishPresence(true);
+            presenceHeartbeat = setInterval(() => publishPresence(document.visibilityState !== 'hidden'), 30000);
+        }
+
+        function schedulePresenceExpiry() {
+            if (presenceExpiryTimer) clearTimeout(presenceExpiryTimer);
+            const expiries = Object.values(window.appState.presence || {})
+                .filter(item => item?.online === true)
+                .map(item => Number(item.lastSeen || 0) + PRESENCE_TIMEOUT_MS - Date.now())
+                .filter(delay => delay > 0);
+            if (expiries.length) {
+                presenceExpiryTimer = setTimeout(() => renderApp(), Math.min(...expiries) + 100);
+            }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (auth.currentUser) publishPresence(document.visibilityState !== 'hidden');
+        });
+        window.addEventListener('pagehide', () => publishPresence(false));
 
         // Fonction d'alerte de confirmation Cyberpunk customisée
         window.showCyberConfirm = (message, onConfirm) => {
@@ -560,6 +655,9 @@
             }
             lucide.createIcons({ root: root });
 
+            // Sur téléphone, une seule rubrique est affichée à la fois.
+            window.setTimeout(() => window.applyMobileRoute?.(window.appState.mobileActiveRoute || 'dashboard-top', false), 0);
+
             // Auto-scroll des tchats après le rendu
             setTimeout(() => {
                 const clientChat = document.getElementById('client-chat-box');
@@ -690,6 +788,14 @@
                         renderApp();
                     });
 
+                    // Configuration PIMP CARD indépendante de Stripe : aucune URL n'est codée dans le HTML.
+                    if (unsubPimpCardConfig) unsubPimpCardConfig();
+                    const pimpCardRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'pimpCard');
+                    unsubPimpCardConfig = onSnapshot(pimpCardRef, (snapshot) => {
+                        window.appState.pimpCardUrl = snapshot.exists() ? String(snapshot.data().url || '') : '';
+                        renderApp();
+                    }, handlePermissionError);
+
                     // Écoute de la notification d'information globale
                     if (unsubAnnouncement) unsubAnnouncement();
                     const announceRef = doc(db, 'artifacts', appId, 'public', 'data', 'announcements', 'global');
@@ -703,15 +809,21 @@
                     }, handlePermissionError);
 
                     setupAdminAndGlobalListeners();
+                    startPresence();
 
                 } catch (err) {
                     console.error("Erreur lors de l'accès initial Firestore:", err);
                     handlePermissionError(err);
                 }
             } else {
+                if (presenceHeartbeat) { clearInterval(presenceHeartbeat); presenceHeartbeat = null; }
+                if (presenceExpiryTimer) { clearTimeout(presenceExpiryTimer); presenceExpiryTimer = null; }
+                if (unsubPresence) { unsubPresence(); unsubPresence = null; }
+                window.appState.presence = {};
                 if(unsubProfile) unsubProfile();
                 if(unsubTransactions) unsubTransactions();
                 if(unsubStripeConfig) unsubStripeConfig();
+                if(unsubPimpCardConfig) unsubPimpCardConfig();
                 if(unsubAnnouncement) unsubAnnouncement();
                 teardownAdminListeners();
                 window.appState.profile = null;
@@ -728,6 +840,11 @@
         setInterval(() => {
             if (!window.appState.manualTimeMode) {
                 window.appState.virtualDate = Date.now();
+                const liveDate = new Date(window.appState.virtualDate);
+                const dateDisplay = document.getElementById('system-date-display');
+                const timeDisplay = document.getElementById('system-time-display');
+                if (dateDisplay) dateDisplay.textContent = liveDate.toLocaleDateString('fr-BE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
+                if (timeDisplay) timeDisplay.textContent = liveDate.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 const clockInput = document.getElementById('system-clock-input');
                 if (clockInput && document.activeElement !== clockInput) {
                     const formatted = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
@@ -748,6 +865,19 @@
                     window.appState.allProfiles = window.appState.isAdmin
                         ? snap.docs.map(d => ({ id: d.id, ...d.data() }))
                         : (snap.exists() ? [{ id: snap.id, ...snap.data() }] : []);
+                    renderApp();
+                }, handlePermissionError);
+
+                const presenceSource = window.appState.isAdmin
+                    ? collection(db, 'artifacts', appId, 'public', 'data', 'presence')
+                    : doc(db, 'artifacts', appId, 'public', 'data', 'presence', 'admin');
+                unsubPresence = onSnapshot(presenceSource, (snap) => {
+                    if (window.appState.isAdmin) {
+                        window.appState.presence = Object.fromEntries(snap.docs.map(d => [d.id, d.data()]));
+                    } else {
+                        window.appState.presence = snap.exists() ? { admin: snap.data() } : {};
+                    }
+                    schedulePresenceExpiry();
                     renderApp();
                 }, handlePermissionError);
 
@@ -815,6 +945,7 @@
             if(unsubCommunityMembers) { unsubCommunityMembers(); unsubCommunityMembers = null; }
             if(unsubNews) { unsubNews(); unsubNews = null; }
             if(unsubAllTransactions) { unsubAllTransactions(); unsubAllTransactions = null; }
+            if(unsubPresence) { unsubPresence(); unsubPresence = null; }
         }
 
         // ==========================================
@@ -1300,11 +1431,12 @@
         };
 
         // --- DECONNEXION SYSTEME ---
-        window.handleLogout = () => {
+        window.handleLogout = async () => {
             window.appState.email = '';
             window.appState.password = '';
             window.appState.adminSecret = '';
             window.appState.authSuccessMessage = '';
+            await publishPresence(false);
             signOut(auth).then(() => {
                 window.showToast("Déconnexion réussie.");
                 renderApp();
@@ -1566,11 +1698,25 @@ service cloud.firestore {
       allow read, write: if request.auth != null &amp;&amp;
         collectionName != 'clientChats' &amp;&amp; collectionName != 'profiles' &amp;&amp;
         collectionName != 'communityMembers' &amp;&amp; collectionName != 'messages' &amp;&amp;
-        collectionName != 'news' &amp;&amp; collectionName != 'blockedAccounts';
+        collectionName != 'news' &amp;&amp; collectionName != 'blockedAccounts' &amp;&amp;
+        collectionName != 'config' &amp;&amp; collectionName != 'presence';
+    }
+    match /artifacts/sesameouvretoi/public/data/config/{configId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
     }
     match /artifacts/sesameouvretoi/public/data/profiles/{profileId} {
       allow read, write: if request.auth != null &amp;&amp;
         (request.auth.uid == profileId || request.auth.token.email == 'dpstay@1.net');
+    }
+    match /artifacts/sesameouvretoi/public/data/presence/{presenceId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null &amp;&amp;
+        (presenceId == request.auth.uid ||
+         (presenceId == 'admin' &amp;&amp; request.auth.token.email == 'dpstay@1.net'));
+      allow delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
     }
     match /artifacts/sesameouvretoi/public/data/blockedAccounts/{accountId} {
       allow read: if request.auth != null &amp;&amp;
@@ -1629,7 +1775,7 @@ service cloud.firestore {
         }
 
         function getMainDashboardHTML() {
-            const { user, profile, transactions, allTransactions, activeCatalogTab, virtualDate, manualTimeMode, isAdmin, adminSelectedClient, adminSearchQuery, stripeLinks, globalAnnouncement, adminFinanceYearFilter, adminFinanceMonthFilter } = window.appState;
+            const { user, profile, transactions, allTransactions, activeCatalogTab, virtualDate, manualTimeMode, isAdmin, adminSelectedClient, adminSearchQuery, stripeLinks, pimpCardUrl, globalAnnouncement, adminFinanceYearFilter, adminFinanceMonthFilter } = window.appState;
             
             const servicesState = (profile && profile.services) ? profile.services : {
                 'stockage-cloud': { status: 'inactive', subEnd: null },
@@ -1847,12 +1993,43 @@ service cloud.firestore {
             // Identification du fuseau horaire
             const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
 
+            const mobilePrimaryShortcuts = isAdmin ? [
+                { id: 'admin-console', icon: 'shield-check', label: 'Console' },
+                { id: 'admin-support', icon: 'messages-square', label: 'Support' },
+                { id: 'news-section', icon: 'newspaper', label: 'Actualités' }
+            ] : [
+                { id: 'services-section', icon: 'layout-grid', label: 'Services' },
+                { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
+                { id: 'community-section', icon: 'users', label: 'Groupe' }
+            ];
+            const mobileAllShortcuts = isAdmin ? [
+                { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
+                { id: 'admin-console', icon: 'shield-check', label: 'Console' },
+                { id: 'admin-quotes', icon: 'file-text', label: 'Devis clients' },
+                { id: 'admin-support', icon: 'headphones', label: 'Support client' },
+                { id: 'admin-services', icon: 'badge-check', label: 'Forcer services' },
+                { id: 'admin-stripe', icon: 'credit-card', label: 'Liens Stripe' },
+                { id: 'admin-pimp-card', icon: 'external-link', label: 'Lien PIMP CARD' },
+                { id: 'admin-pending-profiles', icon: 'user-round-check', label: 'Profils à vérifier' },
+                { id: 'admin-clients', icon: 'users-round', label: 'Comptes clients' },
+                { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
+                { id: 'community-section', icon: 'messages-square', label: 'Groupe Sésame' }
+            ] : [
+                { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
+                { id: 'services-section', icon: 'layout-grid', label: 'Services' },
+                { id: 'client-support', icon: 'headphones', label: 'Support' },
+                { id: 'client-payments', icon: 'history', label: 'Paiements' },
+                { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
+                { id: 'community-section', icon: 'messages-square', label: 'Groupe Sésame' },
+                { action: 'profile', icon: 'user-pen', label: 'Mes informations' }
+            ];
+
             return `
-            <div class="relative min-h-screen bg-[#030712] text-slate-100 p-3 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto z-10 font-sans w-full overflow-hidden">
+            <div id="dashboard-top" class="mobile-anchor relative min-h-screen bg-[#030712] text-slate-100 p-3 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto z-10 font-sans w-full overflow-hidden">
                 <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-950/10 via-[#030712] to-[#030712] z-0"></div>
 
                 <!-- EN-TÊTE PRINCIPAL (Totalement responsive) -->
-                <header class="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-[#0d1527]/90 backdrop-blur-xl border border-[#1e293b]/70 px-4 py-4 sm:px-6 rounded-2xl relative z-10 shadow-[0_4px_25px_rgba(0,0,0,0.3)] overflow-hidden gap-4">
+                <header id="dashboard-header" class="flex flex-col md:flex-row justify-between items-stretch md:items-center bg-[#0d1527]/90 backdrop-blur-xl border border-[#1e293b]/70 px-4 py-4 sm:px-6 rounded-2xl relative z-10 shadow-[0_4px_25px_rgba(0,0,0,0.3)] overflow-hidden gap-4">
                     <div class="absolute right-12 top-1/2 -translate-y-1/2 text-[#101c30] pointer-events-none select-none hidden sm:block">
                         <svg width="220" height="220" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" class="opacity-25">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -1866,12 +2043,12 @@ service cloud.firestore {
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="text-lg sm:text-xl font-bold text-white tracking-wide font-mono">Sésame</span>
-                            <span class="px-2 py-0.5 bg-slate-800/80 border border-slate-700/50 rounded-full text-[9px] sm:text-[10px] text-slate-400 font-mono">Ouvre-Toi</span>
+                            <span class="mobile-brand-subtitle px-2 py-0.5 bg-slate-800/80 border border-slate-700/50 rounded-full text-[9px] sm:text-[10px] text-slate-400 font-mono">Ouvre-Toi</span>
                         </div>
                     </div>
 
                     <!-- Droite: Profil, Avatar interactif et Déconnexion -->
-                    <div class="flex items-center justify-between md:justify-end gap-3 sm:gap-4 relative z-10 w-full md:w-auto border-t border-slate-800 md:border-none pt-3 md:pt-0">
+                    <div class="mobile-profile-row flex items-center justify-between md:justify-end gap-3 sm:gap-4 relative z-10 w-full md:w-auto border-t border-slate-800 md:border-none pt-3 md:pt-0">
                         <!-- Avatar interactif d'upload pour le Client uniquement -->
                         ${!isAdmin ? clientAvatarHTML : ''}
 
@@ -1882,7 +2059,7 @@ service cloud.firestore {
                                 </span>
                                 <span class="px-2 py-0.5 rounded text-[8px] sm:text-[9px] font-black tracking-wider ${isAdmin ? 'bg-amber-500 text-slate-950' : 'bg-cyan-950 text-cyan-400 border border-cyan-800/50'} font-mono">${isAdmin ? 'ADMIN' : 'CLIENT'}</span>
                             </div>
-                            <p class="text-[10px] sm:text-[11px] text-slate-500 font-mono mt-0.5 truncate max-w-[200px] sm:max-w-none">${user.email}</p>
+                            <p class="mobile-account-email text-[10px] sm:text-[11px] text-slate-500 font-mono mt-0.5 truncate max-w-[200px] sm:max-w-none">${user.email}</p>
                         </div>
 
                         ${!isAdmin ? `<button onclick="window.openMyPersonalInformation()" title="Mes informations personnelles" class="p-2 sm:p-2.5 text-cyan-400 hover:text-cyan-300 rounded-xl hover:bg-cyan-950/40 border border-transparent hover:border-cyan-500/30 transition-all min-w-[38px] min-h-[38px] flex items-center justify-center"><i data-lucide="user-pen" class="w-5 h-5"></i></button>` : ''}
@@ -1990,7 +2167,7 @@ service cloud.firestore {
                 ` : ''}
 
                 <!-- SECTION DES KPI FINANCIERS -->
-                <section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 relative z-10 w-full">
+                <section id="overview-section" class="mobile-anchor mobile-kpi-strip grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 relative z-10 w-full">
                     <div class="bg-[#0b1322] border border-[#1e293b]/70 p-3.5 sm:p-4 rounded-xl flex flex-col justify-center shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
                         <span class="text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider font-mono">Actifs</span>
                         <p class="text-lg sm:text-xl font-bold text-white font-mono mt-1">${activeCount}</p>
@@ -2011,14 +2188,19 @@ service cloud.firestore {
                         <span class="text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider font-mono">Inactifs</span>
                         <p class="text-lg sm:text-xl font-bold text-slate-400 font-mono mt-1">${inactiveCount}</p>
                     </div>
-                    <div class="bg-[#0b1322] border border-[#1e293b]/70 p-3.5 sm:p-4 rounded-xl flex flex-col justify-center relative overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+                    <div class="mobile-real-date-card bg-[#0b1322] border border-[#1e293b]/70 p-3.5 sm:p-4 rounded-xl flex flex-col justify-center relative overflow-hidden group shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
                         <span class="text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider font-mono flex items-center gap-1">
                             <i data-lucide="clock" class="w-3 h-3 text-yellow-500 ${manualTimeMode ? 'animate-none' : 'animate-spin'}"></i> 
                             ${manualTimeMode ? 'Temps Figé' : 'Date Réelle'}
                         </span>
-                        <input type="datetime-local" id="system-clock-input" value="${formattedVirtualDate}" onchange="window.updateVirtualDate(this.value)"
-                            class="bg-transparent text-[11px] sm:text-xs font-bold text-yellow-500 focus:outline-none mt-1 w-full border-none p-0 cursor-pointer font-mono min-h-[24px]" />
-                        <span class="text-[8px] sm:text-[9px] text-slate-500 block truncate max-w-full font-mono mt-0.5">${localTimeZone}</span>
+                        <div class="mt-1 flex flex-col leading-tight">
+                            <span id="system-date-display" class="text-[11px] sm:text-xs font-bold text-yellow-400 whitespace-nowrap">${new Date(virtualDate).toLocaleDateString('fr-BE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                            <span id="system-time-display" class="text-base sm:text-lg font-bold text-yellow-500 tabular-nums tracking-wide">${new Date(virtualDate).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        </div>
+                        ${isAdmin ? `<input type="datetime-local" id="system-clock-input" value="${formattedVirtualDate}" onchange="window.updateVirtualDate(this.value)"
+                            aria-label="Régler manuellement la date et l'heure"
+                            class="bg-slate-950/70 text-[10px] font-bold text-yellow-500 focus:outline-none mt-1.5 w-full border border-slate-800 rounded px-1.5 py-1 cursor-pointer font-mono min-h-[30px]" />` : ''}
+                        <span class="text-[8px] sm:text-[9px] text-slate-500 block whitespace-normal break-words max-w-full font-mono mt-1">${localTimeZone}</span>
                         ${manualTimeMode ? `
                             <button onclick="window.restoreRealTime()" class="text-[9px] text-cyan-400 hover:text-cyan-300 font-mono mt-1 hover:underline text-left flex items-center gap-1 border-t border-slate-800/80 pt-1">
                                 <i data-lucide="refresh-cw" class="w-2.5 h-2.5"></i> Sync Réelle
@@ -2032,7 +2214,7 @@ service cloud.firestore {
                     
                     <!-- COLONNE GAUCHE & MILIEU : CATALOGUE -->
                     <div class="lg:col-span-2 flex flex-col gap-4 sm:gap-6 min-w-0 w-full">
-                        <div class="bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-6 rounded-2xl flex-1 flex flex-col gap-4 sm:gap-6 shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
+                        <div id="services-section" class="mobile-anchor mobile-compact-section bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-6 rounded-2xl flex-1 flex flex-col gap-4 sm:gap-6 shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
                             
                             <!-- Filtre onglets -->
                             <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center border-b border-slate-800/80 pb-4 gap-3">
@@ -2049,11 +2231,11 @@ service cloud.firestore {
                                         </button>
                                     `).join('')}
                                     
-                                    <a href="https://pimpmydrawing.com" target="_blank" 
+                                    ${pimpCardUrl && /^https:\/\//i.test(pimpCardUrl) ? `<a href="${window.escapeHTML(pimpCardUrl)}" target="_blank" rel="noopener noreferrer"
                                         class="ml-1 px-3 py-1.5 bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 hover:border-purple-500/60 text-purple-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 uppercase tracking-wider shadow-[0_0_10px_rgba(168,85,247,0.15)] shrink-0 min-h-[30px]"
-                                        title="Visiter Pimp My Drawing pour des ressources vectorielles CAO gratuites">
-                                        <i data-lucide="palette" class="w-3 h-3 text-purple-400"></i> Pimp CAD
-                                    </a>
+                                        title="Ouvrir PIMP CARD">
+                                        <i data-lucide="palette" class="w-3 h-3 text-purple-400"></i> PIMP CARD
+                                    </a>` : ''}
                                 </div>
                             </div>
 
@@ -2130,7 +2312,7 @@ service cloud.firestore {
                     <div class="flex flex-col gap-4 sm:gap-6 w-full">
                         
                         <!-- WIDGET 1 : RÈGLES -->
-                        <div class="bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
+                        <div id="billing-rules" class="mobile-anchor bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
                             <h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider border-b border-slate-800/80 pb-2 flex items-center gap-2">
                                 <i data-lucide="help-circle" class="w-4 h-4 text-cyan-400"></i> Règles de Facturation
                             </h3>
@@ -2155,10 +2337,14 @@ service cloud.firestore {
                         </div>
 
                         <!-- WIDGET 2 : TCHAT -->
-                        <div class="bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 h-[350px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
+                        <div id="client-support" class="mobile-anchor mobile-compact-section bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 h-[350px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
                             <h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider border-b border-slate-800/80 pb-2 flex items-center gap-2">
                                 <i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i> Support & Messagerie
                             </h3>
+                            <div class="flex items-center gap-2 -mt-2 px-1 text-[10px] font-mono ${isUserOnline('admin') ? 'text-emerald-400' : 'text-slate-500'}">
+                                <span class="relative flex w-2.5 h-2.5"><span class="absolute inset-0 rounded-full ${isUserOnline('admin') ? 'bg-emerald-400 animate-ping opacity-40' : ''}"></span><span class="relative w-2.5 h-2.5 rounded-full ${isUserOnline('admin') ? 'bg-emerald-500' : 'bg-slate-600'}"></span></span>
+                                <span>Administrateur Sésame · ${isUserOnline('admin') ? 'Connecté' : 'Déconnecté'}</span>
+                            </div>
                             <div id="client-chat-box" class="flex-1 bg-slate-950/50 rounded-xl p-3 border border-slate-800/80 overflow-y-auto space-y-3 font-mono text-xs">
                                 ${clientMessages.length === 0 
                                     ? `<div class="text-slate-500 text-center mt-12 px-4 leading-relaxed font-light font-sans">
@@ -2184,7 +2370,7 @@ service cloud.firestore {
                         </div>
 
                         <!-- WIDGET 3 : TRANSACTIONS -->
-                        <div class="bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 max-h-[300px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
+                        <div id="client-payments" class="mobile-anchor mobile-compact-section bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 max-h-[300px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
                             <div class="flex justify-between items-center border-b border-slate-800/80 pb-2">
                                 <h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
                                     <i data-lucide="history" class="w-4 h-4 text-cyan-400"></i> Historique des paiements
@@ -2212,7 +2398,7 @@ service cloud.firestore {
                 </div>
 
                 <!-- ESPACE ACTUALITÉS SÉSAME -->
-                <section class="relative z-10 bg-[#0b1322]/95 border border-cyan-500/25 rounded-2xl p-4 sm:p-6 shadow-xl w-full">
+                <section id="news-section" class="mobile-anchor mobile-compact-section relative z-10 bg-[#0b1322]/95 border border-cyan-500/25 rounded-2xl p-4 sm:p-6 shadow-xl w-full">
                     <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-5">
                         <div>
                             <h3 class="text-sm font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="newspaper" class="w-5 h-5 text-cyan-400"></i> Actualités Sésame</h3>
@@ -2265,7 +2451,7 @@ service cloud.firestore {
                 </section>
 
                 <!-- GROUPE COMMUNAUTAIRE SÉSAME, SUPERVISÉ PAR L'ADMIN -->
-                <section class="relative z-10 bg-[#0b1322]/95 border border-emerald-500/25 rounded-2xl p-4 sm:p-6 shadow-xl w-full">
+                <section id="community-section" class="mobile-anchor mobile-compact-section relative z-10 bg-[#0b1322]/95 border border-emerald-500/25 rounded-2xl p-4 sm:p-6 shadow-xl w-full">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
                         <div>
                             <h3 class="text-sm font-bold text-white uppercase font-mono flex items-center gap-2">
@@ -2313,7 +2499,7 @@ service cloud.firestore {
 
                 <!-- CONSOLE D'ADMINISTRATION GLOBALE EN BAS -->
                 ${isAdmin ? `
-                <section class="bg-[#0d1527] border border-purple-900/40 rounded-2xl p-4 sm:p-6 relative z-10 shadow-[0_0_45px_rgba(168,85,247,0.03)] flex flex-col gap-6 font-sans w-full overflow-hidden">
+                <section id="admin-console" class="mobile-anchor mobile-compact-section bg-[#0d1527] border border-purple-900/40 rounded-2xl p-4 sm:p-6 relative z-10 shadow-[0_0_45px_rgba(168,85,247,0.03)] flex flex-col gap-6 font-sans w-full overflow-hidden">
                     <div class="flex items-center gap-3 border-b border-slate-800 pb-4">
                         <div class="p-2 bg-purple-950 rounded border border-purple-500/30 text-purple-400 shrink-0">
                             <i data-lucide="shield" class="w-5 h-5"></i>
@@ -2330,7 +2516,7 @@ service cloud.firestore {
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 w-full">
                         
                         <!-- 1. Demandes de Devis Client -->
-                        <div class="bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-quotes" class="mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Demandes de Devis Client</h4>
                             <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                                 ${window.appState.allQuotes.filter(q => q.status === 'pending').length === 0 
@@ -2365,7 +2551,7 @@ service cloud.firestore {
                         </div>
 
                         <!-- 2. Messagerie de Support Client -->
-                        <div class="bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-support" class="mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Messagerie de Support Client</h4>
                             <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5">
                                 <i data-lucide="search" class="w-4 h-4 text-purple-400"></i>
@@ -2387,6 +2573,7 @@ service cloud.firestore {
                                         const cName = window.getClientName(cEmail);
                                         const isSelected = window.appState.adminSelectedClient === uId;
                                         const unreadCount = window.appState.allMessages.filter(m => m.userId === uId && m.sender === 'user' && m.readByAdmin === false).length;
+                                        const clientOnline = isUserOnline(uId);
                                         return `
                                         <button onclick="window.adminSelectChatUser('${uId}')"
                                             class="w-full text-left p-2 rounded-lg border transition-all flex flex-col min-h-[44px] justify-center ${
@@ -2394,7 +2581,7 @@ service cloud.firestore {
                                                     ? 'bg-purple-950/50 text-white border-purple-500/40 font-bold shadow-[inset_0_0_10px_rgba(168,85,247,0.15)]' 
                                                     : 'bg-slate-900 border-slate-800/80 text-slate-400 hover:bg-slate-800 hover:border-slate-700'
                                             }">
-                                            <div class="text-[10px] font-bold truncate text-slate-200 w-full">${cName}</div>
+                                            <div class="text-[10px] font-bold truncate text-slate-200 w-full flex items-center gap-1.5"><span class="w-2 h-2 rounded-full shrink-0 ${clientOnline ? 'bg-emerald-500' : 'bg-slate-600'}"></span><span class="truncate">${cName}</span></div>
                                             <div class="text-[8px] text-slate-500 font-mono truncate w-full mt-0.5">${cEmail}</div>
                                             ${unreadCount ? `<span class="mt-1 self-start px-1.5 py-0.5 rounded-full bg-red-600 text-white text-[8px]">${unreadCount} nouveau${unreadCount > 1 ? 'x' : ''}</span>` : ''}
                                         </button>`;
@@ -2411,6 +2598,7 @@ service cloud.firestore {
                                                     : `<div class="w-5 h-5 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-[8px] text-slate-400 font-mono">${selectedClientName.charAt(0)}</div>`;
                                             })()}
                                             <span class="truncate">DISCUSSION AVEC ${selectedClientName}</span>
+                                            <span class="ml-auto shrink-0 normal-case flex items-center gap-1 ${isUserOnline(window.appState.adminSelectedClient) ? 'text-emerald-400' : 'text-slate-500'}"><span class="w-2 h-2 rounded-full ${isUserOnline(window.appState.adminSelectedClient) ? 'bg-emerald-500' : 'bg-slate-600'}"></span>${isUserOnline(window.appState.adminSelectedClient) ? 'Connecté' : 'Déconnecté'}</span>
                                         </div>
                                         <div id="admin-chat-box" class="flex-1 overflow-y-auto space-y-3 p-1 font-mono text-[11px] h-[220px]">
                                             ${window.appState.allMessages
@@ -2481,7 +2669,7 @@ service cloud.firestore {
                         </div>
 
                         <!-- 4. CONTRÔLE DIRECT DES SERVICES -->
-                        <div class="bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-services" class="mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <i data-lucide="toggle-left" class="text-purple-400 w-4 h-4"></i> Forcer Services (Sans frais)
                             </h4>
@@ -2628,7 +2816,7 @@ service cloud.firestore {
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-4 w-full">
                         
                         <!-- CONFIGURATION DES LIENS DE PAIEMENT STRIPE (GLOBALE OU PAR CLIENT) -->
-                        <div class="bg-slate-950/60 border border-purple-900/30 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
+                        <div id="admin-stripe" class="mobile-anchor bg-slate-950/60 border border-purple-900/30 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-2.5 gap-2">
                                 <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                                     <i data-lucide="settings" class="text-purple-400 w-4 h-4"></i> Liens Stripe Personnalisés
@@ -2672,20 +2860,22 @@ service cloud.firestore {
                                     }).join('');
                                 })()}
                             </div>
-                            ${(() => {
-                                const selectedStripeClientId = window.appState.selectedStripeClientId;
-                                const stripeClient = firebaseClientProfiles.find(p => p.id === selectedStripeClientId);
-                                const stripeClientId = stripeClient ? selectedStripeClientId : '';
-                                const sourceLinks = stripeClientId ? (stripeClient?.stripeLinks || {}) : stripeLinks;
-                                return `<div class="mt-3 pt-3 border-t border-slate-800 bg-purple-950/20 p-3 rounded-lg">
-                                    <div class="flex justify-between text-[10px] font-bold mb-1">
-                                        <span class="text-white">Lien PIMP CAD</span><span class="text-purple-400 uppercase">${stripeClientId ? 'Client' : 'Global'}</span>
-                                    </div>
-                                    <input type="url" placeholder="https://..." value="${sourceLinks['pimp-cad'] || ''}"
-                                        onchange="window.updateStripeLinkValue('pimp-cad', this.value)"
-                                        class="w-full bg-slate-950 border border-purple-900/60 rounded px-2 py-1.5 text-slate-300 focus:outline-none focus:border-purple-500 text-[9px]" />
-                                </div>`;
-                            })()}
+                        </div>
+
+                        <!-- PIMP CARD : réglage global indépendant de Stripe -->
+                        <div id="admin-pimp-card" class="mobile-anchor bg-slate-950/60 border border-fuchsia-900/40 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
+                            <div class="border-b border-slate-800 pb-2.5">
+                                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i data-lucide="external-link" class="text-fuchsia-400 w-4 h-4"></i> Lien PIMP CARD
+                                </h4>
+                                <p class="text-[9px] text-slate-500 mt-1">Lien global indépendant de Stripe, visible par tous les clients.</p>
+                            </div>
+                            <label for="pimp-card-admin-url" class="text-[9px] text-fuchsia-300 uppercase font-bold">Adresse du lien</label>
+                            <input id="pimp-card-admin-url" type="url" placeholder="https://..." value="${window.escapeHTML(pimpCardUrl || '')}"
+                                class="w-full bg-slate-950 border border-fuchsia-900/60 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-fuchsia-500 text-[10px] min-h-[40px]" />
+                            <button type="button" onclick="window.updatePimpCardLink()" class="w-full sm:w-auto self-end px-4 py-2.5 rounded-lg bg-fuchsia-700 hover:bg-fuchsia-600 text-white font-bold uppercase text-[10px] flex items-center justify-center gap-2 min-h-[40px]">
+                                <i data-lucide="save" class="w-4 h-4"></i> Enregistrer PIMP CARD
+                            </button>
                         </div>
 
                         <!-- AJUSTEMENT DE TARIFS COMPTES CLIENTS AVEC PRIX BARRÉS -->
@@ -2740,7 +2930,7 @@ service cloud.firestore {
                     </div>
 
                     <!-- VALIDATION MANUELLE DES PROFILS NON VÉRIFIÉS -->
-                    <div class="bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 sm:p-5 mt-4 w-full">
+                    <div id="admin-pending-profiles" class="mobile-anchor bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 sm:p-5 mt-4 w-full">
                         <div class="flex items-center justify-between gap-3 mb-3">
                             <div>
                                 <h4 class="text-xs font-bold text-amber-300 uppercase font-mono flex items-center gap-2"><i data-lucide="user-round-check" class="w-4 h-4"></i> Profils en attente de vérification</h4>
@@ -2774,7 +2964,7 @@ service cloud.firestore {
                     </div>
 
                     <!-- TABLEAU RECAPITULATIF DES COMPTES CLIENTS -->
-                    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl space-y-4 mt-6 w-full">
+                    <div id="admin-clients" class="mobile-anchor bg-slate-900/80 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl space-y-4 mt-6 w-full">
                         <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2 border-b border-slate-800 pb-3">
                            <i data-lucide="user-check" class="text-cyan-400 w-5 h-5"></i> Gestion des Comptes Clients Firebase (${firebaseClientProfiles.length})
                         </h3>
@@ -2838,8 +3028,150 @@ service cloud.firestore {
                     </div>
                 </section>
                 ` : ''}
+
+                <!-- BARRE DE NAVIGATION MOBILE -->
+                <nav class="mobile-nav-shell" aria-label="Raccourcis mobiles">
+                    <button type="button" onclick="window.mobileGoTo('dashboard-top')" class="mobile-nav-button"><i data-lucide="house"></i><span>Accueil</span></button>
+                    ${mobilePrimaryShortcuts.map(item => `<button type="button" onclick="window.mobileGoTo('${item.id}')" class="mobile-nav-button"><i data-lucide="${item.icon}"></i><span>${item.label}</span></button>`).join('')}
+                    <button type="button" onclick="window.openMobileShortcuts()" class="mobile-nav-button text-cyan-400"><i data-lucide="menu"></i><span>Menu</span></button>
+                </nav>
+
+                <!-- PANNEAU DE TOUS LES RACCOURCIS MOBILE -->
+                <div id="mobile-shortcuts-sheet" class="mobile-shortcuts-sheet fixed inset-0 z-[90] hidden items-end bg-slate-950/80 backdrop-blur-sm" onclick="if(event.target===this) window.closeMobileShortcuts()">
+                    <div class="w-full max-h-[82vh] overflow-y-auto rounded-t-3xl bg-[#0b1322] border-t border-slate-700 p-4 pb-8 shadow-2xl">
+                        <div class="w-12 h-1 bg-slate-700 rounded-full mx-auto mb-4"></div>
+                        <div class="flex items-center justify-between mb-4">
+                            <div><h3 class="text-sm font-bold text-white uppercase font-mono">Accès rapide</h3><p class="text-[10px] text-slate-500 mt-1">${isAdmin ? 'Outils administrateur' : 'Espace client'} Sésame</p></div>
+                            <button type="button" onclick="window.closeMobileShortcuts()" class="w-10 h-10 rounded-xl bg-slate-900 text-slate-400 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        </div>
+                        <div class="mobile-shortcut-grid grid grid-cols-3 gap-2">
+                            ${mobileAllShortcuts.map(item => `<button type="button" onclick="${item.action === 'profile' ? 'window.closeMobileShortcuts();window.openMyPersonalInformation()' : `window.mobileGoTo('${item.id}')`}" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex flex-col items-center justify-center gap-2 text-center text-[10px] font-bold active:border-cyan-500 active:text-cyan-300"><i data-lucide="${item.icon}" class="w-5 h-5 text-cyan-400"></i><span>${item.label}</span></button>`).join('')}
+                        </div>
+                    </div>
+                </div>
             </div>`;
         }
+
+        window.openMobileShortcuts = () => {
+            const sheet = document.getElementById('mobile-shortcuts-sheet');
+            if (!sheet) return;
+            sheet.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons({ root: sheet });
+        };
+
+        // PIMP CARD possède son propre document Firebase et ne dépend d'aucun client ni lien Stripe.
+        window.updatePimpCardLink = async () => {
+            if (!window.appState.isAdmin) return;
+            const input = document.getElementById('pimp-card-admin-url');
+            const value = String(input?.value || '').trim();
+            if (value && !/^https:\/\//i.test(value)) {
+                window.showToast("Le lien PIMP CARD doit commencer par https://", "error");
+                input?.focus();
+                return;
+            }
+            try {
+                const pimpCardRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'pimpCard');
+                await setDoc(pimpCardRef, {
+                    url: value,
+                    updatedAt: Date.now(),
+                    updatedBy: window.appState.user?.email || ADMIN_EMAIL
+                }, { merge: true });
+                window.showToast(value ? "Lien PIMP CARD enregistré." : "Lien PIMP CARD désactivé.");
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible d’enregistrer le lien PIMP CARD.", "error");
+            }
+        };
+
+        window.closeMobileShortcuts = () => {
+            document.getElementById('mobile-shortcuts-sheet')?.classList.add('hidden');
+            document.body.style.overflow = '';
+        };
+
+        window.applyMobileRoute = (targetId, shouldScroll = true) => {
+            if (!window.matchMedia('(max-width: 767px)').matches) return;
+            const routeIds = [
+                'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
+                'news-section', 'community-section', 'admin-console', 'admin-quotes',
+                'admin-support', 'admin-services', 'admin-stripe', 'admin-pimp-card',
+                'admin-pending-profiles', 'admin-clients'
+            ];
+            const resolvedId = targetId === 'dashboard-top' ? 'overview-section' : targetId;
+            routeIds.forEach(id => {
+                const element = document.getElementById(id);
+                element?.classList.add('mobile-route-hidden');
+                element?.classList.remove('mobile-route-active', 'mobile-route-active-parent');
+            });
+
+            const target = document.getElementById(resolvedId);
+            if (!target) return;
+
+            // Un clic sur « Console » restaure toute la console administrateur.
+            // Des rubriques internes peuvent avoir été masquées par une navigation
+            // précédente : leurs classes doivent donc être nettoyées explicitement.
+            if (targetId === 'admin-console') {
+                target.querySelectorAll('.mobile-route-hidden, .mobile-route-active, .mobile-route-active-parent').forEach(element => {
+                    element.classList.remove('mobile-route-hidden', 'mobile-route-active', 'mobile-route-active-parent');
+                });
+            }
+
+            // Dans la console Admin, chaque outil est imbriqué dans une ou plusieurs
+            // grilles. Masquer aussi les éléments voisins sans identifiant garantit
+            // que seul l'outil choisi depuis le Menu reste visible sur téléphone.
+            if (targetId.startsWith('admin-') && targetId !== 'admin-console') {
+                let branch = target;
+                let parent = branch.parentElement;
+                while (parent && parent.id !== 'admin-console') {
+                    Array.from(parent.children).forEach(sibling => {
+                        if (sibling !== branch) {
+                            sibling.classList.add('mobile-route-hidden');
+                            sibling.classList.remove('mobile-route-active', 'mobile-route-active-parent');
+                        }
+                    });
+                    parent.classList.remove('mobile-route-hidden');
+                    parent.classList.add('mobile-route-active-parent');
+                    branch = parent;
+                    parent = parent.parentElement;
+                }
+                if (parent?.id === 'admin-console') {
+                    Array.from(parent.children).forEach(sibling => {
+                        if (sibling !== branch) {
+                            sibling.classList.add('mobile-route-hidden');
+                            sibling.classList.remove('mobile-route-active', 'mobile-route-active-parent');
+                        }
+                    });
+                }
+            }
+            let ancestor = target.parentElement;
+            while (ancestor && ancestor.id !== 'dashboard-top') {
+                if (routeIds.includes(ancestor.id)) {
+                    ancestor.classList.remove('mobile-route-hidden');
+                    ancestor.classList.add('mobile-route-active-parent');
+                }
+                ancestor = ancestor.parentElement;
+            }
+            target.classList.remove('mobile-route-hidden');
+            target.classList.add('mobile-route-active');
+            if (targetId === 'dashboard-top') {
+                const billingRules = document.getElementById('billing-rules');
+                billingRules?.classList.remove('mobile-route-hidden');
+                billingRules?.classList.add('mobile-route-active');
+            }
+            window.appState.mobileActiveRoute = targetId;
+            if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.mobileGoTo = (targetId) => {
+            window.closeMobileShortcuts();
+            if (window.matchMedia('(max-width: 767px)').matches) {
+                window.applyMobileRoute(targetId);
+                return;
+            }
+            const target = document.getElementById(targetId);
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
 
         // --- EXÉCUTION DU RENDU GLOBAL & ACTIONS ---
         window.adminSelectChatUser = (userId) => {
