@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#030712">
+    <meta name="color-scheme" content="dark">
     <title>Sésame Ouvre-Toi</title>
-    
     <link rel="icon" type="image/png" href="assets/icons/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg" />
     <link rel="shortcut icon" href="assets/icons/favicon.ico" />
@@ -18,6 +19,25 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
+        /* Fond critique anti-flash : ne dépend pas du chargement de Tailwind. */
+        html {
+            min-height: 100%;
+            background-color: #030712;
+            color-scheme: dark;
+        }
+        body,
+        #app,
+        #root {
+            min-height: 100vh;
+            background-color: #030712;
+        }
+        body {
+            margin: 0;
+        }
+        #root {
+            isolation: isolate;
+        }
+
         /* Personnalisation de la barre de défilement */
         ::-webkit-scrollbar {
             width: 6px;
@@ -60,43 +80,107 @@
             box-shadow: 0 0 10px rgba(168, 85, 247, 0.15);
         }
 
+        /* Écran de connexion Client / Admin */
+        .auth-page {
+            background:
+                radial-gradient(circle at 15% 12%, rgba(8,145,178,.14), transparent 34%),
+                radial-gradient(circle at 88% 86%, rgba(126,34,206,.13), transparent 36%),
+                #030712;
+        }
+        .auth-panel {
+            background: linear-gradient(155deg, rgba(15,23,42,.97), rgba(7,13,25,.98));
+            box-shadow: 0 24px 70px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.025) inset;
+        }
+        .auth-role-button {
+            min-height: 76px;
+            border: 1px solid #1e293b;
+            background: rgba(2,6,23,.68);
+        }
+        .auth-role-button:hover { border-color: #334155; background: rgba(15,23,42,.92); }
+        .auth-role-button.is-client { border-color: rgba(34,211,238,.6); background: rgba(8,145,178,.12); box-shadow: 0 0 22px rgba(6,182,212,.1); }
+        .auth-role-button.is-admin { border-color: rgba(192,132,252,.58); background: rgba(126,34,206,.12); box-shadow: 0 0 22px rgba(168,85,247,.1); }
+        .auth-input-wrap:focus-within { transform: translateY(-1px); }
+        .auth-input-wrap { transition: transform .2s ease; }
+        .auth-input { min-height: 50px; background: rgba(2,6,23,.82); }
+        @media (max-width: 480px) {
+            .auth-page { justify-content: flex-start; padding: 14px 12px 28px; }
+            .auth-panel { padding: 20px 16px !important; border-radius: 20px !important; }
+            .auth-role-button { min-height: 68px; padding: 10px !important; }
+        }
+
         /* Navigation et densité optimisées pour téléphones */
         .mobile-anchor { scroll-margin-top: 88px; }
         .mobile-nav-shell { display: none; }
         .mobile-shortcuts-sheet { display: none; }
+        .kpi-auto-carousel {
+            display: flex !important;
+            overflow-x: auto;
+            overflow-y: hidden;
+            gap: 16px;
+            padding: 3px 2px 10px;
+            scroll-behavior: auto;
+            scrollbar-width: none;
+            overscroll-behavior-inline: contain;
+            -webkit-overflow-scrolling: touch;
+            cursor: grab;
+            touch-action: pan-x pan-y;
+            user-select: none;
+            mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+        }
+        .kpi-auto-carousel.is-dragging {
+            cursor: grabbing;
+            scroll-behavior: auto;
+        }
+        .kpi-auto-carousel::-webkit-scrollbar { display: none; }
+        .kpi-auto-carousel > * {
+            flex: 0 0 clamp(220px, 22vw, 270px);
+            min-height: 142px;
+            transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+        }
+        .kpi-auto-carousel > *:hover {
+            transform: translateY(-2px);
+            border-color: rgba(34, 211, 238, .28);
+            box-shadow: 0 12px 34px rgba(0, 0, 0, .38);
+        }
         @media (max-width: 767px) {
-            html { scroll-behavior: smooth; }
+            html { scroll-behavior: auto; }
             body { padding-bottom: 92px !important; }
             #dashboard-top { padding: 10px; gap: 12px; }
-            #dashboard-header { position: sticky; top: 8px; z-index: 35; padding: 10px 12px; border-radius: 14px; }
+            #dashboard-header { position: sticky; top: 8px; z-index: 35; padding: 10px 12px; border-radius: 14px; backdrop-filter: none; -webkit-backdrop-filter: none; background: #0d1527; }
             #dashboard-header .mobile-brand-subtitle { display: none; }
             #dashboard-header .mobile-account-email { max-width: 128px; }
             #dashboard-header .mobile-profile-row { border-top: 0; padding-top: 0; }
             .mobile-compact-section { padding: 14px !important; border-radius: 14px !important; }
             .mobile-compact-section > div:first-child p { display: none; }
-            .mobile-kpi-strip { display: flex !important; overflow-x: auto; gap: 8px; padding-bottom: 2px; scroll-snap-type: x proximity; }
-            .mobile-kpi-strip > * { min-width: 138px; scroll-snap-align: start; }
+            .mobile-kpi-strip { gap: 10px; padding-bottom: 5px; scroll-snap-type: none; }
+            .mobile-kpi-strip > * { flex-basis: 158px; min-width: 158px; min-height: 116px; }
             .mobile-real-date-card { min-width: 190px !important; }
             .mobile-nav-shell {
                 display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
                 position: fixed; z-index: 80; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
                 padding: 7px 5px; border: 1px solid rgba(51,65,85,.9); border-radius: 18px;
-                background: rgba(8,15,29,.94); backdrop-filter: blur(18px);
+                background: #080f1d; backdrop-filter: none; -webkit-backdrop-filter: none;
                 box-shadow: 0 12px 40px rgba(0,0,0,.55);
             }
             .mobile-nav-button { min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: #94a3b8; font-size: 9px; font-weight: 700; }
             .mobile-nav-button:active { color: #22d3ee; transform: scale(.96); }
             .mobile-nav-button svg { width: 19px; height: 19px; }
             .mobile-shortcuts-sheet:not(.hidden) { display: flex; }
+            .mobile-shortcuts-sheet { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
             .mobile-shortcut-grid button { min-height: 82px; }
             #toast-container { bottom: 88px; left: 12px; right: 12px; max-width: none; }
             .mobile-route-hidden { display: none !important; }
-            .mobile-route-active { animation: mobileRouteIn .22s ease-out; }
+            .mobile-route-active.mobile-route-animate { animation: mobileRouteIn .18s ease-out; }
             .mobile-route-active-parent { display: flex !important; padding: 0 !important; border: 0 !important; background: transparent !important; box-shadow: none !important; overflow: visible !important; }
+            .animate-pulse { animation: none !important; }
         }
         @keyframes mobileRouteIn {
             from { opacity: 0; transform: translateY(8px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .kpi-auto-carousel > * { transition: none; }
+            .auth-input-wrap { transition: none; }
         }
     </style>
 </head>
@@ -643,6 +727,47 @@
         // ==========================================
         // 4. RENDU DE L'INTERFACE UI (MANDATAIRE)
         // ==========================================
+        function initKpiCarousel() {
+            const carousel = document.getElementById('overview-section');
+            if (!carousel) return;
+
+            let dragging = false;
+            let dragPointerId = null;
+            let dragStartX = 0;
+            let dragStartScroll = 0;
+
+            carousel.addEventListener('pointerdown', (event) => {
+                if (event.pointerType !== 'mouse' || event.button !== 0) return;
+                dragging = true;
+                dragPointerId = event.pointerId;
+                dragStartX = event.clientX;
+                dragStartScroll = carousel.scrollLeft;
+                carousel.classList.add('is-dragging');
+                carousel.setPointerCapture(event.pointerId);
+            });
+            carousel.addEventListener('pointermove', (event) => {
+                if (!dragging || event.pointerId !== dragPointerId) return;
+                event.preventDefault();
+                carousel.scrollLeft = dragStartScroll - (event.clientX - dragStartX);
+            });
+            const finishManualScroll = (event) => {
+                if (dragging && (!event || event.pointerId === dragPointerId)) {
+                    dragging = false;
+                    carousel.classList.remove('is-dragging');
+                    dragPointerId = null;
+                }
+            };
+            carousel.addEventListener('pointerup', finishManualScroll);
+            carousel.addEventListener('pointercancel', finishManualScroll);
+            carousel.addEventListener('wheel', (event) => {
+                if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+                if (carousel.scrollWidth <= carousel.clientWidth) return;
+                event.preventDefault();
+                carousel.scrollLeft += event.deltaY;
+            }, { passive: false });
+            carousel.addEventListener('dragstart', (event) => event.preventDefault());
+        }
+
         function renderApp() {
             const root = document.getElementById('root');
             if(!root) return;
@@ -660,9 +785,13 @@
                 root.innerHTML = getMainDashboardHTML();
             }
             lucide.createIcons({ root: root });
+            initKpiCarousel();
 
             // Sur téléphone, une seule rubrique est affichée à la fois.
-            window.setTimeout(() => window.applyMobileRoute?.(window.appState.mobileActiveRoute || 'dashboard-top', false), 0);
+            // Appliquer la rubrique avant le prochain affichage du navigateur.
+            // Un setTimeout créait une image intermédiaire où toutes les cartes
+            // devenaient visibles pendant les synchronisations Firebase.
+            window.applyMobileRoute?.(window.appState.mobileActiveRoute || 'dashboard-top', false, false);
 
             // Auto-scroll des tchats après le rendu
             setTimeout(() => {
@@ -1517,44 +1646,45 @@
             const showSecret = !isLoginMode && authRole === 'admin';
 
             return `
-            <div class="min-h-screen bg-[#030712] flex flex-col items-center justify-center p-4 font-mono relative">
-              <div class="absolute inset-0 overflow-hidden pointer-events-none">
-                <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-cyan-950/20 blur-[100px] rounded-full"></div>
-                <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-950/20 blur-[100px] rounded-full"></div>
-              </div>
-              
-              <div class="z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl p-8 rounded-2xl border border-slate-800 shadow-[0_0_30px_rgba(8,145,178,0.15)] relative overflow-hidden font-sans">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent"></div>
+            <div class="auth-page min-h-screen flex flex-col items-center justify-center p-4 font-mono relative">
+              <div class="auth-panel z-10 w-full max-w-lg p-6 sm:p-8 rounded-[26px] border ${authRole === 'admin' ? 'border-purple-500/25' : 'border-cyan-500/25'} relative overflow-hidden font-sans">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent ${authRole === 'admin' ? 'via-purple-500' : 'via-cyan-500'} to-transparent"></div>
                 
-                <div class="flex justify-center mb-6">
+                <div class="flex justify-center mb-4">
                   <!-- LOGO SÉSAME SUR L'ÉCRAN DE CONNEXION -->
-                  <div class="p-3 bg-[#091524] rounded-xl border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-                    <i data-lucide="shield" class="w-10 h-10 text-cyan-400 fill-cyan-400/10"></i>
+                  <div class="p-3 bg-[#091524] rounded-2xl border ${authRole === 'admin' ? 'border-purple-500/40 shadow-[0_0_18px_rgba(168,85,247,.25)]' : 'border-cyan-500/40 shadow-[0_0_18px_rgba(6,182,212,.25)]'}">
+                    <i data-lucide="${authRole === 'admin' ? 'shield-check' : 'key-round'}" class="w-9 h-9 ${authRole === 'admin' ? 'text-purple-400' : 'text-cyan-400'}"></i>
                   </div>
                 </div>
                 
-                <h2 class="text-2xl font-bold text-center text-white mb-2 uppercase tracking-widest font-mono">Sésame Ouvre-Toi</h2>
-                <p class="text-slate-400 text-center mb-6 text-sm font-light">Portail d'Accès Réseau</p>
+                <h2 class="text-xl sm:text-2xl font-bold text-center text-white mb-1 tracking-wide font-mono">Sésame Ouvre-Toi</h2>
+                <p class="text-slate-400 text-center mb-6 text-sm">Connectez-vous à votre espace sécurisé</p>
 
                 <!-- ONGLETS DE SÉPARATION DES COMPTES -->
-                <div class="flex border-b border-slate-800/80 mb-6 font-mono text-xs">
+                <div class="grid grid-cols-2 gap-3 mb-5 font-mono">
                     <button onclick="window.setAuthRole('client')" 
-                        class="flex-1 pb-3 font-bold uppercase tracking-wider border-b-2 transition-all ${authRole === 'client' ? 'border-cyan-500 text-cyan-400' : 'border-transparent text-slate-500 hover:text-slate-300'}">
-                        Espace Client
+                        aria-pressed="${authRole === 'client'}"
+                        class="auth-role-button ${authRole === 'client' ? 'is-client text-cyan-300' : 'text-slate-400'} rounded-xl p-3 transition-all text-left flex items-center gap-3">
+                        <span class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${authRole === 'client' ? 'bg-cyan-500/15 text-cyan-400' : 'bg-slate-800 text-slate-500'}"><i data-lucide="user-round" class="w-5 h-5"></i></span>
+                        <span><strong class="block text-xs sm:text-sm text-white">Espace Client</strong><small class="block text-[9px] sm:text-[10px] mt-0.5 opacity-70">Mon compte</small></span>
                     </button>
                     <button onclick="window.setAuthRole('admin')" 
-                        class="flex-1 pb-3 font-bold uppercase tracking-wider border-b-2 transition-all ${authRole === 'admin' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-500 hover:text-slate-300'}">
-                        Espace Admin
+                        aria-pressed="${authRole === 'admin'}"
+                        class="auth-role-button ${authRole === 'admin' ? 'is-admin text-purple-300' : 'text-slate-400'} rounded-xl p-3 transition-all text-left flex items-center gap-3">
+                        <span class="w-9 h-9 shrink-0 rounded-lg flex items-center justify-center ${authRole === 'admin' ? 'bg-purple-500/15 text-purple-400' : 'bg-slate-800 text-slate-500'}"><i data-lucide="shield-check" class="w-5 h-5"></i></span>
+                        <span><strong class="block text-xs sm:text-sm text-white">Espace Admin</strong><small class="block text-[9px] sm:text-[10px] mt-0.5 opacity-70">Administration</small></span>
                     </button>
                 </div>
                 
                 <!-- Astuces de démonstration simples -->
-                <div class="mb-4 p-2 bg-slate-950/80 border border-slate-800 rounded text-[11px] font-mono leading-relaxed text-slate-400">
-                    <p class="text-cyan-400 font-bold mb-1">🔒 Accès restreint </p>
+                <div class="mb-5 p-3 bg-slate-950/65 border ${authRole === 'admin' ? 'border-purple-500/20' : 'border-cyan-500/15'} rounded-xl text-[11px] leading-relaxed text-slate-400 flex gap-2.5">
+                    <i data-lucide="${authRole === 'admin' ? 'lock-keyhole' : 'circle-help'}" class="w-4 h-4 mt-0.5 shrink-0 ${authRole === 'admin' ? 'text-purple-400' : 'text-cyan-400'}"></i>
+                    <p>
                     ${authRole === 'admin' 
-                        ? `Cet espace est réservé aux utilisateurs <span class="text-purple-300">admin</span> Toute tentative d'accès non autorisée est enregistrée au <span class="text-purple-300">base de données</span>` 
-                        : `En cas d'oubli de vos identifiants, contactez votre administrateur réseau ou le support technique`
+                        ? `Accès réservé à l’administrateur autorisé de Sésame.` 
+                        : `Utilisez l’adresse e-mail et le mot de passe associés à votre compte client.`
                     }
+                    </p>
                 </div>
                 
                 <!-- Bannière d'erreur -->
@@ -1579,64 +1709,69 @@
                   ${!isLoginMode && authRole === 'client' ? `
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label class="block text-slate-400 text-xs mb-1 uppercase">Prénom</label>
+                      <label for="auth-first-name" class="block text-slate-300 text-xs mb-1.5 font-semibold">Prénom</label>
                       <input id="auth-first-name" type="text" required maxlength="60" value="${firstName}"
                         oninput="window.handleAuthInput('firstName', this.value)"
-                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="Prénom" />
+                        autocomplete="given-name" class="auth-input w-full border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15" placeholder="Votre prénom" />
                     </div>
                     <div>
-                      <label class="block text-slate-400 text-xs mb-1 uppercase">Nom</label>
+                      <label for="auth-last-name" class="block text-slate-300 text-xs mb-1.5 font-semibold">Nom</label>
                       <input id="auth-last-name" type="text" required maxlength="60" value="${lastName}"
                         oninput="window.handleAuthInput('lastName', this.value)"
-                        class="w-full bg-slate-950 border border-slate-700 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500" placeholder="Nom" />
+                        autocomplete="family-name" class="auth-input w-full border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/15" placeholder="Votre nom" />
                     </div>
                   </div>` : ''}
-                  <div>
-                    <label class="block text-slate-400 text-xs mb-1 uppercase font-mono">Identifiant Réseau</label>
-                    <input id="auth-email" type="email" required
+                  <div class="auth-input-wrap">
+                    <label for="auth-email" class="block text-slate-300 text-xs mb-1.5 font-semibold">Adresse e-mail</label>
+                    <div class="relative">
+                    <i data-lucide="mail" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"></i>
+                    <input id="auth-email" type="email" required autocomplete="email" inputmode="email"
                       value="${email}"
                       oninput="window.handleAuthInput('email', this.value)"
-                      class="w-full bg-slate-950 border ${authRole === 'admin' ? 'border-purple-900/40 focus:border-purple-500 focus:ring-purple-500' : 'border-slate-700 focus:border-cyan-500 focus:ring-cyan-500'} rounded-lg px-4 py-2.5 text-white focus:outline-none focus:ring-1 transition-all font-mono"
-                      placeholder="${authRole === 'admin' ? 'vous.nêtes-pas@autorisé' : 'nom.prenom@gmail.com'}" />
+                      class="auth-input w-full border ${authRole === 'admin' ? 'border-purple-500/25 focus:border-purple-500 focus:ring-purple-500/15' : 'border-slate-700 focus:border-cyan-500 focus:ring-cyan-500/15'} rounded-xl pl-11 pr-4 py-3 text-white focus:outline-none focus:ring-2 transition-all"
+                      placeholder="${authRole === 'admin' ? 'Adresse administrateur' : 'exemple@email.com'}" />
+                    </div>
                   </div>
 
                   <!-- Clé d'activation Admin visible uniquement sur l'inscription admin -->
                   ${showSecret ? `
                   <div id="admin-secret-container" class="animate-fadeIn">
-                    <label class="block text-yellow-500 text-xs mb-1 uppercase font-bold font-mono">Clé d'activation Admin (Licence)</label>
+                    <label for="auth-secret" class="block text-yellow-400 text-xs mb-1.5 font-semibold">Clé d’activation Admin</label>
                     <input id="auth-secret" type="text" required
                       value="${adminSecret}"
                       oninput="window.handleAuthInput('adminSecret', this.value)"
-                      class="w-full bg-slate-950 border border-yellow-600/50 rounded-lg px-4 py-2.5 text-yellow-400 focus:outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 transition-all font-mono"
+                      class="auth-input w-full border border-yellow-600/50 rounded-xl px-4 py-3 text-yellow-300 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/15 transition-all"
                       placeholder="Clé secrète de licence" />
                     <p class="text-[10px] text-slate-500 mt-1 font-sans">Saisie requise pour créer le compte administrateur unique.</p>
                   </div>` : ''}
 
                   <!-- Mot de passe sécurisé -->
-                  <div>
-                    <label class="block text-slate-400 text-xs mb-1 uppercase font-mono">Code d'autorisation (Mot de passe)</label>
+                  <div class="auth-input-wrap">
+                    <label for="auth-password" class="block text-slate-300 text-xs mb-1.5 font-semibold">Mot de passe</label>
                     <div class="relative">
-                      <input id="auth-password" type="${showPassword ? 'text' : 'password'}" required
+                      <i data-lucide="lock-keyhole" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"></i>
+                      <input id="auth-password" type="${showPassword ? 'text' : 'password'}" required autocomplete="${isLoginMode ? 'current-password' : 'new-password'}"
                         value="${password}"
                         oninput="window.handleAuthInput('password', this.value)"
-                        class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-4 pr-10 py-2.5 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono"
-                        placeholder="xxxxxxxx" />
-                      <button type="button" onclick="window.togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                        class="auth-input w-full border ${authRole === 'admin' ? 'border-purple-500/25 focus:border-purple-500 focus:ring-purple-500/15' : 'border-slate-700 focus:border-cyan-500 focus:ring-cyan-500/15'} rounded-xl pl-11 pr-12 py-3 text-white focus:outline-none focus:ring-2 transition-all"
+                        placeholder="Votre mot de passe" />
+                      <button type="button" onclick="window.togglePasswordVisibility()" aria-label="${showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}" class="absolute right-1.5 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-lg text-slate-500 hover:text-white hover:bg-slate-800">
                         <i data-lucide="${showPassword ? 'eye-off' : 'eye'}" class="w-4 h-4"></i>
                       </button>
                     </div>
                   </div>
                   
                   <button type="submit" ${authLoading ? 'disabled' : ''}
-                    class="w-full bg-gradient-to-r ${authRole === 'admin' ? 'from-purple-600 to-indigo-600 shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'from-cyan-600 to-blue-600 shadow-[0_0_15px_rgba(6,182,212,0.4)]'} text-white font-bold py-3 px-4 rounded-lg transition-all uppercase tracking-wider text-sm mt-4 disabled:opacity-50 font-mono">
-                    ${authLoading ? 'Connexion en cours...' : (isLoginMode ? 'Initialiser la liaison' : 'Créer une instance')}
+                    class="w-full bg-gradient-to-r ${authRole === 'admin' ? 'from-purple-600 to-indigo-600 shadow-[0_10px_30px_rgba(126,34,206,.25)]' : 'from-cyan-600 to-blue-600 shadow-[0_10px_30px_rgba(8,145,178,.22)]'} hover:brightness-110 active:scale-[.99] text-white font-bold min-h-[50px] py-3 px-4 rounded-xl transition-all text-sm mt-4 disabled:opacity-50 disabled:cursor-wait flex items-center justify-center gap-2">
+                    <i data-lucide="${authLoading ? 'loader-circle' : (isLoginMode ? 'log-in' : 'user-plus')}" class="w-4 h-4 ${authLoading ? 'animate-spin' : ''}"></i>
+                    ${authLoading ? 'Connexion en cours…' : (isLoginMode ? `Se connecter à l’espace ${authRole === 'admin' ? 'Admin' : 'Client'}` : 'Créer mon compte client')}
                   </button>
                 </form>
                 
                 <div class="mt-6 text-center font-mono font-sans">
-                  <button type="button" onclick="window.toggleAuthMode()" class="text-slate-500 hover:text-slate-300 text-xs transition-colors">
-                    ${isLoginMode ? "Créer un nouveau compte" : "Déjà un compte ? Établir la connexion."}
-                  </button>
+                  ${authRole === 'client' ? `<button type="button" onclick="window.toggleAuthMode()" class="text-slate-400 hover:text-cyan-300 text-xs transition-colors rounded-lg px-3 py-2">
+                    ${isLoginMode ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
+                  </button>` : `<p class="text-[11px] text-slate-500">La création du compte administrateur est réservée au responsable du site.</p>`}
                 </div>
               </div>
             </div>`;
@@ -2100,7 +2235,7 @@ service cloud.firestore {
 
                 <!-- BANNIÈRE DE NOTIFICATION GLOBALE (Totalement optimisée pour mobile) -->
                 ${!isAdmin && globalAnnouncement && globalAnnouncement.text && profile?.dismissedAnnouncementId !== (globalAnnouncement.id || String(globalAnnouncement.timestamp)) ? `
-                <div class="relative bg-gradient-to-r from-amber-950/40 to-yellow-950/30 border border-amber-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 overflow-hidden z-10 animate-pulse">
+                <div class="relative bg-gradient-to-r from-amber-950/40 to-yellow-950/30 border border-amber-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 overflow-hidden z-10">
                     <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
                     <div class="flex items-start sm:items-center gap-3">
                         <div class="p-2 bg-amber-950 rounded-lg text-amber-500 border border-amber-500/20 shrink-0">
@@ -2173,7 +2308,7 @@ service cloud.firestore {
                 ` : ''}
 
                 <!-- SECTION DES KPI FINANCIERS -->
-                <section id="overview-section" class="mobile-anchor mobile-kpi-strip grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 relative z-10 w-full">
+                <section id="overview-section" aria-label="Indicateurs du tableau de bord" class="mobile-anchor mobile-kpi-strip kpi-auto-carousel relative z-10 w-full">
                     <div class="bg-[#0b1322] border border-[#1e293b]/70 p-3.5 sm:p-4 rounded-xl flex flex-col justify-center shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
                         <span class="text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider font-mono">Actifs</span>
                         <p class="text-lg sm:text-xl font-bold text-white font-mono mt-1">${activeCount}</p>
@@ -3095,7 +3230,7 @@ service cloud.firestore {
             document.body.style.overflow = '';
         };
 
-        window.applyMobileRoute = (targetId, shouldScroll = true) => {
+        window.applyMobileRoute = (targetId, shouldScroll = true, shouldAnimate = true) => {
             if (!window.matchMedia('(max-width: 767px)').matches) return;
             const routeIds = [
                 'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
@@ -3107,7 +3242,7 @@ service cloud.firestore {
             routeIds.forEach(id => {
                 const element = document.getElementById(id);
                 element?.classList.add('mobile-route-hidden');
-                element?.classList.remove('mobile-route-active', 'mobile-route-active-parent');
+                element?.classList.remove('mobile-route-active', 'mobile-route-active-parent', 'mobile-route-animate');
             });
 
             const target = document.getElementById(resolvedId);
@@ -3118,7 +3253,7 @@ service cloud.firestore {
             // précédente : leurs classes doivent donc être nettoyées explicitement.
             if (targetId === 'admin-console') {
                 target.querySelectorAll('.mobile-route-hidden, .mobile-route-active, .mobile-route-active-parent').forEach(element => {
-                    element.classList.remove('mobile-route-hidden', 'mobile-route-active', 'mobile-route-active-parent');
+                    element.classList.remove('mobile-route-hidden', 'mobile-route-active', 'mobile-route-active-parent', 'mobile-route-animate');
                 });
             }
 
@@ -3132,7 +3267,7 @@ service cloud.firestore {
                     Array.from(parent.children).forEach(sibling => {
                         if (sibling !== branch) {
                             sibling.classList.add('mobile-route-hidden');
-                            sibling.classList.remove('mobile-route-active', 'mobile-route-active-parent');
+                            sibling.classList.remove('mobile-route-active', 'mobile-route-active-parent', 'mobile-route-animate');
                         }
                     });
                     parent.classList.remove('mobile-route-hidden');
@@ -3144,7 +3279,7 @@ service cloud.firestore {
                     Array.from(parent.children).forEach(sibling => {
                         if (sibling !== branch) {
                             sibling.classList.add('mobile-route-hidden');
-                            sibling.classList.remove('mobile-route-active', 'mobile-route-active-parent');
+                            sibling.classList.remove('mobile-route-active', 'mobile-route-active-parent', 'mobile-route-animate');
                         }
                     });
                 }
@@ -3159,10 +3294,12 @@ service cloud.firestore {
             }
             target.classList.remove('mobile-route-hidden');
             target.classList.add('mobile-route-active');
+            target.classList.toggle('mobile-route-animate', shouldAnimate);
             if (targetId === 'dashboard-top') {
                 const billingRules = document.getElementById('billing-rules');
                 billingRules?.classList.remove('mobile-route-hidden');
                 billingRules?.classList.add('mobile-route-active');
+                billingRules?.classList.toggle('mobile-route-animate', shouldAnimate);
             }
             window.appState.mobileActiveRoute = targetId;
             if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
