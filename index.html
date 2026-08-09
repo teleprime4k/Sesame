@@ -525,7 +525,9 @@
             adminFinanceYearFilter: "all",
             adminFinanceMonthFilter: "all",
             editingNewsId: '',
-            editingNewsImage: ''
+            editingNewsImage: '',
+            newsDraftTitle: '',
+            newsDraftContent: ''
         };
 
         let unsubProfile = null;
@@ -768,9 +770,37 @@
             carousel.addEventListener('dragstart', (event) => event.preventDefault());
         }
 
+        function captureActiveAdminField() {
+            if (!window.appState.isAdmin) return null;
+            const field = document.activeElement;
+            if (!field || !['INPUT', 'TEXTAREA', 'SELECT'].includes(field.tagName) || field.type === 'file') return null;
+            const locator = field.id ? { id: field.id } : (field.name ? { name: field.name } : null);
+            if (!locator) return null;
+            return {
+                ...locator,
+                value: field.value,
+                selectionStart: typeof field.selectionStart === 'number' ? field.selectionStart : null,
+                selectionEnd: typeof field.selectionEnd === 'number' ? field.selectionEnd : null
+            };
+        }
+
+        function restoreActiveAdminField(savedField) {
+            if (!savedField) return;
+            const field = savedField.id
+                ? document.getElementById(savedField.id)
+                : document.querySelector(`[name="${CSS.escape(savedField.name)}"]`);
+            if (!field) return;
+            field.value = savedField.value;
+            field.focus({ preventScroll: true });
+            if (savedField.selectionStart !== null && typeof field.setSelectionRange === 'function') {
+                field.setSelectionRange(savedField.selectionStart, savedField.selectionEnd);
+            }
+        }
+
         function renderApp() {
             const root = document.getElementById('root');
             if(!root) return;
+            const activeAdminField = captureActiveAdminField();
             
             if (window.appState.loadingAuth) {
                 root.innerHTML = `<div class="min-h-screen flex items-center justify-center text-cyan-500"><i data-lucide="zap" class="animate-pulse w-12 h-12"></i></div>`;
@@ -786,6 +816,7 @@
             }
             lucide.createIcons({ root: root });
             initKpiCarousel();
+            restoreActiveAdminField(activeAdminField);
 
             // Sur téléphone, une seule rubrique est affichée à la fois.
             // Appliquer la rubrique avant le prochain affichage du navigateur.
@@ -2577,7 +2608,7 @@ service cloud.firestore {
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-[9px] uppercase text-slate-500 mb-1">Titre de l’actualité</label>
-                                <input id="news-title" maxlength="120" required class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Titre de la publication" />
+                                <input id="news-title" maxlength="120" required value="${window.escapeHTML(window.appState.newsDraftTitle || '')}" oninput="window.updateNewsDraft('title', this.value)" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500" placeholder="Titre de la publication" />
                             </div>
                             <div>
                                 <label class="block text-[9px] uppercase text-slate-500 mb-1">Image</label>
@@ -2589,7 +2620,7 @@ service cloud.firestore {
                         <div class="flex flex-col gap-3">
                             <div class="flex-1">
                                 <label class="block text-[9px] uppercase text-slate-500 mb-1">Informations</label>
-                                <textarea id="news-content" maxlength="3000" required rows="7" class="w-full h-full min-h-[150px] bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 resize-y" placeholder="Rédigez le contenu de l’actualité…"></textarea>
+                                <textarea id="news-content" maxlength="3000" required rows="7" oninput="window.updateNewsDraft('content', this.value)" class="w-full h-full min-h-[150px] bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-500 resize-y" placeholder="Rédigez le contenu de l’actualité…">${window.escapeHTML(window.appState.newsDraftContent || '')}</textarea>
                             </div>
                             <div class="flex gap-2">
                                 <button type="submit" class="flex-1 py-2.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-xs text-white font-bold uppercase">${window.appState.editingNewsId ? 'Enregistrer les modifications' : 'Publier l’actualité'}</button>
@@ -3554,11 +3585,18 @@ service cloud.firestore {
             reader.readAsDataURL(file);
         };
 
+        window.updateNewsDraft = (field, value) => {
+            if (field === 'title') window.appState.newsDraftTitle = value;
+            if (field === 'content') window.appState.newsDraftContent = value;
+        };
+
         window.adminSaveNews = async (event) => {
             event.preventDefault();
             if (!window.appState.isAdmin) return;
             const title = document.getElementById('news-title')?.value.trim();
             const content = document.getElementById('news-content')?.value.trim();
+            window.appState.newsDraftTitle = title || '';
+            window.appState.newsDraftContent = content || '';
             if (!title || !content) {
                 window.showToast("Le titre et les informations sont obligatoires.", "error");
                 return;
@@ -3575,6 +3613,8 @@ service cloud.firestore {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'news', window.appState.editingNewsId), newsData);
                     window.showToast("Actualité modifiée avec succès.");
                 } else {
+                    // Une nouvelle actualité reçoit toujours son propre document :
+                    // les publications précédentes restent disponibles.
                     await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'news'), {
                         ...newsData,
                         publishedAt: Date.now()
@@ -3594,6 +3634,8 @@ service cloud.firestore {
             if (!news) return;
             window.appState.editingNewsId = newsId;
             window.appState.editingNewsImage = news.image || '';
+            window.appState.newsDraftTitle = news.title || '';
+            window.appState.newsDraftContent = news.content || '';
             renderApp();
             setTimeout(() => {
                 const titleInput = document.getElementById('news-title');
@@ -3607,6 +3649,8 @@ service cloud.firestore {
         window.cancelNewsEdit = () => {
             window.appState.editingNewsId = '';
             window.appState.editingNewsImage = '';
+            window.appState.newsDraftTitle = '';
+            window.appState.newsDraftContent = '';
             renderApp();
         };
 
