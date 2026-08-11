@@ -305,6 +305,50 @@
         </div>
     </div>
 
+    <!-- GALERIE INTERACTIVE DES MODÈLES DE SITES INTERNET -->
+    <div id="website-models-modal" class="fixed inset-0 z-[110] hidden bg-slate-950/95 backdrop-blur-md overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="website-models-title">
+        <div class="min-h-full p-3 sm:p-6 flex items-start justify-center">
+            <div class="w-full max-w-6xl bg-[#08111f] border border-cyan-500/30 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(6,182,212,.18)]">
+                <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-800 bg-[#0b1322] sticky top-0 z-20">
+                    <div class="min-w-0">
+                        <h2 id="website-models-title" class="text-sm sm:text-lg font-black text-white uppercase tracking-wide flex items-center gap-2">
+                            <i data-lucide="monitor-smartphone" class="w-5 h-5 text-cyan-400 shrink-0"></i>
+                            Nos modèles de sites
+                        </h2>
+                        <p class="text-[9px] sm:text-xs text-slate-400 mt-1">Démonstrations interactives · testez la navigation et le panier</p>
+                    </div>
+                    <button type="button" onclick="window.closeWebsiteModels()" class="p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500 min-w-[42px] min-h-[42px] flex items-center justify-center" aria-label="Fermer les modèles">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <div class="p-4 sm:p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                        <button id="model-tab-fashion" type="button" onclick="window.selectWebsiteModel('fashion')" class="website-model-tab text-left p-4 rounded-xl border border-fuchsia-400 bg-fuchsia-500/10 transition-all">
+                            <span class="flex items-center gap-3"><span class="p-2 rounded-lg bg-fuchsia-500/20 text-fuchsia-300"><i data-lucide="shirt" class="w-5 h-5"></i></span><span><strong class="block text-sm text-white">Boutique vêtements</strong><small class="text-slate-400">Mode, collections et panier</small></span></span>
+                        </button>
+                        <button id="model-tab-food" type="button" onclick="window.selectWebsiteModel('food')" class="website-model-tab text-left p-4 rounded-xl border border-slate-700 bg-slate-900/60 transition-all">
+                            <span class="flex items-center gap-3"><span class="p-2 rounded-lg bg-emerald-500/20 text-emerald-300"><i data-lucide="shopping-basket" class="w-5 h-5"></i></span><span><strong class="block text-sm text-white">Boutique alimentation</strong><small class="text-slate-400">Produits frais et commande</small></span></span>
+                        </button>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-700 overflow-hidden bg-white shadow-2xl">
+                        <div class="h-9 bg-slate-100 border-b border-slate-200 flex items-center gap-2 px-3">
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                            <span id="model-browser-address" class="ml-2 flex-1 rounded bg-white border border-slate-200 text-[9px] text-slate-400 px-3 py-1 truncate">demo.sesame-mode.be</span>
+                        </div>
+                        <div id="website-model-preview" class="min-h-[520px]"></div>
+                    </div>
+
+                    <div class="mt-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                        <p class="text-[10px] sm:text-xs text-slate-400"><i data-lucide="info" class="inline w-3.5 h-3.5 text-cyan-400"></i> Démonstration sans paiement réel. Le modèle final sera personnalisé à votre marque.</p>
+                        <button type="button" onclick="window.requestWebsiteModelQuote()" class="px-5 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold uppercase min-h-[44px] shrink-0">Demander ce modèle</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL DE REÇU / FACTURE (CYBER-INVOICE) -->
     <div id="invoice-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md font-mono">
         <div class="bg-[#0b1322] border border-[#1e293b] rounded-2xl w-full max-w-lg p-5 sm:p-6 relative overflow-hidden shadow-[0_0_50px_rgba(8,145,178,0.15)]">
@@ -418,6 +462,7 @@
         const appId = "sesameouvretoi";
 
         const ADMIN_EMAIL = "dpstay@1.net";
+        const PROTOTYPE_CLIENT_ID = "__admin_client_prototype__";
         const ADMIN_SECRET_KEY = "2026"; 
 
         // ==========================================
@@ -538,6 +583,17 @@
 
             // Contrôle Direct des Services
             selectedServiceClientId: "",
+
+            // Compte client prototype privé de l'Administrateur (simulation locale sans paiement)
+            prototypeClient: (() => {
+                try {
+                    const saved = JSON.parse(localStorage.getItem('sesameAdminPrototypeClient') || 'null');
+                    if (saved && saved.services) return saved;
+                } catch (error) {
+                    console.warn('Simulation prototype non restaurée.', error);
+                }
+                return { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [] };
+            })(),
 
             // Saisie temporaire de besoins de devis
             quoteRequestServiceId: null,
@@ -1215,6 +1271,17 @@
             const service = SERVICES_DATA.find(s => s.id === sId);
             if (!service) return;
 
+            // Le compte prototype suit le même parcours fonctionnel qu'un client,
+            // mais la frontière externe (Stripe / Firebase) reste simulée.
+            if (window.appState.isAdmin) {
+                if (service.type === 'devis') {
+                    window.createAdminPrototypeQuoteRequest(sId);
+                    return;
+                }
+                window.simulateAdminPrototypePayment(sId);
+                return;
+            }
+
             if (service.type === 'devis') {
                 window.openQuoteRequestModal(sId);
                 return;
@@ -1222,6 +1289,104 @@
 
             // Ouvre la modale explicative Stripe
             window.openPaymentModal(sId);
+        };
+
+        // --- MODÈLES INTERACTIFS POUR LE SERVICE CRÉATION DE SITE ---
+        const WEBSITE_MODEL_PRODUCTS = {
+            fashion: [
+                { icon: '👕', name: 'T-shirt Essential', price: 24.90, tag: 'Nouveau' },
+                { icon: '🧥', name: 'Veste Urban', price: 69.90, tag: 'Tendance' },
+                { icon: '👟', name: 'Sneakers Motion', price: 84.90, tag: 'Best-seller' },
+                { icon: '👜', name: 'Sac Élégance', price: 49.90, tag: 'Collection' }
+            ],
+            food: [
+                { icon: '🥑', name: 'Panier fraîcheur', price: 18.50, tag: 'Bio' },
+                { icon: '🥖', name: 'Box petit-déjeuner', price: 14.90, tag: 'Local' },
+                { icon: '🍓', name: 'Fruits de saison', price: 9.80, tag: 'Frais' },
+                { icon: '🧀', name: 'Sélection du terroir', price: 26.40, tag: 'Artisanal' }
+            ]
+        };
+        let activeWebsiteModel = 'fashion';
+        let websiteModelCart = { fashion: 0, food: 0 };
+
+        function renderWebsiteModel() {
+            const target = document.getElementById('website-model-preview');
+            if (!target) return;
+            const fashion = activeWebsiteModel === 'fashion';
+            const products = WEBSITE_MODEL_PRODUCTS[activeWebsiteModel];
+            const accent = fashion ? 'bg-fuchsia-600 hover:bg-fuchsia-500' : 'bg-emerald-600 hover:bg-emerald-500';
+            const light = fashion ? 'bg-rose-50' : 'bg-emerald-50';
+            const brand = fashion ? 'NOVA MODE' : 'MARCHÉ FRAIS';
+            const headline = fashion ? 'Exprimez votre style.' : 'Le meilleur du frais, chez vous.';
+            const subtitle = fashion ? 'Une collection moderne pensée pour chaque moment.' : 'Des produits locaux sélectionnés et livrés avec soin.';
+            document.getElementById('model-browser-address').textContent = fashion ? 'demo.sesame-mode.be' : 'demo.sesame-marche.be';
+            target.innerHTML = `
+                <div class="text-slate-900 font-sans">
+                    <header class="px-4 sm:px-8 py-4 flex items-center justify-between gap-3 bg-white border-b border-slate-100">
+                        <strong class="text-base sm:text-xl tracking-widest">${brand}</strong>
+                        <nav class="hidden sm:flex gap-5 text-xs font-semibold text-slate-500"><button onclick="window.scrollModelTo('model-products')">Accueil</button><button onclick="window.scrollModelTo('model-products')">Produits</button><button onclick="window.showToast('Page À propos disponible dans le site final.')">À propos</button></nav>
+                        <button type="button" onclick="window.showModelCart()" class="relative px-3 py-2 rounded-lg ${accent} text-white text-xs font-bold">Panier <span id="website-model-cart" class="ml-1 bg-white/25 px-1.5 py-0.5 rounded-full">${websiteModelCart[activeWebsiteModel]}</span></button>
+                    </header>
+                    <section class="${light} px-5 sm:px-10 py-10 sm:py-14 grid sm:grid-cols-2 gap-7 items-center">
+                        <div><span class="text-[10px] font-black uppercase tracking-[.25em] ${fashion ? 'text-fuchsia-600' : 'text-emerald-700'}">Boutique en ligne</span><h3 class="text-3xl sm:text-5xl font-black mt-3 leading-tight">${headline}</h3><p class="text-sm text-slate-600 mt-4 max-w-md">${subtitle}</p><button type="button" onclick="window.scrollModelTo('model-products')" class="mt-6 px-5 py-3 rounded-lg ${accent} text-white text-xs font-bold uppercase">Découvrir la collection</button></div>
+                        <div class="min-h-[190px] sm:min-h-[240px] rounded-3xl ${fashion ? 'bg-gradient-to-br from-fuchsia-200 to-purple-300' : 'bg-gradient-to-br from-emerald-200 to-lime-200'} flex items-center justify-center text-8xl shadow-xl">${fashion ? '🛍️' : '🥕'}</div>
+                    </section>
+                    <section id="model-products" class="px-4 sm:px-8 py-9 bg-white"><div class="flex justify-between items-end mb-5"><div><span class="text-[10px] uppercase tracking-widest text-slate-400">Sélection</span><h4 class="text-xl font-black">Nos produits populaires</h4></div><span class="text-xs text-slate-400">Livraison rapide</span></div>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">${products.map((product, index) => `<article class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-lg transition-shadow"><div class="h-28 sm:h-36 ${light} flex items-center justify-center text-5xl">${product.icon}</div><div class="p-3"><span class="text-[8px] uppercase font-bold ${fashion ? 'text-fuchsia-600' : 'text-emerald-700'}">${product.tag}</span><h5 class="font-bold text-xs sm:text-sm mt-1 min-h-[36px]">${product.name}</h5><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3"><strong class="text-sm">${product.price.toFixed(2)} €</strong><button type="button" onclick="window.addWebsiteModelProduct(${index})" class="px-3 py-2 rounded-lg ${accent} text-white text-[9px] font-bold">Ajouter</button></div></div></article>`).join('')}</div>
+                    </section>
+                    <footer class="px-5 py-6 bg-slate-900 text-white flex flex-col sm:flex-row justify-between gap-2 text-xs"><strong>${brand}</strong><span class="text-slate-400">Paiement sécurisé · Livraison · Contact</span></footer>
+                </div>`;
+        }
+
+        window.openWebsiteModels = () => {
+            const modal = document.getElementById('website-models-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            renderWebsiteModel();
+            lucide.createIcons({ root: modal });
+        };
+        window.closeWebsiteModels = () => {
+            document.getElementById('website-models-modal')?.classList.add('hidden');
+            document.body.style.overflow = '';
+        };
+        window.selectWebsiteModel = (model) => {
+            if (!WEBSITE_MODEL_PRODUCTS[model]) return;
+            activeWebsiteModel = model;
+            ['fashion', 'food'].forEach(name => {
+                const tab = document.getElementById(`model-tab-${name}`);
+                const selected = name === model;
+                tab?.classList.toggle('border-fuchsia-400', selected && model === 'fashion');
+                tab?.classList.toggle('border-emerald-400', selected && model === 'food');
+                tab?.classList.toggle('bg-fuchsia-500/10', selected && model === 'fashion');
+                tab?.classList.toggle('bg-emerald-500/10', selected && model === 'food');
+                tab?.classList.toggle('border-slate-700', !selected);
+            });
+            renderWebsiteModel();
+        };
+        window.addWebsiteModelProduct = (index) => {
+            if (!WEBSITE_MODEL_PRODUCTS[activeWebsiteModel][index]) return;
+            websiteModelCart[activeWebsiteModel] += 1;
+            const counter = document.getElementById('website-model-cart');
+            if (counter) counter.textContent = websiteModelCart[activeWebsiteModel];
+            window.showToast('Produit ajouté au panier de démonstration.');
+        };
+        window.showModelCart = () => {
+            const count = websiteModelCart[activeWebsiteModel];
+            window.showToast(count ? `Panier de démonstration : ${count} article${count > 1 ? 's' : ''}.` : 'Le panier de démonstration est vide.');
+        };
+        window.scrollModelTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.requestWebsiteModelQuote = () => {
+            const selectedLabel = activeWebsiteModel === 'fashion' ? 'boutique de vêtements' : 'boutique alimentaire';
+            window.closeWebsiteModels();
+            if (window.appState.isAdmin) {
+                window.createAdminPrototypeQuoteRequest('ux-design');
+                window.showToast(`Prototype : modèle ${selectedLabel} sélectionné.`);
+            } else {
+                window.openQuoteRequestModal('ux-design');
+                const field = document.getElementById('quote-request-requirements');
+                if (field && !field.value.trim()) field.value = `Je souhaite recevoir un devis pour le modèle ${selectedLabel}.`;
+            }
         };
 
         // --- GESTION DE LA MODALE DE PAIEMENT STRIPE ---
@@ -1293,19 +1458,23 @@
             try {
                 const service = SERVICES_DATA.find(s => s.id === sId);
                 const pendingRef = collection(db, 'artifacts', appId, 'public', 'data', 'paymentRequests');
-                await addDoc(pendingRef, {
+                const pendingDoc = await addDoc(pendingRef, {
                     userId: user.uid,
                     userEmail: user.email,
                     serviceId: sId,
                     quoteId: qId || null,
                     expectedAmount: customPrice,
                     serviceName: service?.name || 'Service Sésame',
+                    stripeUrl: stripeUrl,
                     status: 'pending',
+                    verified: false,
                     createdAt: Date.now(),
                     activationSource: 'stripe_webhook_only'
                 });
                 const checkoutUrl = new URL(stripeUrl);
-                checkoutUrl.searchParams.set('client_reference_id', user.uid);
+                // Le webhook retrouve exactement cette demande Firebase. Cet identifiant
+                // ne contient que les caractères autorisés par Stripe.
+                checkoutUrl.searchParams.set('client_reference_id', pendingDoc.id);
                 const finalCheckoutUrl = checkoutUrl.toString();
                 if (stripeWindow && !stripeWindow.closed) {
                     stripeWindow.location.replace(finalCheckoutUrl);
@@ -1331,6 +1500,29 @@
         window.handleServiceDeactivation = async (sId) => {
             const service = SERVICES_DATA.find(s => s.id === sId);
             if (!service) return;
+
+            if (window.appState.isAdmin) {
+                if (CLIENT_CANCELLATION_REQUEST_IDS.has(sId)) {
+                    window.requestServiceCancellation(sId);
+                    return;
+                }
+                window.showCyberConfirm(`Confirmez-vous la désactivation de : ${service.name} ?`, () => {
+                    const prototype = window.getAdminPrototypeClient();
+                    const currentState = prototype.services[sId] || { status: 'inactive', subEnd: null };
+                    prototype.services[sId] = {
+                        ...currentState,
+                        status: 'inactive',
+                        subEnd: sId === TV_PASS_SERVICE_ID ? currentState.subEnd : null,
+                        deactivatedAt: window.getVirtualTimestamp(),
+                        simulation: true
+                    };
+                    window.addAdminPrototypeEvent('deactivation', sId, `Désactivation de ${service.name}`);
+                    window.saveAdminPrototype();
+                    window.showToast(`Prototype : ${service.name} a été désactivé.`);
+                    renderApp();
+                });
+                return;
+            }
 
             if (CLIENT_CANCELLATION_REQUEST_IDS.has(sId)) {
                 window.requestServiceCancellation(sId);
@@ -1386,9 +1578,26 @@
 
         window.handleFreeReactivation = async (sId) => {
             const service = SERVICES_DATA.find(s => s.id === sId);
-            const currentState = window.appState.profile?.services?.[sId];
+            const currentState = window.appState.isAdmin
+                ? window.getAdminPrototypeClient().services?.[sId]
+                : window.appState.profile?.services?.[sId];
             if (!service || sId !== TV_PASS_SERVICE_ID || !currentState?.subEnd || currentState.subEnd <= window.getVirtualTimestamp()) {
                 window.showToast("La période est expirée : vous devez vous réabonner.", "error");
+                return;
+            }
+
+            if (window.appState.isAdmin) {
+                const prototype = window.getAdminPrototypeClient();
+                prototype.services[sId] = {
+                    ...currentState,
+                    status: 'active',
+                    reactivatedAt: window.getVirtualTimestamp(),
+                    simulation: true
+                };
+                window.addAdminPrototypeEvent('reactivation', sId, `Réactivation sans paiement de ${service.name}`);
+                window.saveAdminPrototype();
+                window.showToast(`Prototype : ${service.name} réactivé sans paiement. La date de fin reste inchangée.`);
+                renderApp();
                 return;
             }
 
@@ -1425,12 +1634,31 @@
             const service = SERVICES_DATA.find(item => item.id === sId);
             const user = window.appState.user;
             if (!service || !user) return;
+            const isCancellation = requestType === 'cancellation';
+            const field = isCancellation ? 'cancellationRequestedAt' : 'renewalRequestedAt';
+
+            if (window.appState.isAdmin) {
+                const prototype = window.getAdminPrototypeClient();
+                const state = { ...(prototype.services[sId] || {}) };
+                if (state[field]) {
+                    window.showToast(isCancellation ? "La demande de désactivation prototype est déjà envoyée." : "La demande de renouvellement prototype est déjà envoyée.");
+                    return;
+                }
+                state[field] = window.getVirtualTimestamp();
+                state.simulation = true;
+                prototype.services[sId] = state;
+                window.addAdminPrototypeEvent(requestType, sId, isCancellation
+                    ? `Demande de désactivation envoyée pour ${service.name}`
+                    : `Demande de renouvellement envoyée pour ${service.name}`);
+                window.saveAdminPrototype();
+                window.showToast(isCancellation ? "Prototype : demande de désactivation envoyée." : "Prototype : demande de renouvellement envoyée.");
+                renderApp();
+                return;
+            }
             const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid);
             const services = { ...(window.appState.profile?.services || {}) };
             const state = { ...(services[sId] || {}) };
             const timestamp = Date.now();
-            const isCancellation = requestType === 'cancellation';
-            const field = isCancellation ? 'cancellationRequestedAt' : 'renewalRequestedAt';
             if (state[field]) {
                 window.showToast(isCancellation ? "Votre demande de désactivation est déjà envoyée." : "Votre demande de renouvellement est déjà envoyée.");
                 return;
@@ -1605,6 +1833,16 @@
         window.updateStripeLinkValue = async (serviceId, value) => {
             try {
                 const stripeClientId = window.appState.selectedStripeClientId;
+
+                if (stripeClientId === PROTOTYPE_CLIENT_ID) {
+                    const prototype = window.getAdminPrototypeClient();
+                    prototype.stripeLinks = { ...(prototype.stripeLinks || {}), [serviceId]: value.trim() };
+                    window.addAdminPrototypeEvent('stripe_link', serviceId, `Lien Stripe personnalisé ${value.trim() ? 'enregistré' : 'supprimé'}`);
+                    window.saveAdminPrototype();
+                    window.showToast("Prototype : lien Stripe personnalisé enregistré (simulation).");
+                    renderApp();
+                    return;
+                }
                 
                 if (stripeClientId) {
                     const verifiedClient = window.appState.allProfiles.find(client =>
@@ -2122,19 +2360,37 @@ service cloud.firestore {
 
         function getMainDashboardHTML() {
             const { user, profile, transactions, allTransactions, activeCatalogTab, virtualDate, manualTimeMode, isAdmin, adminSelectedClient, adminSearchQuery, stripeLinks, pimpCardUrl, globalAnnouncement, adminFinanceYearFilter, adminFinanceMonthFilter } = window.appState;
+            if (isAdmin) window.normalizeAdminPrototypeServices?.();
             
-            const servicesState = (profile && profile.services) ? profile.services : {
+            // Sur le compte Admin, les cartes du catalogue utilisent directement
+            // l'état du client prototype. Les commandes visibles sur chaque service
+            // pilotent donc la même simulation que la Console Administrateur.
+            const servicesState = isAdmin
+                ? (window.appState.prototypeClient?.services || {})
+                : ((profile && profile.services) ? profile.services : {
                 'stockage-cloud': { status: 'inactive', subEnd: null },
                 'gestion-crm': { status: 'inactive', subEnd: null },
                 'cdn-global': { status: 'inactive', subEnd: null },
                 'security-pack': { status: 'inactive', subEnd: null },
                 'custom-app': { status: 'inactive', subEnd: null },
                 'ux-design': { status: 'inactive', subEnd: null }
-            };
+            });
             const firebaseClientProfiles = window.appState.allProfiles.filter(client =>
                 client.email !== ADMIN_EMAIL && client.authVerified === true);
+            const prototypeProfile = {
+                ...window.getAdminPrototypeClient?.(),
+                id: PROTOTYPE_CLIENT_ID,
+                email: 'prototype@sesame.local',
+                authVerified: true,
+                simulation: true
+            };
             const unverifiedClientProfiles = window.appState.allProfiles.filter(client =>
                 client.email && client.email !== ADMIN_EMAIL && client.authVerified !== true);
+            const prototypePendingQuotes = (prototypeProfile.quotes || []).filter(quote => quote.status === 'pending');
+            const adminPendingQuotes = [
+                ...window.appState.allQuotes.filter(quote => quote.status === 'pending'),
+                ...prototypePendingQuotes
+            ];
 
             // ----------------------------------------------------
             // CALCUL DES KPI ET STATISTIQUES FINANCIÈRES
@@ -2150,8 +2406,9 @@ service cloud.firestore {
                 const isActive = sState.status === 'active' && sState.subEnd > virtualDate;
                 
                 // Résoudre le tarif (personnalisé si présent)
-                const customPrice = (profile?.customPrices?.[service.id] !== undefined)
-                    ? parseFloat(profile.customPrices[service.id])
+                const pricingProfile = isAdmin ? prototypeProfile : profile;
+                const customPrice = (pricingProfile?.customPrices?.[service.id] !== undefined)
+                    ? parseFloat(pricingProfile.customPrices[service.id])
                     : null;
                 const currentPrice = customPrice !== null ? customPrice : service.price;
 
@@ -2265,7 +2522,9 @@ service cloud.firestore {
             const hasCredentials = !isAdmin && profile && profile.credentials && (profile.credentials.identifier || profile.credentials.password || profile.credentials.extra);
             
             // Résoudre les identifiants pour l'affichage de l'Admin en mode édition réactive
-            const activeCredClient = window.appState.allProfiles.find(p => p.id === window.appState.selectedCredClientId);
+            const activeCredClient = window.appState.selectedCredClientId === PROTOTYPE_CLIENT_ID
+                ? prototypeProfile
+                : window.appState.allProfiles.find(p => p.id === window.appState.selectedCredClientId);
             const activeCredId = activeCredClient?.credentials?.identifier || "";
             const activeCredPass = activeCredClient?.credentials?.password || "";
             const activeCredExtra = activeCredClient?.credentials?.extra || "";
@@ -2351,6 +2610,7 @@ service cloud.firestore {
             const mobileAllShortcuts = isAdmin ? [
                 { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
                 { id: 'admin-console', icon: 'shield-check', label: 'Console' },
+                { id: 'admin-prototype', icon: 'flask-conical', label: 'Prototype' },
                 { id: 'admin-quotes', icon: 'file-text', label: 'Devis clients' },
                 { id: 'admin-support', icon: 'headphones', label: 'Support client' },
                 { id: 'admin-services', icon: 'badge-check', label: 'Forcer services' },
@@ -2647,8 +2907,14 @@ service cloud.firestore {
                                             <h4 class="text-xs sm:text-sm font-bold text-white uppercase font-mono truncate max-w-[150px] sm:max-w-none">${service.name}</h4>
                                             ${stateBadge}
                                         </div>
+                                        ${isAdmin ? `<div class="flex items-center gap-1.5 text-[9px] uppercase font-bold font-mono text-purple-300"><i data-lucide="flask-conical" class="w-3 h-3"></i> Mode client prototype · règles réelles · paiement simulé</div>` : ''}
                                         <p class="text-xs text-slate-400 flex-1 font-light leading-relaxed font-sans">${service.description}</p>
                                         
+                                        ${service.id === 'ux-design' ? `
+                                            <button type="button" onclick="window.openWebsiteModels()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-fuchsia-600/90 to-purple-600/90 hover:from-fuchsia-500 hover:to-purple-500 text-white text-[10px] sm:text-[11px] uppercase font-bold transition-all shadow-[0_0_14px_rgba(192,38,211,.2)] flex items-center justify-center gap-2 min-h-[40px]">
+                                                <i data-lucide="layout-template" class="w-4 h-4"></i> Voir nos modèles
+                                            </button>
+                                        ` : ''}
                                         <div class="border-t border-slate-900 pt-3 flex items-center justify-between gap-2">
                                             <span class="text-xs sm:text-sm font-bold text-cyan-400 font-mono">
                                                 ${priceDisplay}
@@ -2870,6 +3136,45 @@ service cloud.firestore {
                         </div>
                     </div>
 
+                    <!-- COMPTE CLIENT PROTOTYPE DE L'ADMINISTRATEUR -->
+                    <div id="admin-prototype" class="mobile-anchor bg-gradient-to-br from-cyan-950/30 via-slate-950/80 to-purple-950/30 border border-cyan-500/25 rounded-xl p-4 sm:p-5 w-full">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 border-b border-slate-800/80 pb-4">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <div class="w-10 h-10 rounded-xl bg-cyan-950 border border-cyan-500/30 text-cyan-400 flex items-center justify-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
+                                <div class="min-w-0">
+                                    <h4 class="text-sm font-bold text-white uppercase font-mono">Compte client prototype</h4>
+                                    <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Profil client complet de simulation : services, identifiants, devis, tarifs, liens Stripe, PIMP CARD et information globale. Sélectionnez « Client Prototype » dans les outils de la Console ; aucune donnée d'un vrai client ne sera modifiée.</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="window.resetAdminPrototype()" class="px-3 py-2 rounded-lg bg-slate-950 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/40 text-slate-400 hover:text-red-300 text-[9px] uppercase font-bold transition-all shrink-0">Réinitialiser la simulation</button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                            ${SERVICES_DATA.map(service => {
+                                const prototypeState = window.appState.prototypeClient?.services?.[service.id] || { status: 'inactive', subEnd: null };
+                                const prototypeActive = prototypeState.status === 'active' && prototypeState.subEnd > virtualDate;
+                                const prototypeExpired = prototypeState.status === 'active' && prototypeState.subEnd && prototypeState.subEnd <= virtualDate;
+                                const prototypeDays = prototypeActive ? Math.max(1, Math.ceil((prototypeState.subEnd - virtualDate) / 86400000)) : 0;
+                                return `<div class="bg-slate-950/75 border ${prototypeActive ? 'border-emerald-500/30' : prototypeExpired ? 'border-amber-500/30' : 'border-slate-800'} rounded-xl p-3 flex flex-col gap-3">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="min-w-0"><strong class="block text-[11px] text-white truncate">${service.name}</strong><span class="text-[9px] ${prototypeActive ? 'text-emerald-400' : prototypeExpired ? 'text-amber-400' : 'text-slate-500'}">${prototypeActive ? `Actif · ${prototypeDays} jour${prototypeDays > 1 ? 's' : ''}` : prototypeExpired ? 'Expiré' : 'Inactif'}</span></div>
+                                        <span class="w-2.5 h-2.5 rounded-full shrink-0 mt-1 ${prototypeActive ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,.7)]' : prototypeExpired ? 'bg-amber-500' : 'bg-slate-600'}"></span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5 mt-auto">
+                                        <input id="prototype-days-${service.id}" type="number" min="1" max="3650" value="${prototypeActive ? prototypeDays : (service.durationDays || 30)}" aria-label="Durée prototype en jours" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-white text-center focus:outline-none focus:border-cyan-500" />
+                                        <button type="button" onclick="window.setAdminPrototypeService('${service.id}')" class="flex-1 px-2 py-1.5 rounded-lg text-[9px] uppercase font-bold bg-cyan-950/50 text-cyan-300 border border-cyan-500/30">Régler les jours</button>
+                                        <button type="button" onclick="document.getElementById('services-section')?.scrollIntoView({behavior:'smooth',block:'start'})" class="px-2 py-1.5 rounded-lg bg-purple-950/40 text-purple-300 border border-purple-500/25 text-[9px] uppercase font-bold">Tester</button>
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-4 pt-4 border-t border-slate-800/80 text-[9px] font-mono">
+                            <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Profil</span><strong class="text-cyan-300">prototype@sesame.local</strong></div>
+                            <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Info globale héritée</span><strong class="${globalAnnouncement?.text ? 'text-emerald-300' : 'text-slate-500'}">${globalAnnouncement?.text ? 'Visible dans la simulation' : 'Aucune diffusion'}</strong></div>
+                            <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">PIMP CARD hérité</span><strong class="${pimpCardUrl ? 'text-fuchsia-300' : 'text-slate-500'}">${pimpCardUrl ? 'Lien disponible' : 'Lien non configuré'}</strong></div>
+                            <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Configuration</span><strong class="text-purple-300">Globale + personnalisée</strong></div>
+                        </div>
+                    </div>
+
                     <!-- Grille principale de l'Admin : alignée sur 6 colonnes sur grand écran -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 w-full">
                         
@@ -2877,13 +3182,14 @@ service cloud.firestore {
                         <div id="admin-quotes" class="mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Demandes de Devis Client</h4>
                             <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                                ${window.appState.allQuotes.filter(q => q.status === 'pending').length === 0 
+                                ${adminPendingQuotes.length === 0 
                                     ? `<p class="text-slate-500 text-xs italic font-mono text-center py-6">Aucun devis en attente.</p>`
-                                    : window.appState.allQuotes.filter(q => q.status === 'pending').map(q => `
-                                        <div class="bg-slate-900 border border-slate-800 p-3 rounded-lg flex flex-col gap-3">
+                                    : adminPendingQuotes.map(q => `
+                                        <div class="bg-slate-900 border ${q.simulation ? 'border-cyan-500/35' : 'border-slate-800'} p-3 rounded-lg flex flex-col gap-3">
                                             <div class="overflow-hidden w-full">
                                                 <p class="text-xs font-bold text-slate-300 font-sans truncate">${q.serviceName}</p>
                                                 <p class="text-[10px] text-slate-500 font-mono mt-1 truncate">${q.userEmail}</p>
+                                                ${q.simulation ? '<span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[8px] uppercase font-bold">Simulation prototype</span>' : ''}
                                                 
                                                 <!-- Affichage des besoins rédigés par le client dans l'Admin -->
                                                 ${q.requirements ? `
@@ -2995,6 +3301,7 @@ service cloud.firestore {
                                         <select id="cred-client-select" onchange="window.adminChangeCredClient(this.value)"
                                             class="w-full bg-slate-950 border border-slate-850 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 min-h-[36px]">
                                             <option value="">-- Choisir un client --</option>
+                                            <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedCredClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
                                             ${window.appState.allProfiles.filter(p => p.email !== ADMIN_EMAIL).map(p => `
                                                 <option value="${p.id}" ${window.appState.selectedCredClientId === p.id ? 'selected' : ''}>
                                                     ${window.getClientName(p.email)} (${p.email})
@@ -3037,6 +3344,7 @@ service cloud.firestore {
                                     <select id="service-client-select" onchange="window.adminChangeServiceClient(this.value)"
                                         class="w-full bg-slate-950 border border-slate-850 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 min-h-[36px]">
                                         <option value="">-- Choisir un client --</option>
+                                        <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedServiceClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
                                         ${firebaseClientProfiles.map(p => `
                                             <option value="${p.id}" ${window.appState.selectedServiceClientId === p.id ? 'selected' : ''}>
                                                 ${window.getClientName(p.email)} (${p.email})
@@ -3047,7 +3355,9 @@ service cloud.firestore {
 
                                 <div class="space-y-2 flex-1 overflow-y-auto max-h-[160px] pr-1 no-scrollbar">
                                     ${(() => {
-                                        const sClient = firebaseClientProfiles.find(p => p.id === window.appState.selectedServiceClientId);
+                                        const sClient = window.appState.selectedServiceClientId === PROTOTYPE_CLIENT_ID
+                                            ? prototypeProfile
+                                            : firebaseClientProfiles.find(p => p.id === window.appState.selectedServiceClientId);
                                         if (!sClient) return `<p class="text-slate-600 text-center italic text-[9px] mt-6">Choisissez un client pour gérer ses services.</p>`;
                                         
                                         const clientServices = sClient.services || {};
@@ -3187,6 +3497,7 @@ service cloud.firestore {
                                     <select onchange="window.adminChangeStripeClient(this.value)"
                                         class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-purple-500 flex-1 sm:flex-none min-h-[28px]">
                                         <option value="">🌍 Global (Par Défaut)</option>
+                                        <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedStripeClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
                                         ${firebaseClientProfiles.map(p => `
                                             <option value="${p.id}" ${window.appState.selectedStripeClientId === p.id ? 'selected' : ''}>
                                                 👤 ${window.getClientName(p.email)}
@@ -3200,7 +3511,9 @@ service cloud.firestore {
                                 ${(() => {
                                     // Résoudre la source des liens à afficher dans les champs d'édition
                                     const selectedStripeClientId = window.appState.selectedStripeClientId;
-                                    const stripeClient = firebaseClientProfiles.find(p => p.id === selectedStripeClientId);
+                                    const stripeClient = selectedStripeClientId === PROTOTYPE_CLIENT_ID
+                                        ? prototypeProfile
+                                        : firebaseClientProfiles.find(p => p.id === selectedStripeClientId);
                                     const stripeClientId = stripeClient ? selectedStripeClientId : '';
                                     const sourceLinks = stripeClientId ? (stripeClient?.stripeLinks || {}) : stripeLinks;
 
@@ -3247,6 +3560,7 @@ service cloud.firestore {
                                 <select onchange="window.adminChangePriceClient(this.value)"
                                     class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-purple-500 min-h-[28px] flex-1 sm:flex-none">
                                     <option value="">-- Choisir un client --</option>
+                                    <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedPriceClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
                                     ${window.appState.allProfiles.filter(p => p.email !== ADMIN_EMAIL).map(p => `
                                         <option value="${p.id}" ${window.appState.selectedPriceClientId === p.id ? 'selected' : ''}>
                                             👤 ${window.getClientName(p.email)} (${p.email})
@@ -3258,7 +3572,9 @@ service cloud.firestore {
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto no-scrollbar pr-1 flex-1">
                                 ${(() => {
                                     const pClientId = window.appState.selectedPriceClientId;
-                                    const pClient = window.appState.allProfiles.find(p => p.id === pClientId);
+                                    const pClient = pClientId === PROTOTYPE_CLIENT_ID
+                                        ? prototypeProfile
+                                        : window.appState.allProfiles.find(p => p.id === pClientId);
                                     if (!pClient) return `<p class="text-slate-600 text-center italic text-[9px] mt-6 w-full col-span-2">Sélectionnez un client pour personnaliser ses tarifs.</p>`;
 
                                     const customPrices = pClient.customPrices || {};
@@ -3818,6 +4134,182 @@ service cloud.firestore {
             renderApp();
         };
 
+        window.getAdminPrototypeClient = () => {
+            if (!window.appState.prototypeClient || !window.appState.prototypeClient.services) {
+                window.appState.prototypeClient = { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [] };
+            }
+            window.appState.prototypeClient.id = PROTOTYPE_CLIENT_ID;
+            window.appState.prototypeClient.email = 'prototype@sesame.local';
+            window.appState.prototypeClient.credentials = window.appState.prototypeClient.credentials || {};
+            window.appState.prototypeClient.customPrices = window.appState.prototypeClient.customPrices || {};
+            window.appState.prototypeClient.stripeLinks = window.appState.prototypeClient.stripeLinks || {};
+            window.appState.prototypeClient.quotes = window.appState.prototypeClient.quotes || [];
+            window.appState.prototypeClient.events = window.appState.prototypeClient.events || [];
+            return window.appState.prototypeClient;
+        };
+
+        window.addAdminPrototypeEvent = (type, serviceId, detail) => {
+            const prototype = window.getAdminPrototypeClient();
+            prototype.events.unshift({ type, serviceId, detail, timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now() });
+            prototype.events = prototype.events.slice(0, 100);
+        };
+
+        // Applique au prototype la même expiration que pour un compte client.
+        window.normalizeAdminPrototypeServices = () => {
+            if (!window.appState.isAdmin) return;
+            const prototype = window.getAdminPrototypeClient();
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            let changed = false;
+            for (const [serviceId, state] of Object.entries(prototype.services)) {
+                if (state?.subEnd && state.subEnd <= now && state.status !== 'expired') {
+                    prototype.services[serviceId] = { ...state, status: 'expired', expiredAt: state.subEnd, expiryNotifiedAt: now, simulation: true };
+                    window.addAdminPrototypeEvent('expiration', serviceId, `Expiration de ${SERVICES_DATA.find(item => item.id === serviceId)?.name || serviceId}`);
+                    changed = true;
+                }
+            }
+            if (changed) window.saveAdminPrototype();
+        };
+
+        // Simule uniquement l'acceptation Stripe ; la durée et les règles appliquées
+        // après cette frontière sont celles du vrai service.
+        window.simulateAdminPrototypePayment = (serviceId) => {
+            if (!window.appState.isAdmin) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (!service) return;
+            const current = window.getAdminPrototypeClient().services[serviceId] || {};
+            const price = Number.parseFloat(service.price || 0).toFixed(2);
+            window.showCyberConfirm(`SIMULATION CLIENT — Confirmer un paiement Stripe accepté de ${price} € pour ${service.name} ?`, () => {
+                const prototype = window.getAdminPrototypeClient();
+                const now = window.getVirtualTimestamp();
+                const base = current.status === 'active' && current.subEnd > now ? current.subEnd : now;
+                prototype.services[serviceId] = {
+                    ...current,
+                    status: 'active',
+                    activatedAt: current.activatedAt || now,
+                    renewedAt: current.subEnd ? now : null,
+                    subEnd: base + ((service.durationDays || 30) * 86400000),
+                    cancellationRequestedAt: null,
+                    renewalRequestedAt: null,
+                    prototypePaymentStatus: 'paid',
+                    prototypePaymentAmount: service.price,
+                    simulation: true
+                };
+                window.addAdminPrototypeEvent('payment', serviceId, `Paiement simulé accepté : ${price} €`);
+                window.saveAdminPrototype();
+                window.showToast(`Prototype : paiement accepté, ${service.name} est activé pour ${service.durationDays || 30} jours.`);
+                renderApp();
+            });
+        };
+
+        window.createAdminPrototypeQuoteRequest = (serviceId) => {
+            if (!window.appState.isAdmin) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (!service) return;
+            const prototype = window.getAdminPrototypeClient();
+            const now = window.getVirtualTimestamp();
+            prototype.services[serviceId] = {
+                ...(prototype.services[serviceId] || {}),
+                status: 'inactive',
+                quoteRequestedAt: now,
+                quoteStatus: 'pending',
+                simulation: true
+            };
+            prototype.quotes = prototype.quotes || [];
+            const existingPending = prototype.quotes.find(quote => quote.serviceId === serviceId && quote.status === 'pending');
+            if (!existingPending) {
+                prototype.quotes.unshift({
+                    id: `prototype-${Date.now()}-${serviceId}`,
+                    userId: PROTOTYPE_CLIENT_ID,
+                    userEmail: 'prototype@sesame.local',
+                    serviceId,
+                    serviceName: service.name,
+                    status: 'pending',
+                    requirements: 'Demande de devis générée depuis le profil client prototype.',
+                    date: now,
+                    simulation: true
+                });
+            }
+            window.addAdminPrototypeEvent('quote', serviceId, `Demande de devis envoyée pour ${service.name}`);
+            window.saveAdminPrototype();
+            window.showToast(`Prototype : demande de devis envoyée pour ${service.name}.`);
+            renderApp();
+        };
+
+        // Enregistre le compte prototype sur l'appareil de l'Admin uniquement.
+        window.saveAdminPrototype = () => {
+            try {
+                localStorage.setItem('sesameAdminPrototypeClient', JSON.stringify(window.appState.prototypeClient));
+            } catch (error) {
+                console.warn('Impossible de conserver la simulation prototype.', error);
+            }
+        };
+
+        // Active, renouvelle ou modifie la durée d'un service dans la simulation.
+        window.setAdminPrototypeService = (serviceId) => {
+            if (!window.appState.isAdmin) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            const input = document.getElementById(`prototype-days-${serviceId}`);
+            // Depuis la Console, l'Admin peut saisir une durée. Depuis la carte du
+            // service disponible, la durée normale du service est appliquée.
+            const days = input
+                ? Number.parseInt(input.value, 10)
+                : Number.parseInt(service?.durationDays || 30, 10);
+            if (!service || !Number.isInteger(days) || days < 1 || days > 3650) {
+                window.showToast("Indiquez une durée de 1 à 3650 jours pour la simulation.", "error");
+                return;
+            }
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            const prototype = window.getAdminPrototypeClient();
+            prototype.services = { ...(prototype.services || {}) };
+            const current = prototype.services[serviceId] || {};
+            if (!current.subEnd && current.status !== 'active') {
+                window.showToast("Testez d'abord S'abonner ou Demander devis depuis la carte du service.", "error");
+                document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+            prototype.services[serviceId] = {
+                ...current,
+                status: current.status,
+                activatedAt: current.activatedAt || now,
+                subEnd: now + (days * 86400000),
+                simulation: true
+            };
+            window.appState.prototypeClient = prototype;
+            window.addAdminPrototypeEvent('duration_adjustment', serviceId, `Durée réglée à ${days} jour${days > 1 ? 's' : ''}`);
+            window.saveAdminPrototype();
+            window.showToast(`Prototype : durée de ${service.name} réglée à ${days} jour${days > 1 ? 's' : ''}.`);
+            renderApp();
+        };
+
+        // Coupe un service prototype sans modifier les données Firebase réelles.
+        window.stopAdminPrototypeService = (serviceId) => {
+            if (!window.appState.isAdmin) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            const prototype = window.appState.prototypeClient;
+            if (!service || !prototype) return;
+            prototype.services = { ...(prototype.services || {}) };
+            prototype.services[serviceId] = {
+                ...(prototype.services[serviceId] || {}),
+                status: 'inactive',
+                subEnd: null,
+                stoppedAt: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now(),
+                simulation: true
+            };
+            window.saveAdminPrototype();
+            window.showToast(`Simulation : ${service.name} désactivé.`);
+            renderApp();
+        };
+
+        window.resetAdminPrototype = () => {
+            if (!window.appState.isAdmin) return;
+            window.showCyberConfirm("Remettre tous les services du compte prototype à zéro ? Aucun vrai compte client ne sera modifié.", () => {
+                window.appState.prototypeClient = { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [] };
+                window.saveAdminPrototype();
+                window.showToast("Le compte client prototype a été réinitialisé.");
+                renderApp();
+            });
+        };
+
         window.deleteNews = (newsId) => {
             if (!window.appState.isAdmin) return;
             window.showCyberConfirm("Supprimer définitivement cette actualité ?", async () => {
@@ -3862,6 +4354,20 @@ service cloud.firestore {
 
         // Forcer l'activation ou la désactivation d'un service d'un client (sans frais)
         window.adminToggleClientService = async (clientId, serviceId, isActive) => {
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                const prototype = window.getAdminPrototypeClient();
+                const serviceDef = SERVICES_DATA.find(s => s.id === serviceId);
+                if (!serviceDef) return;
+                const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                prototype.services[serviceId] = isActive
+                    ? { ...(prototype.services[serviceId] || {}), status: 'inactive', subEnd: null, cancellationRequestedAt: null, simulation: true }
+                    : { ...(prototype.services[serviceId] || {}), status: 'active', subEnd: now + ((serviceDef.durationDays || 30) * 86400000), activatedAt: now, renewalRequestedAt: null, cancellationRequestedAt: null, simulation: true, forcedWithoutCharge: true };
+                window.addAdminPrototypeEvent('forced_service', serviceId, `${serviceDef.name} ${isActive ? 'désactivé' : 'activé sans frais'}`);
+                window.saveAdminPrototype();
+                window.showToast(`Prototype : service "${serviceDef.name}" ${isActive ? 'désactivé' : 'activé sans frais'}.`);
+                renderApp();
+                return;
+            }
             try {
                 const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
                 const snap = await getDoc(clientRef);
@@ -4105,6 +4611,22 @@ service cloud.firestore {
                 window.showToast("Indiquez un nombre de jours entre 1 et 3650.", "error");
                 return;
             }
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                const prototype = window.getAdminPrototypeClient();
+                const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                prototype.services[serviceId] = {
+                    ...(prototype.services[serviceId] || {}),
+                    status: 'active',
+                    subEnd: now + (days * 86400000),
+                    correctedByAdminAt: now,
+                    simulation: true
+                };
+                window.addAdminPrototypeEvent('duration_adjustment', serviceId, `Durée forcée à ${days} jour${days > 1 ? 's' : ''}`);
+                window.saveAdminPrototype();
+                window.showToast(`Prototype : durée corrigée à ${days} jour${days > 1 ? 's' : ''}.`);
+                renderApp();
+                return;
+            }
             try {
                 const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
                 const snap = await getDoc(clientRef);
@@ -4197,6 +4719,16 @@ service cloud.firestore {
                 window.showToast("Veuillez sélectionner un compte client.", "error");
                 return;
             }
+
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                const prototype = window.getAdminPrototypeClient();
+                prototype.credentials = { identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
+                window.addAdminPrototypeEvent('credentials', '', 'Identifiants de simulation mis à jour');
+                window.saveAdminPrototype();
+                window.showToast("Prototype : identifiants enregistrés dans la simulation.");
+                renderApp();
+                return;
+            }
             
             try {
                 const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
@@ -4220,7 +4752,6 @@ service cloud.firestore {
             if (!clientId) return;
 
             try {
-                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
                 const updatedPrices = {};
 
                 // Parcourir les services à prix fixe et récolter les valeurs insérées
@@ -4234,6 +4765,17 @@ service cloud.firestore {
                     }
                 });
 
+                if (clientId === PROTOTYPE_CLIENT_ID) {
+                    const prototype = window.getAdminPrototypeClient();
+                    prototype.customPrices = updatedPrices;
+                    window.addAdminPrototypeEvent('custom_prices', '', 'Tarifs personnalisés de simulation mis à jour');
+                    window.saveAdminPrototype();
+                    window.showToast("Prototype : tarifs personnalisés enregistrés.");
+                    renderApp();
+                    return;
+                }
+
+                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
                 await updateDoc(clientRef, { customPrices: updatedPrices });
                 window.showToast("Tarifs client personnalisés enregistrés avec succès !");
                 renderApp();
@@ -4315,6 +4857,22 @@ service cloud.firestore {
                 return;
             }
 
+            if (quoteId.startsWith('prototype-')) {
+                const prototype = window.getAdminPrototypeClient();
+                const quote = (prototype.quotes || []).find(item => item.id === quoteId);
+                if (!quote) return;
+                quote.status = 'proposed';
+                quote.price = price;
+                quote.proposedAt = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                const serviceState = prototype.services[quote.serviceId] || {};
+                prototype.services[quote.serviceId] = { ...serviceState, quoteStatus: 'proposed', quotePrice: price, simulation: true };
+                window.addAdminPrototypeEvent('quote_proposal', quote.serviceId, `Devis prototype proposé à ${price.toFixed(2)} €`);
+                window.saveAdminPrototype();
+                window.showToast("Prototype : proposition de devis transmise.");
+                renderApp();
+                return;
+            }
+
             try {
                 const quoteRef = doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quoteId);
                 await updateDoc(quoteRef, {
@@ -4330,6 +4888,19 @@ service cloud.firestore {
 
         // L'administrateur rejette une demande de devis
         window.adminResolveQuote = async (quoteId, nextStatus) => {
+            if (quoteId.startsWith('prototype-')) {
+                const prototype = window.getAdminPrototypeClient();
+                const quote = (prototype.quotes || []).find(item => item.id === quoteId);
+                if (!quote) return;
+                quote.status = nextStatus;
+                const serviceState = prototype.services[quote.serviceId] || {};
+                prototype.services[quote.serviceId] = { ...serviceState, quoteStatus: nextStatus, simulation: true };
+                window.addAdminPrototypeEvent('quote_status', quote.serviceId, `Devis prototype : ${nextStatus}`);
+                window.saveAdminPrototype();
+                window.showToast("Prototype : demande de devis traitée.");
+                renderApp();
+                return;
+            }
             try {
                 const quoteRef = doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quoteId);
                 await updateDoc(quoteRef, { status: nextStatus });
