@@ -474,6 +474,12 @@
             }
         ];
 
+        // Règles métier propres aux abonnements Sésame.
+        const TV_PASS_SERVICE_ID = 'cdn-global';
+        const CLIENT_CANCELLATION_REQUEST_IDS = new Set(['stockage-cloud', 'security-pack']);
+        const ADMIN_RENEWAL_CONFIRMATION_IDS = new Set(['stockage-cloud', 'gestion-crm', 'security-pack']);
+        const expiryProcessing = new Set();
+
         // ==========================================
         // 3. GESTION D'ÉTAT GLOBAL
         // ==========================================
@@ -930,13 +936,42 @@
                             
                             for (const sId in services) {
                                 if (services[sId].status === 'active' && services[sId].subEnd && services[sId].subEnd < window.appState.virtualDate) {
-                                    services[sId].status = 'expired';
+                                    services[sId] = {
+                                        ...services[sId],
+                                        status: 'expired',
+                                        expiredAt: services[sId].subEnd
+                                    };
                                     updated = true;
                                 }
                             }
 
                             if (updated && !window.appState.isAdmin) {
-                                updateDoc(profileRef, { services }).catch(handlePermissionError);
+                                updateDoc(profileRef, { services }).then(async () => {
+                                    for (const sId in services) {
+                                        const state = services[sId];
+                                        if (state.status !== 'expired' || state.expiryNotifiedAt || expiryProcessing.has(`${currentUser.uid}:${sId}`)) continue;
+                                        expiryProcessing.add(`${currentUser.uid}:${sId}`);
+                                        const service = SERVICES_DATA.find(item => item.id === sId);
+                                        try {
+                                            await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                                                userId: currentUser.uid,
+                                                userEmail: currentUser.email,
+                                                text: `[Expiration] Le service ${service?.name || sId} de ${window.getClientName(currentUser.email)} est arrivé à expiration.`,
+                                                sender: 'user',
+                                                readByAdmin: false,
+                                                timestamp: Date.now(),
+                                                notificationType: 'service_expired',
+                                                serviceId: sId
+                                            });
+                                            services[sId].expiryNotifiedAt = Date.now();
+                                            await updateDoc(profileRef, { services });
+                                        } catch (error) {
+                                            console.error('Notification d\'expiration impossible :', error);
+                                        } finally {
+                                            expiryProcessing.delete(`${currentUser.uid}:${sId}`);
+                                        }
+                                    }
+                                }).catch(handlePermissionError);
                             } else {
                                 window.appState.profile = data;
                                 renderApp();
@@ -1055,6 +1090,7 @@
                     window.appState.allProfiles = window.appState.isAdmin
                         ? snap.docs.map(d => ({ id: d.id, ...d.data() }))
                         : (snap.exists() ? [{ id: snap.id, ...snap.data() }] : []);
+                    if (window.appState.isAdmin) window.processExpiredServicesForAdmin(window.appState.allProfiles);
                     renderApp();
                 }, handlePermissionError);
 
@@ -1126,6 +1162,40 @@
                 handlePermissionError(err);
             }
         }
+
+        // Contrôle aussi les expirations lorsque seul l'Admin est connecté.
+        window.processExpiredServicesForAdmin = async (profiles) => {
+            if (!window.appState.isAdmin) return;
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            for (const profile of profiles.filter(item => item.email && item.email !== ADMIN_EMAIL)) {
+                const services = { ...(profile.services || {}) };
+                for (const [serviceId, state] of Object.entries(services)) {
+                    if (!state?.subEnd || state.subEnd > now || state.expiryNotifiedAt) continue;
+                    const key = `${profile.id}:${serviceId}`;
+                    if (expiryProcessing.has(key)) continue;
+                    expiryProcessing.add(key);
+                    const service = SERVICES_DATA.find(item => item.id === serviceId);
+                    try {
+                        services[serviceId] = { ...state, status: 'expired', expiredAt: state.subEnd, expiryNotifiedAt: Date.now() };
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', profile.id), { services });
+                        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                            userId: profile.id,
+                            userEmail: profile.email,
+                            text: `[Expiration] Le service ${service?.name || serviceId} de ${window.getClientName(profile.email)} est arrivé à expiration.`,
+                            sender: 'user',
+                            readByAdmin: false,
+                            timestamp: Date.now(),
+                            notificationType: 'service_expired',
+                            serviceId
+                        });
+                    } catch (error) {
+                        console.error('Traitement Admin de l\'expiration impossible :', error);
+                    } finally {
+                        expiryProcessing.delete(key);
+                    }
+                }
+            }
+        };
 
         function teardownAdminListeners() {
             if(unsubAdminProfiles) { unsubAdminProfiles(); unsubAdminProfiles = null; }
@@ -1262,6 +1332,11 @@
             const service = SERVICES_DATA.find(s => s.id === sId);
             if (!service) return;
 
+            if (CLIENT_CANCELLATION_REQUEST_IDS.has(sId)) {
+                window.requestServiceCancellation(sId);
+                return;
+            }
+
             window.showCyberConfirm(`Confirmez-vous la désactivation de : ${service.name} ?`, async () => {
                 const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid);
                 const userServices = { ...window.appState.profile.services };
@@ -1269,8 +1344,11 @@
 
                 try {
                     userServices[sId] = {
+                        ...currentServiceState,
                         status: 'inactive',
-                        subEnd: null,
+                        // Le PASS TV continue de décompter ses jours même lorsqu'il est désactivé.
+                        subEnd: sId === TV_PASS_SERVICE_ID ? currentServiceState.subEnd : null,
+                        deactivatedAt: window.getVirtualTimestamp(),
                         freeReactivationUsed: currentServiceState.freeReactivationUsed || false
                     };
 
@@ -1308,19 +1386,21 @@
 
         window.handleFreeReactivation = async (sId) => {
             const service = SERVICES_DATA.find(s => s.id === sId);
-            if (!service) return;
+            const currentState = window.appState.profile?.services?.[sId];
+            if (!service || sId !== TV_PASS_SERVICE_ID || !currentState?.subEnd || currentState.subEnd <= window.getVirtualTimestamp()) {
+                window.showToast("La période est expirée : vous devez vous réabonner.", "error");
+                return;
+            }
 
             const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid);
             const userServices = { ...window.appState.profile.services };
             
-            const reactivationDays = 3;
-            const subEnd = window.getVirtualTimestamp() + (reactivationDays * 24 * 60 * 60 * 1000);
-
             try {
                 userServices[sId] = {
+                    ...currentState,
                     status: 'active',
-                    subEnd: subEnd,
-                    freeReactivationUsed: true 
+                    subEnd: currentState.subEnd,
+                    reactivatedAt: window.getVirtualTimestamp()
                 };
 
                 const txRef = collection(db, 'artifacts', appId, 'public', 'data', 'transactions');
@@ -1330,16 +1410,62 @@
                     offerName: service.name,
                     price: 0,
                     date: window.getVirtualTimestamp(),
-                    detail: "Réactivation gratuite de secours temporaire (3 jours)"
+                    detail: "Réactivation sans paiement pendant la période déjà payée"
                 });
 
                 await updateDoc(profileRef, { services: userServices });
-                window.showToast(`Réactivation gratuite de secours effectuée sur [${service.name}].`);
+                window.showToast(`[${service.name}] réactivé sans paiement. La date d'expiration reste inchangée.`);
             } catch (err) {
                 console.error(err);
                 window.showToast("Erreur de réactivation", "error");
             }
         };
+
+        window.createServiceRequestMessage = async (sId, requestType) => {
+            const service = SERVICES_DATA.find(item => item.id === sId);
+            const user = window.appState.user;
+            if (!service || !user) return;
+            const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid);
+            const services = { ...(window.appState.profile?.services || {}) };
+            const state = { ...(services[sId] || {}) };
+            const timestamp = Date.now();
+            const isCancellation = requestType === 'cancellation';
+            const field = isCancellation ? 'cancellationRequestedAt' : 'renewalRequestedAt';
+            if (state[field]) {
+                window.showToast(isCancellation ? "Votre demande de désactivation est déjà envoyée." : "Votre demande de renouvellement est déjà envoyée.");
+                return;
+            }
+            services[sId] = { ...state, [field]: timestamp };
+            try {
+                await updateDoc(profileRef, { services });
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                    userId: user.uid,
+                    userEmail: user.email,
+                    text: isCancellation
+                        ? `[Demande de désactivation] ${window.getClientName(user.email)} souhaite désactiver le service ${service.name}. Merci de répondre dans cette conversation.`
+                        : `[Demande de renouvellement] ${window.getClientName(user.email)} souhaite renouveler le service ${service.name}. Activation uniquement après confirmation du paiement par l'Admin.`,
+                    sender: 'user',
+                    readByAdmin: false,
+                    timestamp,
+                    notificationType: isCancellation ? 'cancellation_request' : 'renewal_request',
+                    serviceId: sId
+                });
+                window.showToast(isCancellation ? "Demande envoyée à l'Admin. Vous pouvez poursuivre l'échange dans la messagerie." : "Demande de renouvellement envoyée à l'Admin.");
+                window.appState.activeClientMobileSection = 'support';
+                renderApp();
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible d'envoyer la demande.", "error");
+            }
+        };
+
+        window.requestServiceCancellation = (sId) => {
+            const service = SERVICES_DATA.find(item => item.id === sId);
+            if (!service) return;
+            window.showCyberConfirm(`Envoyer à l'Admin une demande de désactivation pour ${service.name} ? Le service restera actif jusqu'à sa réponse.`, () => window.createServiceRequestMessage(sId, 'cancellation'));
+        };
+
+        window.requestServiceRenewal = (sId) => window.createServiceRequestMessage(sId, 'renewal');
 
         window.handleClearTransactions = async () => {
             window.showCyberConfirm("Êtes-vous sûr de vouloir vider tout l'historique des transactions ?", async () => {
@@ -2475,6 +2601,9 @@ service cloud.firestore {
                                     } else if (sState.status === 'expired') {
                                         borderStyle = "border-red-500/20 hover:border-red-500/40 bg-[#1d0e14]/20";
                                         stateBadge = `<span class="px-2 py-0.5 rounded bg-red-950/30 border border-red-500/30 text-red-400 text-[9px] sm:text-[10px] uppercase font-bold font-mono">Expiré</span>`;
+                                    } else if (service.id === TV_PASS_SERVICE_ID && sState.status === 'inactive' && daysLeft > 0) {
+                                        borderStyle = "border-amber-500/25 hover:border-amber-500/40 bg-amber-950/10";
+                                        stateBadge = `<span class="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-300 text-[9px] sm:text-[10px] uppercase font-bold font-mono">Désactivé (${daysLeft}j)</span>`;
                                     }
 
                                     // Vérifier si un prix personnalisé a été attribué par l'Administrateur
@@ -2496,6 +2625,22 @@ service cloud.firestore {
                                         priceDisplay = `${service.price.toFixed(2)} €`;
                                     }
 
+                                    let actionButton = '';
+                                    if (isActive) {
+                                        actionButton = CLIENT_CANCELLATION_REQUEST_IDS.has(service.id)
+                                            ? (sState.cancellationRequestedAt
+                                                ? `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-emerald-950/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed opacity-90">Demande de désactivation envoyée</button>`
+                                                : `<button type="button" onclick="window.requestServiceCancellation('${service.id}')" class="w-full py-2 bg-amber-950/30 hover:bg-amber-900/40 text-amber-300 border border-amber-500/30 rounded-lg text-[10px] uppercase font-bold transition-all font-mono min-h-[36px]">Demander désactivation</button>`)
+                                            : `<button onclick="window.handleServiceDeactivation('${service.id}')" class="w-full py-2 bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-500/30 hover:border-red-500/60 rounded-lg text-[11px] uppercase font-bold transition-all font-mono min-h-[36px]">Désactiver</button>`;
+                                    } else if (service.id === TV_PASS_SERVICE_ID && sState.status === 'inactive' && daysLeft > 0) {
+                                        actionButton = `<button onclick="window.handleFreeReactivation('${service.id}')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] uppercase font-bold transition-all font-mono min-h-[36px]">Réactiver sans paiement</button>`;
+                                    } else if (sState.status === 'expired' && ADMIN_RENEWAL_CONFIRMATION_IDS.has(service.id)) {
+                                        actionButton = `<button onclick="window.requestServiceRenewal('${service.id}')" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-[10px] uppercase font-bold transition-all font-mono min-h-[36px]">${sState.renewalRequestedAt ? 'Renouvellement demandé' : 'Demander renouvellement'}</button>`;
+                                    } else {
+                                        const buttonLabel = service.type === 'devis' ? 'Demander devis' : (service.id === TV_PASS_SERVICE_ID && sState.status === 'expired' ? 'SE RÉABONNER' : `S'abonner`);
+                                        actionButton = `<button onclick="window.handleServiceAction('${service.id}')" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[11px] uppercase font-bold transition-all shadow-[0_0_10px_rgba(8,145,178,0.3)] font-mono min-h-[36px]">${buttonLabel}</button>`;
+                                    }
+
                                     return `
                                     <div class="border ${borderStyle} rounded-xl p-4 sm:p-5 flex flex-col gap-4 transition-all relative overflow-hidden group w-full">
                                         <div class="flex justify-between items-start gap-2">
@@ -2509,14 +2654,7 @@ service cloud.firestore {
                                                 ${priceDisplay}
                                             </span>
                                             <div class="w-7/12 shrink-0">
-                                                ${isActive 
-                                                    ? `<button onclick="window.handleServiceDeactivation('${service.id}')" class="w-full py-2 bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-500/30 hover:border-red-500/60 rounded-lg text-[11px] uppercase font-bold transition-all font-mono min-h-[36px]">Désactiver</button>`
-                                                    : (service.type === 'mensuel' && sState.status === 'expired' && !sState.freeReactivationUsed)
-                                                        ? `<button onclick="window.handleFreeReactivation('${service.id}')" class="w-full py-2 bg-emerald-600 hover:bg-[#10b981] text-white rounded-lg text-[11px] uppercase font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)] font-mono min-h-[36px]">Réactiver (Gratuit)</button>`
-                                                        : `<button onclick="window.handleServiceAction('${service.id}')" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[11px] uppercase font-bold transition-all shadow-[0_0_10px_rgba(8,145,178,0.3)] font-mono min-h-[36px]">
-                                                            ${service.type === 'devis' ? 'Demander devis' : `S'abonner`}
-                                                           </button>`
-                                                }
+                                                ${actionButton}
                                             </div>
                                         </div>
                                     </div>`;
@@ -2923,7 +3061,7 @@ service cloud.firestore {
                                                 <div class="truncate">
                                                     <span class="text-white block font-bold truncate text-[10px] sm:text-xs">${s.name}</span>
                                                     <span class="text-[9px] font-mono ${isActive ? 'text-emerald-400 font-bold' : 'text-slate-500'}">
-                                                        ${isActive ? 'Actif' : 'Inactif'}
+                                                        ${isActive ? 'Actif' : (sState.status === 'expired' ? 'Expiré' : 'Inactif')}${sState.renewalRequestedAt ? ' · Renouvellement demandé' : ''}${sState.cancellationRequestedAt ? ' · Désactivation demandée' : ''}
                                                     </span>
                                                 </div>
                                                 <div class="flex items-center gap-1 shrink-0">
@@ -2931,6 +3069,8 @@ service cloud.firestore {
                                                     class="w-14 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[9px] text-white text-center" />
                                                 <button onclick="window.adminSetServiceDays('${sClient.id}', '${s.id}')" title="Enregistrer les jours"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-500/30">Jours</button>` : ''}
+                                                ${sState.renewalRequestedAt && ADMIN_RENEWAL_CONFIRMATION_IDS.has(s.id) ? `<button onclick="window.adminConfirmServiceRenewal('${sClient.id}', '${s.id}')"
+                                                    class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/30">Paiement reçu</button>` : ''}
                                                 <button onclick="window.adminToggleClientService('${sClient.id}', '${s.id}', ${isActive})"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded transition-all shrink-0 ${
                                                         isActive 
@@ -3732,8 +3872,10 @@ service cloud.firestore {
                     if (isActive) {
                         // On force la désactivation
                         services[serviceId] = {
+                            ...(services[serviceId] || {}),
                             status: 'inactive',
                             subEnd: null,
+                            cancellationRequestedAt: null,
                             freeReactivationUsed: services[serviceId]?.freeReactivationUsed || false
                         };
                         window.showToast(`Service "${serviceDef.name}" désactivé.`);
@@ -3742,8 +3884,13 @@ service cloud.firestore {
                         const durationDays = serviceDef.durationDays > 0 ? serviceDef.durationDays : 30;
                         const virtualTimestamp = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
                         services[serviceId] = {
+                            ...(services[serviceId] || {}),
                             status: 'active',
                             subEnd: virtualTimestamp + (durationDays * 24 * 60 * 60 * 1000),
+                            activatedAt: virtualTimestamp,
+                            renewalRequestedAt: null,
+                            cancellationRequestedAt: null,
+                            expiryNotifiedAt: null,
                             freeReactivationUsed: services[serviceId]?.freeReactivationUsed || false
                         };
                         window.showToast(`Service "${serviceDef.name}" activé directement (sans frais).`);
@@ -3756,6 +3903,46 @@ service cloud.firestore {
                 console.error(e);
                 window.showToast("Erreur lors de la mise à jour du service client.", "error");
             }
+        };
+
+        window.adminConfirmServiceRenewal = (clientId, serviceId) => {
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            const client = window.appState.allProfiles.find(item => item.id === clientId);
+            if (!service || !client) return;
+            window.showCyberConfirm(`Confirmez-vous avoir réellement reçu le paiement de renouvellement de ${window.getClientName(client.email)} pour ${service.name} ?`, async () => {
+                try {
+                    const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                    const snap = await getDoc(clientRef);
+                    if (!snap.exists()) throw new Error('Profil introuvable');
+                    const services = { ...(snap.data().services || {}) };
+                    const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    services[serviceId] = {
+                        ...(services[serviceId] || {}),
+                        status: 'active',
+                        subEnd: now + ((service.durationDays || 30) * 86400000),
+                        activatedAt: now,
+                        renewedAt: now,
+                        renewalConfirmedByAdmin: true,
+                        renewalRequestedAt: null,
+                        expiryNotifiedAt: null
+                    };
+                    await updateDoc(clientRef, { services });
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                        userId: clientId,
+                        userEmail: client.email,
+                        text: `[Renouvellement confirmé] L'Admin confirme la réception du paiement. Le service ${service.name} est réactivé pour ${service.durationDays || 30} jours.`,
+                        sender: 'admin',
+                        readByClient: false,
+                        timestamp: now,
+                        notificationType: 'renewal_confirmed',
+                        serviceId
+                    });
+                    window.showToast(`Paiement confirmé : ${service.name} est réactivé.`);
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible de confirmer le renouvellement.", "error");
+                }
+            });
         };
 
         window.adminVerifyClientProfile = (clientId) => {
