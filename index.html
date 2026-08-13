@@ -523,6 +523,9 @@
         const TV_PASS_SERVICE_ID = 'cdn-global';
         const CLIENT_CANCELLATION_REQUEST_IDS = new Set(['stockage-cloud', 'security-pack']);
         const ADMIN_RENEWAL_CONFIRMATION_IDS = new Set(['stockage-cloud', 'gestion-crm', 'security-pack']);
+        // Ces abonnements sont prélevés hors du parcours client : à expiration,
+        // seul l'Admin peut confirmer le prélèvement et relancer le service.
+        const ADMIN_EXPIRY_REACTIVATION_IDS = new Set(['stockage-cloud', 'security-pack']);
         const expiryProcessing = new Set();
 
         // ==========================================
@@ -1012,7 +1015,9 @@
                                             await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
                                                 userId: currentUser.uid,
                                                 userEmail: currentUser.email,
-                                                text: `[Expiration] Le service ${service?.name || sId} de ${window.getClientName(currentUser.email)} est arrivé à expiration.`,
+                                                text: ADMIN_EXPIRY_REACTIVATION_IDS.has(sId)
+                                                    ? `[Expiration] Le service ${service?.name || sId} de ${window.getClientName(currentUser.email)} est arrivé à expiration. Après vérification du prélèvement, l'Admin peut le réactiver depuis cette conversation.`
+                                                    : `[Expiration] Le service ${service?.name || sId} de ${window.getClientName(currentUser.email)} est arrivé à expiration.`,
                                                 sender: 'user',
                                                 readByAdmin: false,
                                                 timestamp: Date.now(),
@@ -1237,7 +1242,9 @@
                         await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
                             userId: profile.id,
                             userEmail: profile.email,
-                            text: `[Expiration] Le service ${service?.name || serviceId} de ${window.getClientName(profile.email)} est arrivé à expiration.`,
+                            text: ADMIN_EXPIRY_REACTIVATION_IDS.has(serviceId)
+                                ? `[Expiration] Le service ${service?.name || serviceId} de ${window.getClientName(profile.email)} est arrivé à expiration. Après vérification du prélèvement, cliquez sur le bouton ci-dessous pour le réactiver.`
+                                : `[Expiration] Le service ${service?.name || serviceId} de ${window.getClientName(profile.email)} est arrivé à expiration.`,
                             sender: 'user',
                             readByAdmin: false,
                             timestamp: Date.now(),
@@ -2894,6 +2901,8 @@ service cloud.firestore {
                                             : `<button onclick="window.handleServiceDeactivation('${service.id}')" class="w-full py-2 bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-500/30 hover:border-red-500/60 rounded-lg text-[11px] uppercase font-bold transition-all font-mono min-h-[36px]">Désactiver</button>`;
                                     } else if (service.id === TV_PASS_SERVICE_ID && sState.status === 'inactive' && daysLeft > 0) {
                                         actionButton = `<button onclick="window.handleFreeReactivation('${service.id}')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] uppercase font-bold transition-all font-mono min-h-[36px]">Réactiver sans paiement</button>`;
+                                    } else if (sState.status === 'expired' && ADMIN_EXPIRY_REACTIVATION_IDS.has(service.id)) {
+                                        actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-slate-900 text-amber-300 border border-amber-500/30 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">En attente de réactivation par l'Admin</button>`;
                                     } else if (sState.status === 'expired' && ADMIN_RENEWAL_CONFIRMATION_IDS.has(service.id)) {
                                         actionButton = `<button onclick="window.requestServiceRenewal('${service.id}')" class="w-full py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg text-[10px] uppercase font-bold transition-all font-mono min-h-[36px]">${sState.renewalRequestedAt ? 'Renouvellement demandé' : 'Demander renouvellement'}</button>`;
                                     } else {
@@ -3273,6 +3282,15 @@ service cloud.firestore {
                                                     <span class="text-[8px] text-slate-500">${m.sender === 'admin' ? 'Vous — Administrateur Sésame' : `${window.getClientName(m.userEmail)} — Client`}</span>
                                                     <div class="p-2 rounded bg-slate-900 text-slate-200 mt-0.5 max-w-[90%] break-all">
                                                         ${m.text}
+                                                        ${(() => {
+                                                            if (m.notificationType !== 'service_expired' || !ADMIN_EXPIRY_REACTIVATION_IDS.has(m.serviceId)) return '';
+                                                            const targetProfile = window.appState.allProfiles.find(p => p.id === m.userId);
+                                                            const targetState = targetProfile?.services?.[m.serviceId] || {};
+                                                            const canReactivate = targetState.status === 'expired' && !m.reactivationConfirmedAt;
+                                                            return canReactivate
+                                                                ? `<button type="button" onclick="window.adminReactivateExpiredService('${m.userId}', '${m.serviceId}', '${m.id}')" class="mt-2 w-full px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] uppercase font-bold transition-all">Prélèvement reçu · Réactiver le service</button>`
+                                                                : `<span class="mt-2 block px-2 py-1.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[9px] uppercase font-bold">Service réactivé</span>`;
+                                                        })()}
                                                     </div>
                                                 </div>
                                             `).join('')}
@@ -4447,6 +4465,61 @@ service cloud.firestore {
                 } catch (error) {
                     console.error(error);
                     window.showToast("Impossible de confirmer le renouvellement.", "error");
+                }
+            });
+        };
+
+        // Action disponible directement dans le message automatique d'expiration.
+        window.adminReactivateExpiredService = (clientId, serviceId, messageId) => {
+            if (!window.appState.isAdmin || !ADMIN_EXPIRY_REACTIVATION_IDS.has(serviceId)) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            const client = window.appState.allProfiles.find(item => item.id === clientId);
+            if (!service || !client) return;
+            window.showCyberConfirm(`Confirmez-vous que le prélèvement de ${window.getClientName(client.email)} a bien été reçu pour ${service.name} ? Le service sera réactivé immédiatement.`, async () => {
+                try {
+                    const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                    const snap = await getDoc(clientRef);
+                    if (!snap.exists()) throw new Error('Profil introuvable');
+                    const services = { ...(snap.data().services || {}) };
+                    if (services[serviceId]?.status !== 'expired') {
+                        window.showToast("Ce service n'est plus expiré.", "error");
+                        return;
+                    }
+                    const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    services[serviceId] = {
+                        ...(services[serviceId] || {}),
+                        status: 'active',
+                        subEnd: now + ((service.durationDays || 30) * 86400000),
+                        activatedAt: now,
+                        renewedAt: now,
+                        reactivatedAfterDebitAt: now,
+                        renewalRequestedAt: null,
+                        expiryNotifiedAt: null
+                    };
+                    await updateDoc(clientRef, { services });
+                    if (messageId) {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId), {
+                            reactivationConfirmedAt: now,
+                            reactivationConfirmedBy: window.appState.user?.email || ADMIN_EMAIL,
+                            readByAdmin: true
+                        });
+                    }
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                        userId: clientId,
+                        userEmail: client.email,
+                        text: `[Réactivation confirmée] Le prélèvement a été reçu. Le service ${service.name} est réactivé pour ${service.durationDays || 30} jours.`,
+                        sender: 'admin',
+                        senderName: 'Administrateur Sésame',
+                        readByAdmin: true,
+                        readByClient: false,
+                        timestamp: now,
+                        notificationType: 'automatic_reactivation_confirmed',
+                        serviceId
+                    });
+                    window.showToast(`${service.name} réactivé après confirmation du prélèvement.`);
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible de réactiver le service.", "error");
                 }
             });
         };
