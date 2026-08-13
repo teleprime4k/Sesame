@@ -525,7 +525,7 @@
         const ADMIN_RENEWAL_CONFIRMATION_IDS = new Set(['stockage-cloud', 'gestion-crm', 'security-pack']);
         // Ces abonnements sont prélevés hors du parcours client : à expiration,
         // seul l'Admin peut confirmer le prélèvement et relancer le service.
-        const ADMIN_EXPIRY_REACTIVATION_IDS = new Set(['stockage-cloud', 'security-pack']);
+        const ADMIN_EXPIRY_REACTIVATION_IDS = new Set(['stockage-cloud', 'gestion-crm', 'security-pack']);
         const expiryProcessing = new Set();
 
         // ==========================================
@@ -3397,7 +3397,7 @@ service cloud.firestore {
                                                     class="w-14 bg-slate-950 border border-slate-700 rounded px-1 py-1 text-[9px] text-white text-center" />
                                                 <button onclick="window.adminSetServiceDays('${sClient.id}', '${s.id}')" title="Enregistrer les jours"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-500/30">Jours</button>` : ''}
-                                                ${sState.renewalRequestedAt && ADMIN_RENEWAL_CONFIRMATION_IDS.has(s.id) ? `<button onclick="window.adminConfirmServiceRenewal('${sClient.id}', '${s.id}')"
+                                                ${sState.status === 'expired' && ADMIN_EXPIRY_REACTIVATION_IDS.has(s.id) ? `<button onclick="window.adminReactivateExpiredService('${sClient.id}', '${s.id}')"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/30">Paiement reçu</button>` : ''}
                                                 <button onclick="window.adminToggleClientService('${sClient.id}', '${s.id}', ${isActive})"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded transition-all shrink-0 ${
@@ -4473,6 +4473,34 @@ service cloud.firestore {
         window.adminReactivateExpiredService = (clientId, serviceId, messageId) => {
             if (!window.appState.isAdmin || !ADMIN_EXPIRY_REACTIVATION_IDS.has(serviceId)) return;
             const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                if (!service) return;
+                const prototype = window.getAdminPrototypeClient();
+                const state = prototype.services?.[serviceId] || {};
+                if (state.status !== 'expired') {
+                    window.showToast("Ce service prototype n'est plus expiré.", "error");
+                    return;
+                }
+                window.showCyberConfirm(`Simulation : confirmer le paiement reçu et réactiver ${service.name} ?`, () => {
+                    const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    prototype.services[serviceId] = {
+                        ...state,
+                        status: 'active',
+                        subEnd: now + ((service.durationDays || 30) * 86400000),
+                        activatedAt: now,
+                        renewedAt: now,
+                        reactivatedAfterDebitAt: now,
+                        renewalRequestedAt: null,
+                        expiryNotifiedAt: null,
+                        simulation: true
+                    };
+                    window.addAdminPrototypeEvent('payment_received', serviceId, `Paiement reçu et réactivation de ${service.name}`);
+                    window.saveAdminPrototype();
+                    window.showToast(`Prototype : ${service.name} réactivé.`);
+                    renderApp();
+                });
+                return;
+            }
             const client = window.appState.allProfiles.find(item => item.id === clientId);
             if (!service || !client) return;
             window.showCyberConfirm(`Confirmez-vous que le prélèvement de ${window.getClientName(client.email)} a bien été reçu pour ${service.name} ? Le service sera réactivé immédiatement.`, async () => {
