@@ -287,10 +287,17 @@
                     Veuillez détailler vos besoins pour le service <span id="quote-modal-service-name" class="text-cyan-400 font-bold">...</span>. Vos précisions aideront l'administrateur à évaluer le coût du projet.
                 </p>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="sm:col-span-2"><label class="block text-[10px] text-slate-500 uppercase font-mono mb-1.5">Nom de votre projet</label><input id="quote-request-title" type="text" maxlength="80" placeholder="Ex. Boutique Teleprime" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-700" /></div>
+                    <div><label class="block text-[10px] text-slate-500 uppercase font-mono mb-1.5">Budget envisagé</label><select id="quote-request-budget" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-cyan-500"><option value="À définir">À définir</option><option value="Moins de 500 €">Moins de 500 €</option><option value="500 à 1 000 €">500 à 1 000 €</option><option value="1 000 à 2 500 €">1 000 à 2 500 €</option><option value="Plus de 2 500 €">Plus de 2 500 €</option></select></div>
+                    <div><label class="block text-[10px] text-slate-500 uppercase font-mono mb-1.5">Date souhaitée</label><input id="quote-request-deadline" type="date" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-cyan-500" /></div>
+                </div>
                 <div>
-                    <label class="block text-[10px] text-slate-500 uppercase font-mono mb-1.5">Description de votre demande :</label>
-                    <textarea id="quote-request-requirements" rows="5" placeholder="Écrivez ici vos attentes, fonctionnalités nécessaires, délais souhaités..."
-                        class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-700 resize-none leading-relaxed"></textarea>
+                    <label class="block text-[10px] text-cyan-400 uppercase font-mono mb-1.5 font-bold">Expliquez précisément votre souhait *</label>
+                    <textarea id="quote-request-requirements" rows="6" maxlength="1500" oninput="document.getElementById('quote-requirements-count').textContent=this.value.length"
+                        placeholder="Décrivez votre idée, le style recherché, les fonctionnalités, les couleurs, les exemples que vous aimez et toute information utile..."
+                        class="w-full bg-slate-950 border border-cyan-900/60 rounded-lg p-3 text-xs text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-700 resize-y leading-relaxed"></textarea>
+                    <div class="flex justify-between mt-1 text-[8px] font-mono"><span class="text-slate-500">Champ obligatoire · 10 caractères minimum</span><span class="text-slate-500"><span id="quote-requirements-count">0</span>/1500</span></div>
                 </div>
 
                 <div class="pt-4 border-t border-slate-800/80 flex flex-col gap-2">
@@ -305,6 +312,30 @@
         </div>
     </div>
 
+    <!-- GALERIE INTERACTIVE DES MODÈLES D'APPLICATIONS MOBILES -->
+    <div id="app-models-modal" class="fixed inset-0 z-[115] hidden bg-slate-950/95 backdrop-blur-md overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="app-models-title">
+        <div class="min-h-full p-3 sm:p-6 flex items-start justify-center">
+            <div class="w-full max-w-6xl bg-[#08111f] border border-violet-500/30 rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(139,92,246,.18)]">
+                <div class="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-slate-800 bg-[#0b1322] sticky top-0 z-20">
+                    <div class="min-w-0"><h2 id="app-models-title" class="text-sm sm:text-lg font-black text-white uppercase tracking-wide flex items-center gap-2"><i data-lucide="smartphone" class="w-5 h-5 text-violet-400"></i> Nos modèles d’applications</h2><p class="text-[9px] sm:text-xs text-slate-400 mt-1">Applications interactives · testez chaque parcours dans le téléphone</p></div>
+                    <button type="button" onclick="window.closeAppModels()" class="p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-300 hover:text-white hover:border-violet-500 min-w-[42px] min-h-[42px] flex items-center justify-center" aria-label="Fermer"><i data-lucide="x" class="w-5 h-5"></i></button>
+                </div>
+                <div class="p-4 sm:p-6 grid lg:grid-cols-[320px_1fr] gap-5">
+                    <div class="space-y-3">
+                        <button id="app-model-tab-delivery" type="button" onclick="window.selectAppModel('delivery')" class="app-model-tab w-full text-left p-4 rounded-xl border border-orange-400 bg-orange-500/10"><span class="flex items-center gap-3"><span class="text-2xl">🍔</span><span><strong class="block text-sm text-white">Livraison & Restaurant</strong><small class="text-slate-400">Menu, panier et commande</small></span></span></button>
+                        <button id="app-model-tab-booking" type="button" onclick="window.selectAppModel('booking')" class="app-model-tab w-full text-left p-4 rounded-xl border border-slate-700 bg-slate-900/60"><span class="flex items-center gap-3"><span class="text-2xl">📅</span><span><strong class="block text-sm text-white">Rendez-vous Pro</strong><small class="text-slate-400">Services, horaires et réservation</small></span></span></button>
+                        <button id="app-model-tab-fitness" type="button" onclick="window.selectAppModel('fitness')" class="app-model-tab w-full text-left p-4 rounded-xl border border-slate-700 bg-slate-900/60"><span class="flex items-center gap-3"><span class="text-2xl">🏋️</span><span><strong class="block text-sm text-white">Fitness & Coaching</strong><small class="text-slate-400">Programme, séance et progression</small></span></span></button>
+                        <div class="rounded-xl bg-slate-950 border border-slate-800 p-4 text-[10px] text-slate-400 leading-relaxed"><strong class="text-violet-300 block mb-1">Prototype mobile complet</strong>Navigation, écrans, boutons et validations fonctionnent réellement. Aucune commande ni réservation réelle n’est envoyée.</div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-900 to-slate-950 p-4 sm:p-7 flex items-center justify-center min-h-[660px]">
+                        <div class="w-full max-w-[360px] rounded-[38px] bg-slate-950 border-[7px] border-slate-800 shadow-2xl overflow-hidden relative"><div class="h-7 bg-slate-950 flex justify-center"><span class="w-24 h-5 bg-black rounded-b-2xl"></span></div><div id="app-model-preview" class="h-[610px] overflow-y-auto bg-white no-scrollbar"></div></div>
+                    </div>
+                </div>
+                <div class="px-4 sm:px-6 py-4 border-t border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3"><p class="text-[10px] text-slate-400">Le modèle final sera personnalisé avec votre logo, vos couleurs et vos fonctionnalités.</p><button type="button" onclick="window.requestAppModelQuote()" class="px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold uppercase min-h-[44px]">Demander cette application</button></div>
+            </div>
+        </div>
+    </div>
+
     <!-- GALERIE INTERACTIVE DES MODÈLES DE SITES INTERNET -->
     <div id="website-models-modal" class="fixed inset-0 z-[110] hidden bg-slate-950/95 backdrop-blur-md overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="website-models-title">
         <div class="min-h-full p-3 sm:p-6 flex items-start justify-center">
@@ -315,7 +346,7 @@
                             <i data-lucide="monitor-smartphone" class="w-5 h-5 text-cyan-400 shrink-0"></i>
                             Nos modèles de sites
                         </h2>
-                        <p class="text-[9px] sm:text-xs text-slate-400 mt-1">Démonstrations interactives · testez la navigation et le panier</p>
+                        <p class="text-[9px] sm:text-xs text-slate-400 mt-1">Boutiques complètes · catalogue, panier et commande de démonstration</p>
                     </div>
                     <button type="button" onclick="window.closeWebsiteModels()" class="p-2.5 rounded-xl bg-slate-950 border border-slate-700 text-slate-300 hover:text-white hover:border-cyan-500 min-w-[42px] min-h-[42px] flex items-center justify-center" aria-label="Fermer les modèles">
                         <i data-lucide="x" class="w-5 h-5"></i>
@@ -323,12 +354,15 @@
                 </div>
 
                 <div class="p-4 sm:p-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                         <button id="model-tab-fashion" type="button" onclick="window.selectWebsiteModel('fashion')" class="website-model-tab text-left p-4 rounded-xl border border-fuchsia-400 bg-fuchsia-500/10 transition-all">
                             <span class="flex items-center gap-3"><span class="p-2 rounded-lg bg-fuchsia-500/20 text-fuchsia-300"><i data-lucide="shirt" class="w-5 h-5"></i></span><span><strong class="block text-sm text-white">Boutique vêtements</strong><small class="text-slate-400">Mode, collections et panier</small></span></span>
                         </button>
                         <button id="model-tab-food" type="button" onclick="window.selectWebsiteModel('food')" class="website-model-tab text-left p-4 rounded-xl border border-slate-700 bg-slate-900/60 transition-all">
                             <span class="flex items-center gap-3"><span class="p-2 rounded-lg bg-emerald-500/20 text-emerald-300"><i data-lucide="shopping-basket" class="w-5 h-5"></i></span><span><strong class="block text-sm text-white">Boutique alimentation</strong><small class="text-slate-400">Produits frais et commande</small></span></span>
+                        </button>
+                        <button id="model-tab-electronics" type="button" onclick="window.selectWebsiteModel('electronics')" class="website-model-tab text-left p-4 rounded-xl border border-slate-700 bg-slate-900/60 transition-all">
+                            <span class="flex items-center gap-3"><span class="p-2 rounded-lg bg-blue-500/20 text-blue-300"><i data-lucide="cpu" class="w-5 h-5"></i></span><span><strong class="block text-sm text-white">Électroménager & Tech</strong><small class="text-slate-400">High-tech, maison et commande</small></span></span>
                         </button>
                     </div>
 
@@ -462,8 +496,22 @@
         const appId = "sesameouvretoi";
 
         const ADMIN_EMAIL = "dpstay@1.net";
+        // Un seul compte possède le rôle Administrateur Sésame.
+        const ADMIN_PROFILE_EMAILS = new Set(['dpstay@1.net']);
         const PROTOTYPE_CLIENT_ID = "__admin_client_prototype__";
         const ADMIN_SECRET_KEY = "2026"; 
+        const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+        const isAdminEmail = (email) => normalizeEmail(email) === normalizeEmail(ADMIN_EMAIL);
+        const isAdminProfileEmail = (email) => ADMIN_PROFILE_EMAILS.has(normalizeEmail(email));
+        const isAdminProfile = (profile) => {
+            if (!profile) return false;
+            const declaredRole = String(profile.role || profile.accountType || '').trim().toLowerCase();
+            const adminUid = isAdminEmail(auth.currentUser?.email) ? auth.currentUser?.uid : null;
+            return isAdminProfileEmail(profile.email)
+                || declaredRole === 'admin'
+                || profile.isAdmin === true
+                || Boolean(adminUid && profile.id === adminUid);
+        };
 
         // ==========================================
         // 2. CONFIGURATION DES SERVICES DISPONIBLES
@@ -600,6 +648,7 @@
 
             // Saisie temporaire de besoins de devis
             quoteRequestServiceId: null,
+            quoteRequestPrototype: false,
 
             // Personnalisation des liens Stripe par client
             selectedStripeClientId: "",
@@ -636,7 +685,7 @@
 
         function presenceDocumentId(user = auth.currentUser) {
             if (!user) return '';
-            return user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'admin' : user.uid;
+            return isAdminEmail(user.email) ? 'admin' : user.uid;
         }
 
         function isUserOnline(userId) {
@@ -920,6 +969,9 @@
                 
                 const adminChat = document.getElementById('admin-chat-box');
                 if(adminChat) adminChat.scrollTop = adminChat.scrollHeight;
+
+                const prototypeChat = document.getElementById('prototype-support-box');
+                if(prototypeChat) prototypeChat.scrollTop = prototypeChat.scrollHeight;
             }, 50);
         }
         window.renderApp = renderApp;
@@ -939,7 +991,7 @@
             window.appState.authLoading = false; 
 
             if (currentUser) {
-                window.appState.isAdmin = currentUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+                window.appState.isAdmin = isAdminEmail(currentUser.email);
 
                 try {
                     if (!window.appState.isAdmin) {
@@ -962,6 +1014,8 @@
                             contactEmail: currentUser.email,
                             phone: '',
                             authVerified: true,
+                            role: window.appState.isAdmin ? 'admin' : 'client',
+                            isAdmin: window.appState.isAdmin,
                             lastAuthenticatedAt: Date.now(),
                             status: window.appState.isAdmin ? 'active' : 'inactive',
                             usageTotal: 0,
@@ -977,12 +1031,28 @@
                         });
                     } else {
                         const existingProfile = snap.data();
-                        await updateDoc(profileRef, existingProfile.verificationRejected === true ? {
-                            lastAuthenticatedAt: Date.now()
-                        } : {
-                            authVerified: true,
-                            lastAuthenticatedAt: Date.now()
-                        });
+                        if (window.appState.isAdmin) {
+                            // Répare automatiquement un ancien profil Admin dont
+                            // l'adresse Firestore ne correspond plus à Firebase Auth.
+                            await updateDoc(profileRef, {
+                                email: currentUser.email,
+                                role: 'admin',
+                                isAdmin: true,
+                                authVerified: true,
+                                verificationRejected: false,
+                                lastAuthenticatedAt: Date.now()
+                            });
+                        } else {
+                            await updateDoc(profileRef, existingProfile.verificationRejected === true ? {
+                                lastAuthenticatedAt: Date.now()
+                            } : {
+                                email: currentUser.email,
+                                role: 'client',
+                                isAdmin: false,
+                                authVerified: true,
+                                lastAuthenticatedAt: Date.now()
+                            });
+                        }
                     }
 
                     if(unsubProfile) unsubProfile();
@@ -1228,7 +1298,7 @@
         window.processExpiredServicesForAdmin = async (profiles) => {
             if (!window.appState.isAdmin) return;
             const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
-            for (const profile of profiles.filter(item => item.email && item.email !== ADMIN_EMAIL)) {
+            for (const profile of profiles.filter(item => item.email && !isAdminProfile(item))) {
                 const services = { ...(profile.services || {}) };
                 for (const [serviceId, state] of Object.entries(services)) {
                     if (!state?.subEnd || state.subEnd > now || state.expiryNotifiedAt) continue;
@@ -1282,7 +1352,7 @@
             // mais la frontière externe (Stripe / Firebase) reste simulée.
             if (window.appState.isAdmin) {
                 if (service.type === 'devis') {
-                    window.createAdminPrototypeQuoteRequest(sId);
+                    window.openQuoteRequestModal(sId);
                     return;
                 }
                 window.simulateAdminPrototypePayment(sId);
@@ -1298,51 +1368,239 @@
             window.openPaymentModal(sId);
         };
 
+        // --- MODÈLES INTERACTIFS POUR LE SERVICE CRÉATION D'APPLICATION MOBILE ---
+        const APP_MODEL_DATA = {
+            delivery: {
+                label: 'application de livraison et restaurant', brand: 'MiamGo', color: 'orange',
+                items: [
+                    { id: 'burger', icon: '🍔', name: 'Burger Signature', detail: 'Bœuf, cheddar, sauce maison', price: 12.90 },
+                    { id: 'pizza', icon: '🍕', name: 'Pizza Méditerranéenne', detail: 'Tomate, mozzarella, légumes', price: 13.50 },
+                    { id: 'bowl', icon: '🥗', name: 'Bowl Fresh', detail: 'Avocat, quinoa, poulet grillé', price: 11.90 },
+                    { id: 'dessert', icon: '🧁', name: 'Dessert du Chef', detail: 'Recette artisanale du jour', price: 5.50 }
+                ]
+            },
+            booking: {
+                label: 'application de prise de rendez-vous', brand: 'RendezVous+', color: 'cyan',
+                items: [
+                    { id: 'consult', icon: '💬', name: 'Consultation', detail: '30 minutes · Conseil personnalisé', price: 35 },
+                    { id: 'premium', icon: '✨', name: 'Prestation Premium', detail: '60 minutes · Service complet', price: 65 },
+                    { id: 'support', icon: '🛠️', name: 'Assistance technique', detail: '45 minutes · Diagnostic inclus', price: 49 }
+                ]
+            },
+            fitness: {
+                label: 'application fitness et coaching', brand: 'MOVE+', color: 'violet',
+                items: [
+                    { id: 'cardio', icon: '🏃', name: 'Cardio Express', detail: '18 min · Débutant', price: 0 },
+                    { id: 'strength', icon: '🏋️', name: 'Force Totale', detail: '32 min · Intermédiaire', price: 0 },
+                    { id: 'yoga', icon: '🧘', name: 'Yoga Mobilité', detail: '24 min · Tous niveaux', price: 0 }
+                ]
+            }
+        };
+        let activeAppModel = 'delivery';
+        let appModelScreen = 'home';
+        let appModelCart = {};
+        let appModelSelection = null;
+        let appModelTime = '';
+
+        const getAppModelAccent = () => activeAppModel === 'delivery'
+            ? 'bg-orange-500 hover:bg-orange-400'
+            : (activeAppModel === 'booking' ? 'bg-cyan-600 hover:bg-cyan-500' : 'bg-violet-600 hover:bg-violet-500');
+        const getAppModelSoft = () => activeAppModel === 'delivery' ? 'bg-orange-50' : (activeAppModel === 'booking' ? 'bg-cyan-50' : 'bg-violet-50');
+        const getAppModelCartLines = () => Object.entries(appModelCart).map(([id, qty]) => {
+            const item = APP_MODEL_DATA.delivery.items.find(product => product.id === id);
+            return item ? { item, qty } : null;
+        }).filter(Boolean);
+
+        function renderAppModel() {
+            const target = document.getElementById('app-model-preview');
+            if (!target) return;
+            const model = APP_MODEL_DATA[activeAppModel];
+            const accent = getAppModelAccent();
+            const soft = getAppModelSoft();
+            let body = '';
+            if (activeAppModel === 'delivery') {
+                const cartLines = getAppModelCartLines();
+                const cartCount = cartLines.reduce((sum, line) => sum + line.qty, 0);
+                const subtotal = cartLines.reduce((sum, line) => sum + (line.item.price * line.qty), 0);
+                if (appModelScreen === 'cart') {
+                    body = `<div class="p-4"><button onclick="window.appModelNavigate('home')" class="text-xs text-slate-500">← Retour au menu</button><h3 class="text-2xl font-black mt-4">Votre panier</h3>${cartLines.length ? `<div class="space-y-3 mt-5">${cartLines.map(line => `<div class="border rounded-2xl p-3 flex items-center gap-3"><span class="text-3xl">${line.item.icon}</span><div class="flex-1"><strong class="text-sm block">${line.item.name}</strong><span class="text-xs font-bold">${(line.item.price * line.qty).toFixed(2)} €</span><div class="flex items-center gap-2 mt-2"><button onclick="window.updateAppModelCart('${line.item.id}',-1)" class="w-7 h-7 border rounded">−</button><span class="text-xs">${line.qty}</span><button onclick="window.updateAppModelCart('${line.item.id}',1)" class="w-7 h-7 border rounded">+</button></div></div></div>`).join('')}</div><div class="mt-5 p-4 bg-slate-50 rounded-2xl"><div class="flex justify-between text-xs"><span>Sous-total</span><strong>${subtotal.toFixed(2)} €</strong></div><div class="flex justify-between text-xs mt-2"><span>Livraison</span><strong>2.90 €</strong></div><div class="flex justify-between border-t mt-3 pt-3 font-black"><span>Total</span><span>${(subtotal + 2.9).toFixed(2)} €</span></div><button onclick="window.confirmAppDeliveryOrder()" class="w-full mt-4 py-3 rounded-xl ${accent} text-white text-xs font-bold">Commander et payer (simulation)</button></div>` : `<div class="py-20 text-center"><div class="text-5xl">🛒</div><p class="mt-3 text-sm text-slate-500">Votre panier est vide.</p></div>`}</div>`;
+                } else if (appModelScreen === 'success') {
+                    body = `<div class="min-h-[520px] flex items-center justify-center p-5 ${soft}"><div class="text-center"><div class="w-20 h-20 bg-emerald-100 rounded-full mx-auto flex items-center justify-center text-4xl">✓</div><h3 class="text-2xl font-black mt-5">Commande confirmée</h3><p class="text-sm text-slate-500 mt-2">Le restaurant prépare votre commande.</p><div class="mt-5 bg-white rounded-2xl p-4 text-xs"><strong>Commande #MG${Date.now().toString().slice(-5)}</strong><p class="text-slate-400 mt-1">Livraison estimée : 25–35 min</p></div><button onclick="window.resetAppModel()" class="mt-5 px-5 py-3 rounded-xl ${accent} text-white text-xs font-bold">Retour à l’accueil</button></div></div>`;
+                } else {
+                    body = `<div class="p-4"><div class="rounded-3xl bg-gradient-to-br from-orange-400 to-red-500 text-white p-5"><span class="text-[10px] uppercase font-bold">Livraison rapide</span><h3 class="text-2xl font-black mt-2">Votre repas préféré, chez vous.</h3><p class="text-xs text-white/80 mt-2">Commandez auprès des meilleurs restaurants.</p></div><div class="flex items-center justify-between mt-6"><h4 class="font-black">Populaires près de vous</h4><button onclick="window.appModelNavigate('cart')" class="text-xs font-bold text-orange-600">Panier (${cartCount})</button></div><div class="grid grid-cols-2 gap-3 mt-3">${model.items.map(item => `<div class="border rounded-2xl overflow-hidden"><div class="h-24 ${soft} flex items-center justify-center text-5xl">${item.icon}</div><div class="p-3"><strong class="text-xs block min-h-[32px]">${item.name}</strong><p class="text-[9px] text-slate-400 mt-1 min-h-[28px]">${item.detail}</p><div class="flex items-center justify-between mt-3"><span class="text-xs font-black">${item.price.toFixed(2)} €</span><button onclick="window.addAppModelItem('${item.id}')" class="w-8 h-8 rounded-full ${accent} text-white font-black">+</button></div></div></div>`).join('')}</div></div>`;
+                }
+            } else if (activeAppModel === 'booking') {
+                if (appModelScreen === 'success') {
+                    body = `<div class="min-h-[520px] flex items-center justify-center p-5 ${soft}"><div class="text-center"><div class="text-6xl">📅</div><h3 class="text-2xl font-black mt-4">Rendez-vous confirmé</h3><p class="text-sm text-slate-500 mt-2">${appModelSelection?.name || 'Votre prestation'} · ${appModelTime}</p><button onclick="window.resetAppModel()" class="mt-6 px-5 py-3 rounded-xl ${accent} text-white text-xs font-bold">Voir mes rendez-vous</button></div></div>`;
+                } else if (appModelScreen === 'times') {
+                    body = `<div class="p-4"><button onclick="window.appModelNavigate('home')" class="text-xs text-slate-500">← Changer de service</button><div class="mt-5 p-4 rounded-2xl ${soft}"><span class="text-4xl">${appModelSelection.icon}</span><h3 class="font-black mt-2">${appModelSelection.name}</h3><p class="text-xs text-slate-500">${appModelSelection.detail}</p></div><h4 class="font-black mt-6">Choisissez un horaire</h4><div class="grid grid-cols-3 gap-2 mt-3">${['09:00','10:30','12:00','14:00','15:30','17:00'].map(time => `<button onclick="window.selectAppBookingTime('${time}')" class="p-3 rounded-xl border text-xs font-bold ${appModelTime === time ? `${accent} text-white border-transparent` : 'border-slate-200'}">${time}</button>`).join('')}</div><button onclick="window.confirmAppBooking()" class="w-full mt-6 py-3 rounded-xl ${accent} text-white text-xs font-bold">Confirmer le rendez-vous</button></div>`;
+                } else {
+                    body = `<div class="p-4"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-cyan-100 flex items-center justify-center text-2xl">📅</div><div><h3 class="font-black">Bonjour !</h3><p class="text-xs text-slate-400">Que souhaitez-vous réserver ?</p></div></div><div class="mt-6 p-4 rounded-3xl bg-gradient-to-br from-cyan-600 to-blue-700 text-white"><span class="text-xs">Prochaine disponibilité</span><strong class="block text-xl mt-1">Aujourd’hui à 14:00</strong></div><h4 class="font-black mt-6">Nos prestations</h4><div class="space-y-3 mt-3">${model.items.map(item => `<button onclick="window.chooseAppBooking('${item.id}')" class="w-full border rounded-2xl p-4 flex items-center gap-3 text-left"><span class="text-3xl">${item.icon}</span><span class="flex-1"><strong class="text-sm block">${item.name}</strong><small class="text-slate-400">${item.detail}</small></span><strong class="text-xs">${item.price.toFixed(0)} €</strong></button>`).join('')}</div></div>`;
+                }
+            } else {
+                if (appModelScreen === 'session') {
+                    body = `<div class="min-h-[520px] bg-slate-950 text-white p-5 flex flex-col"><button onclick="window.appModelNavigate('home')" class="text-left text-xs text-slate-400">✕ Quitter</button><div class="flex-1 flex flex-col items-center justify-center text-center"><div class="w-40 h-40 rounded-full border-8 border-violet-500 flex items-center justify-center"><div><span class="text-5xl">${appModelSelection.icon}</span><strong class="block text-2xl mt-2">00:45</strong></div></div><h3 class="text-2xl font-black mt-7">${appModelSelection.name}</h3><p class="text-sm text-slate-400 mt-2">Exercice en cours · Série 2/4</p><button onclick="window.completeAppWorkout()" class="w-full mt-8 py-4 rounded-2xl ${accent} text-white text-sm font-black">Terminer la séance</button></div></div>`;
+                } else if (appModelScreen === 'success') {
+                    body = `<div class="min-h-[520px] flex items-center justify-center p-5 ${soft}"><div class="text-center"><div class="text-7xl">🏆</div><h3 class="text-2xl font-black mt-4">Séance terminée !</h3><p class="text-sm text-slate-500 mt-2">+180 calories · +25 points</p><button onclick="window.resetAppModel()" class="mt-6 px-5 py-3 rounded-xl ${accent} text-white text-xs font-bold">Voir ma progression</button></div></div>`;
+                } else {
+                    body = `<div class="p-4"><div class="rounded-3xl bg-gradient-to-br from-violet-700 to-indigo-900 text-white p-5"><span class="text-xs text-violet-200">Progression hebdomadaire</span><div class="flex items-end justify-between mt-2"><strong class="text-3xl">4 / 5</strong><span class="text-4xl">🔥</span></div><div class="h-2 rounded-full bg-white/20 mt-3"><div class="h-full w-4/5 bg-white rounded-full"></div></div></div><h4 class="font-black mt-6">Séances recommandées</h4><div class="space-y-3 mt-3">${model.items.map(item => `<button onclick="window.startAppWorkout('${item.id}')" class="w-full border rounded-2xl p-4 flex items-center gap-3 text-left"><span class="w-12 h-12 ${soft} rounded-xl flex items-center justify-center text-2xl">${item.icon}</span><span class="flex-1"><strong class="text-sm block">${item.name}</strong><small class="text-slate-400">${item.detail}</small></span><span>›</span></button>`).join('')}</div></div>`;
+                }
+            }
+            target.innerHTML = `<div class="min-h-full text-slate-900 font-sans"><div class="px-4 py-3 bg-white border-b flex items-center justify-between sticky top-0 z-10"><strong>${model.brand}</strong><span class="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">DÉMO</span></div>${body}<nav class="sticky bottom-0 bg-white border-t grid grid-cols-3 text-center text-[9px] font-bold"><button onclick="window.appModelNavigate('home')" class="p-3">⌂<span class="block">Accueil</span></button><button onclick="window.showToast('Recherche disponible dans la version finale.')" class="p-3">⌕<span class="block">Explorer</span></button><button onclick="window.showToast('Profil de démonstration.')" class="p-3">◎<span class="block">Profil</span></button></nav></div>`;
+        }
+
+        window.openAppModels = () => { const modal = document.getElementById('app-models-modal'); if (!modal) return; modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; renderAppModel(); lucide.createIcons({ root: modal }); };
+        window.closeAppModels = () => { document.getElementById('app-models-modal')?.classList.add('hidden'); document.body.style.overflow = ''; };
+        window.selectAppModel = (model) => {
+            if (!APP_MODEL_DATA[model]) return;
+            activeAppModel = model; appModelScreen = 'home'; appModelSelection = null; appModelTime = '';
+            ['delivery','booking','fitness'].forEach(name => {
+                const tab = document.getElementById(`app-model-tab-${name}`); const selected = name === model;
+                tab?.classList.toggle('border-orange-400', selected && model === 'delivery');
+                tab?.classList.toggle('border-cyan-400', selected && model === 'booking');
+                tab?.classList.toggle('border-violet-400', selected && model === 'fitness');
+                tab?.classList.toggle('bg-orange-500/10', selected && model === 'delivery');
+                tab?.classList.toggle('bg-cyan-500/10', selected && model === 'booking');
+                tab?.classList.toggle('bg-violet-500/10', selected && model === 'fitness');
+                tab?.classList.toggle('border-slate-700', !selected);
+            });
+            renderAppModel();
+        };
+        window.appModelNavigate = screen => { appModelScreen = screen; renderAppModel(); };
+        window.addAppModelItem = id => { appModelCart[id] = (appModelCart[id] || 0) + 1; window.showToast('Ajouté au panier de démonstration.'); renderAppModel(); };
+        window.updateAppModelCart = (id, delta) => { appModelCart[id] = Math.max(0, (appModelCart[id] || 0) + delta); if (!appModelCart[id]) delete appModelCart[id]; renderAppModel(); };
+        window.confirmAppDeliveryOrder = () => { if (!getAppModelCartLines().length) return; appModelCart = {}; appModelScreen = 'success'; renderAppModel(); };
+        window.chooseAppBooking = id => { appModelSelection = APP_MODEL_DATA.booking.items.find(item => item.id === id); appModelTime = ''; appModelScreen = 'times'; renderAppModel(); };
+        window.selectAppBookingTime = time => { appModelTime = time; renderAppModel(); };
+        window.confirmAppBooking = () => { if (!appModelTime) return window.showToast('Choisissez un horaire.', 'error'); appModelScreen = 'success'; renderAppModel(); };
+        window.startAppWorkout = id => { appModelSelection = APP_MODEL_DATA.fitness.items.find(item => item.id === id); appModelScreen = 'session'; renderAppModel(); };
+        window.completeAppWorkout = () => { appModelScreen = 'success'; renderAppModel(); };
+        window.resetAppModel = () => { appModelScreen = 'home'; appModelSelection = null; appModelTime = ''; renderAppModel(); };
+        window.requestAppModelQuote = () => {
+            const selectedLabel = APP_MODEL_DATA[activeAppModel].label;
+            window.closeAppModels();
+            if (window.appState.isAdmin) {
+                window.openQuoteRequestModal('custom-app');
+                const field = document.getElementById('quote-request-requirements');
+                if (field && !field.value.trim()) {
+                    field.value = `Je souhaite simuler une demande de devis pour une ${selectedLabel}, personnalisée avec mon identité visuelle.`;
+                    field.dispatchEvent(new Event('input'));
+                }
+            } else {
+                window.openQuoteRequestModal('custom-app');
+                const field = document.getElementById('quote-request-requirements');
+                if (field && !field.value.trim()) {
+                    field.value = `Je souhaite recevoir un devis pour une ${selectedLabel}, personnalisée avec mon identité visuelle.`;
+                    field.dispatchEvent(new Event('input'));
+                }
+            }
+        };
+
         // --- MODÈLES INTERACTIFS POUR LE SERVICE CRÉATION DE SITE ---
         const WEBSITE_MODEL_PRODUCTS = {
             fashion: [
-                { icon: '👕', name: 'T-shirt Essential', price: 24.90, tag: 'Nouveau' },
-                { icon: '🧥', name: 'Veste Urban', price: 69.90, tag: 'Tendance' },
-                { icon: '👟', name: 'Sneakers Motion', price: 84.90, tag: 'Best-seller' },
-                { icon: '👜', name: 'Sac Élégance', price: 49.90, tag: 'Collection' }
+                { id: 'tee', icon: '👕', name: 'T-shirt Essential', price: 24.90, oldPrice: 29.90, tag: 'Nouveau', category: 'Hauts', description: 'Coton premium, coupe moderne et finitions renforcées.', variants: ['S', 'M', 'L', 'XL'] },
+                { id: 'jacket', icon: '🧥', name: 'Veste Urban', price: 69.90, tag: 'Tendance', category: 'Vestes', description: 'Veste légère déperlante avec poches intérieures.', variants: ['S', 'M', 'L', 'XL'] },
+                { id: 'shoes', icon: '👟', name: 'Sneakers Motion', price: 84.90, oldPrice: 99.90, tag: 'Best-seller', category: 'Chaussures', description: 'Semelle confort et design urbain pour le quotidien.', variants: ['39', '40', '41', '42', '43'] },
+                { id: 'bag', icon: '👜', name: 'Sac Élégance', price: 49.90, tag: 'Collection', category: 'Accessoires', description: 'Sac compact avec bandoulière réglable et rangement sécurisé.', variants: ['Noir', 'Beige', 'Bordeaux'] },
+                { id: 'dress', icon: '👗', name: 'Robe Signature', price: 59.90, tag: 'Exclusif', category: 'Robes', description: 'Coupe fluide et tissu doux pour une silhouette élégante.', variants: ['XS', 'S', 'M', 'L'] },
+                { id: 'cap', icon: '🧢', name: 'Casquette Studio', price: 19.90, tag: 'Unisexe', category: 'Accessoires', description: 'Taille réglable, broderie premium et protection solaire.', variants: ['Noir', 'Blanc', 'Rose'] }
             ],
             food: [
-                { icon: '🥑', name: 'Panier fraîcheur', price: 18.50, tag: 'Bio' },
-                { icon: '🥖', name: 'Box petit-déjeuner', price: 14.90, tag: 'Local' },
-                { icon: '🍓', name: 'Fruits de saison', price: 9.80, tag: 'Frais' },
-                { icon: '🧀', name: 'Sélection du terroir', price: 26.40, tag: 'Artisanal' }
+                { id: 'fresh', icon: '🥑', name: 'Panier fraîcheur', price: 18.50, tag: 'Bio', category: 'Fruits & légumes', description: 'Un assortiment de fruits et légumes bio de saison.', variants: ['Petit', 'Familial'] },
+                { id: 'breakfast', icon: '🥖', name: 'Box petit-déjeuner', price: 14.90, tag: 'Local', category: 'Boulangerie', description: 'Pains, viennoiseries, confiture et jus artisanal.', variants: ['Classique', 'Sans gluten'] },
+                { id: 'berries', icon: '🍓', name: 'Fruits de saison', price: 9.80, tag: 'Frais', category: 'Fruits & légumes', description: 'Sélection fraîche préparée le jour de la livraison.', variants: ['500 g', '1 kg'] },
+                { id: 'cheese', icon: '🧀', name: 'Sélection du terroir', price: 26.40, tag: 'Artisanal', category: 'Épicerie', description: 'Assortiment de fromages affinés de producteurs locaux.', variants: ['Doux', 'Caractère'] },
+                { id: 'meal', icon: '🥗', name: 'Menu équilibré', price: 12.90, tag: 'Prêt à manger', category: 'Traiteur', description: 'Plat complet préparé avec des ingrédients frais.', variants: ['Végétarien', 'Poulet'] },
+                { id: 'juice', icon: '🧃', name: 'Cure de jus', price: 21.50, tag: 'Pressé minute', category: 'Boissons', description: 'Six jus frais sans sucre ajouté, pressés à froid.', variants: ['Découverte', 'Détox'] }
+            ],
+            electronics: [
+                { id: 'tv-oled', icon: '📺', name: 'Téléviseur OLED Vision 55"', price: 899.00, oldPrice: 1099.00, tag: 'Promo', category: 'Télévision', description: 'Écran OLED 4K, HDR intelligent, son immersif et applications de streaming intégrées.', variants: ['55 pouces', '65 pouces'] },
+                { id: 'laptop', icon: '💻', name: 'Ordinateur NovaBook Pro', price: 749.00, tag: 'Nouveau', category: 'Informatique', description: 'Ordinateur portable rapide avec écran Full HD, SSD et autonomie longue durée.', variants: ['8 Go / 512 Go', '16 Go / 1 To'] },
+                { id: 'phone', icon: '📱', name: 'Smartphone Pulse X', price: 549.00, oldPrice: 599.00, tag: 'Best-seller', category: 'Téléphonie', description: 'Écran AMOLED, double SIM, appareil photo haute définition et charge rapide.', variants: ['128 Go Noir', '256 Go Bleu', '256 Go Argent'] },
+                { id: 'washer', icon: '🧺', name: 'Lave-linge EcoWash 9 kg', price: 479.00, tag: 'Éco', category: 'Gros électroménager', description: 'Moteur silencieux, programme vapeur et consommation énergétique optimisée.', variants: ['Blanc', 'Anthracite'] },
+                { id: 'fridge', icon: '🧊', name: 'Réfrigérateur FreshMax', price: 699.00, tag: 'Livraison offerte', category: 'Gros électroménager', description: 'Froid ventilé, compartiment fraîcheur et contrôle électronique de la température.', variants: ['Inox', 'Noir'] },
+                { id: 'vacuum', icon: '🧹', name: 'Aspirateur Cyclone Air', price: 189.00, tag: 'Puissant', category: 'Petit électroménager', description: 'Aspiration sans sac, filtration haute efficacité et accessoires multi-surfaces.', variants: ['Standard', 'Pack animaux'] },
+                { id: 'coffee', icon: '☕', name: 'Machine Café Barista', price: 329.00, oldPrice: 379.00, tag: 'Premium', category: 'Petit électroménager', description: 'Broyeur intégré, mousseur à lait et recettes personnalisables.', variants: ['Noir', 'Inox'] },
+                { id: 'headphones', icon: '🎧', name: 'Casque Audio Silence Pro', price: 149.00, tag: 'Audio', category: 'Son & Audio', description: 'Réduction de bruit active, son haute définition et 35 heures d’autonomie.', variants: ['Noir', 'Beige', 'Bleu nuit'] }
             ]
         };
         let activeWebsiteModel = 'fashion';
-        let websiteModelCart = { fashion: 0, food: 0 };
+        let websiteModelView = 'home';
+        let websiteModelSelectedProduct = null;
+        let websiteModelSearch = '';
+        let websiteModelCategory = 'Tous';
+        let websiteModelCart = { fashion: {}, food: {}, electronics: {} };
+        let websiteModelOrder = null;
+
+        const getWebsiteModelTheme = () => {
+            const fashion = activeWebsiteModel === 'fashion';
+            const electronics = activeWebsiteModel === 'electronics';
+            return {
+                fashion,
+                electronics,
+                brand: fashion ? 'NOVA MODE' : (electronics ? 'VOLTIX TECH' : 'MARCHÉ FRAIS'),
+                accent: fashion ? 'bg-fuchsia-600 hover:bg-fuchsia-500' : (electronics ? 'bg-blue-700 hover:bg-blue-600' : 'bg-emerald-600 hover:bg-emerald-500'),
+                accentText: fashion ? 'text-fuchsia-600' : (electronics ? 'text-blue-700' : 'text-emerald-700'),
+                light: fashion ? 'bg-rose-50' : (electronics ? 'bg-blue-50' : 'bg-emerald-50'),
+                gradient: fashion ? 'from-fuchsia-200 via-rose-100 to-purple-300' : (electronics ? 'from-blue-200 via-slate-100 to-cyan-200' : 'from-emerald-200 via-lime-100 to-yellow-100'),
+                eyebrow: electronics ? 'Technologie & maison' : 'Nouvelle collection',
+                headline: fashion ? 'Exprimez votre style.' : (electronics ? 'La technologie qui simplifie la vie.' : 'Le meilleur du frais, chez vous.'),
+                subtitle: fashion ? 'Des pièces modernes, une livraison rapide et des retours simplifiés.' : (electronics ? 'Équipements testés, garanties claires et livraison à domicile.' : 'Des produits locaux sélectionnés et livrés avec soin.'),
+                heroIcon: fashion ? '🛍️' : (electronics ? '⚡' : '🥕'),
+                address: fashion ? 'demo.sesame-mode.be' : (electronics ? 'demo.sesame-voltix.be' : 'demo.sesame-marche.be')
+            };
+        };
+        const getWebsiteCartLines = () => Object.entries(websiteModelCart[activeWebsiteModel]).map(([key, qty]) => {
+            const [productId, variant = 'Standard'] = key.split('::');
+            const product = WEBSITE_MODEL_PRODUCTS[activeWebsiteModel].find(item => item.id === productId);
+            return product ? { key, qty, variant, product } : null;
+        }).filter(Boolean);
+        const getWebsiteCartCount = () => getWebsiteCartLines().reduce((sum, line) => sum + line.qty, 0);
+        const getWebsiteCartSubtotal = () => getWebsiteCartLines().reduce((sum, line) => sum + (line.product.price * line.qty), 0);
+
+        function getWebsiteModelHeader(theme) {
+            return `<header class="px-4 sm:px-7 py-3.5 flex items-center justify-between gap-3 bg-white border-b border-slate-100 sticky top-0 z-10">
+                <button type="button" onclick="window.websiteModelNavigate('home')" class="text-left"><strong class="text-sm sm:text-xl tracking-[.18em]">${theme.brand}</strong><small class="hidden sm:block text-[8px] text-slate-400 uppercase tracking-widest">Boutique officielle</small></button>
+                <nav class="hidden md:flex gap-5 text-xs font-semibold text-slate-500"><button onclick="window.websiteModelNavigate('home')">Accueil</button><button onclick="window.websiteModelNavigate('catalog')">Boutique</button><button onclick="window.showToast('Assistance disponible du lundi au samedi.')">Contact</button></nav>
+                <button type="button" onclick="window.showModelCart()" class="relative px-3 py-2 rounded-lg ${theme.accent} text-white text-xs font-bold flex items-center gap-1.5">🛒 Panier <span class="bg-white/25 px-1.5 py-0.5 rounded-full">${getWebsiteCartCount()}</span></button>
+            </header>`;
+        }
+
+        function getWebsiteCatalogHTML(theme, includeHero = false) {
+            const products = WEBSITE_MODEL_PRODUCTS[activeWebsiteModel];
+            const categories = ['Tous', ...new Set(products.map(item => item.category))];
+            const query = websiteModelSearch.trim().toLowerCase();
+            const filtered = products.filter(product => (websiteModelCategory === 'Tous' || product.category === websiteModelCategory) && (!query || `${product.name} ${product.category} ${product.tag}`.toLowerCase().includes(query)));
+            return `${includeHero ? `<section class="bg-gradient-to-br ${theme.gradient} px-5 sm:px-10 py-10 sm:py-14 grid sm:grid-cols-2 gap-7 items-center"><div><span class="text-[10px] font-black uppercase tracking-[.25em] ${theme.accentText}">${theme.eyebrow}</span><h3 class="text-3xl sm:text-5xl font-black mt-3 leading-tight">${theme.headline}</h3><p class="text-sm text-slate-600 mt-4 max-w-md">${theme.subtitle}</p><button type="button" onclick="window.websiteModelNavigate('catalog')" class="mt-6 px-5 py-3 rounded-lg ${theme.accent} text-white text-xs font-bold uppercase">Découvrir la boutique</button></div><div class="min-h-[190px] sm:min-h-[250px] rounded-3xl bg-white/45 border border-white/60 flex items-center justify-center text-8xl shadow-xl">${theme.heroIcon}</div></section><div class="grid grid-cols-3 bg-white border-b text-center text-[9px] sm:text-xs"><div class="p-3">🚚 Livraison rapide</div><div class="p-3 border-x">🔒 Paiement sécurisé</div><div class="p-3">${theme.electronics ? '🛡️ Garantie incluse' : '↩️ Retours faciles'}</div></div>` : ''}
+            <section id="model-products" class="px-4 sm:px-8 py-8 bg-white">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-5"><div><span class="text-[10px] uppercase tracking-widest text-slate-400">Catalogue</span><h4 class="text-xl font-black">${includeHero ? 'Nos produits populaires' : 'Tous les produits'}</h4></div><div class="relative"><input id="website-model-search" value="${window.escapeHTML(websiteModelSearch)}" oninput="window.searchWebsiteModel(this.value, this.selectionStart)" placeholder="Rechercher un produit..." class="w-full sm:w-64 border border-slate-200 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-slate-500" /></div></div>
+                <div class="flex gap-2 overflow-x-auto pb-3 mb-3">${categories.map(category => `<button type="button" onclick="window.filterWebsiteModel('${category.replace(/'/g, "\\'")}')" class="whitespace-nowrap px-3 py-2 rounded-full text-[9px] font-bold border ${websiteModelCategory === category ? `${theme.accent} text-white border-transparent` : 'bg-white text-slate-500 border-slate-200'}">${category}</button>`).join('')}</div>
+                ${filtered.length ? `<div class="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">${filtered.map(product => `<article class="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-xl transition-all group"><button type="button" onclick="window.openWebsiteProduct('${product.id}')" class="w-full h-32 sm:h-44 ${theme.light} flex items-center justify-center text-6xl group-hover:scale-105 transition-transform">${product.icon}</button><div class="p-3 sm:p-4"><div class="flex items-center justify-between gap-2"><span class="text-[8px] uppercase font-bold ${theme.accentText}">${product.tag}</span><span class="text-[8px] text-slate-400">En stock</span></div><button type="button" onclick="window.openWebsiteProduct('${product.id}')" class="font-bold text-left text-xs sm:text-sm mt-1 min-h-[36px] hover:underline">${product.name}</button><div class="flex items-end justify-between gap-2 mt-3"><div><strong class="text-sm sm:text-base">${product.price.toFixed(2)} €</strong>${product.oldPrice ? `<small class="block line-through text-slate-400">${product.oldPrice.toFixed(2)} €</small>` : ''}</div><button type="button" onclick="window.addWebsiteModelProduct('${product.id}')" class="px-3 py-2.5 rounded-xl ${theme.accent} text-white text-[9px] font-bold">Ajouter</button></div></div></article>`).join('')}</div>` : `<div class="py-16 text-center text-slate-400"><div class="text-4xl mb-3">🔍</div><p>Aucun produit ne correspond à votre recherche.</p></div>`}
+            </section>`;
+        }
 
         function renderWebsiteModel() {
             const target = document.getElementById('website-model-preview');
             if (!target) return;
-            const fashion = activeWebsiteModel === 'fashion';
-            const products = WEBSITE_MODEL_PRODUCTS[activeWebsiteModel];
-            const accent = fashion ? 'bg-fuchsia-600 hover:bg-fuchsia-500' : 'bg-emerald-600 hover:bg-emerald-500';
-            const light = fashion ? 'bg-rose-50' : 'bg-emerald-50';
-            const brand = fashion ? 'NOVA MODE' : 'MARCHÉ FRAIS';
-            const headline = fashion ? 'Exprimez votre style.' : 'Le meilleur du frais, chez vous.';
-            const subtitle = fashion ? 'Une collection moderne pensée pour chaque moment.' : 'Des produits locaux sélectionnés et livrés avec soin.';
-            document.getElementById('model-browser-address').textContent = fashion ? 'demo.sesame-mode.be' : 'demo.sesame-marche.be';
-            target.innerHTML = `
-                <div class="text-slate-900 font-sans">
-                    <header class="px-4 sm:px-8 py-4 flex items-center justify-between gap-3 bg-white border-b border-slate-100">
-                        <strong class="text-base sm:text-xl tracking-widest">${brand}</strong>
-                        <nav class="hidden sm:flex gap-5 text-xs font-semibold text-slate-500"><button onclick="window.scrollModelTo('model-products')">Accueil</button><button onclick="window.scrollModelTo('model-products')">Produits</button><button onclick="window.showToast('Page À propos disponible dans le site final.')">À propos</button></nav>
-                        <button type="button" onclick="window.showModelCart()" class="relative px-3 py-2 rounded-lg ${accent} text-white text-xs font-bold">Panier <span id="website-model-cart" class="ml-1 bg-white/25 px-1.5 py-0.5 rounded-full">${websiteModelCart[activeWebsiteModel]}</span></button>
-                    </header>
-                    <section class="${light} px-5 sm:px-10 py-10 sm:py-14 grid sm:grid-cols-2 gap-7 items-center">
-                        <div><span class="text-[10px] font-black uppercase tracking-[.25em] ${fashion ? 'text-fuchsia-600' : 'text-emerald-700'}">Boutique en ligne</span><h3 class="text-3xl sm:text-5xl font-black mt-3 leading-tight">${headline}</h3><p class="text-sm text-slate-600 mt-4 max-w-md">${subtitle}</p><button type="button" onclick="window.scrollModelTo('model-products')" class="mt-6 px-5 py-3 rounded-lg ${accent} text-white text-xs font-bold uppercase">Découvrir la collection</button></div>
-                        <div class="min-h-[190px] sm:min-h-[240px] rounded-3xl ${fashion ? 'bg-gradient-to-br from-fuchsia-200 to-purple-300' : 'bg-gradient-to-br from-emerald-200 to-lime-200'} flex items-center justify-center text-8xl shadow-xl">${fashion ? '🛍️' : '🥕'}</div>
-                    </section>
-                    <section id="model-products" class="px-4 sm:px-8 py-9 bg-white"><div class="flex justify-between items-end mb-5"><div><span class="text-[10px] uppercase tracking-widest text-slate-400">Sélection</span><h4 class="text-xl font-black">Nos produits populaires</h4></div><span class="text-xs text-slate-400">Livraison rapide</span></div>
-                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">${products.map((product, index) => `<article class="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-lg transition-shadow"><div class="h-28 sm:h-36 ${light} flex items-center justify-center text-5xl">${product.icon}</div><div class="p-3"><span class="text-[8px] uppercase font-bold ${fashion ? 'text-fuchsia-600' : 'text-emerald-700'}">${product.tag}</span><h5 class="font-bold text-xs sm:text-sm mt-1 min-h-[36px]">${product.name}</h5><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3"><strong class="text-sm">${product.price.toFixed(2)} €</strong><button type="button" onclick="window.addWebsiteModelProduct(${index})" class="px-3 py-2 rounded-lg ${accent} text-white text-[9px] font-bold">Ajouter</button></div></div></article>`).join('')}</div>
-                    </section>
-                    <footer class="px-5 py-6 bg-slate-900 text-white flex flex-col sm:flex-row justify-between gap-2 text-xs"><strong>${brand}</strong><span class="text-slate-400">Paiement sécurisé · Livraison · Contact</span></footer>
-                </div>`;
+            const theme = getWebsiteModelTheme();
+            document.getElementById('model-browser-address').textContent = theme.address;
+            let content = '';
+            if (websiteModelView === 'product') {
+                const product = WEBSITE_MODEL_PRODUCTS[activeWebsiteModel].find(item => item.id === websiteModelSelectedProduct);
+                content = product ? `<section class="p-5 sm:p-10 bg-white"><button onclick="window.websiteModelNavigate('catalog')" class="text-xs text-slate-500 mb-6">← Retour à la boutique</button><div class="grid sm:grid-cols-2 gap-8"><div class="min-h-[280px] rounded-3xl ${theme.light} flex items-center justify-center text-9xl">${product.icon}</div><div><span class="text-[10px] uppercase font-black ${theme.accentText}">${product.tag} · ${product.category}</span><h3 class="text-3xl font-black mt-2">${product.name}</h3><div class="flex items-center gap-3 mt-3"><strong class="text-2xl">${product.price.toFixed(2)} €</strong>${product.oldPrice ? `<span class="line-through text-slate-400">${product.oldPrice.toFixed(2)} €</span>` : ''}</div><p class="text-sm text-slate-600 leading-relaxed mt-5">${product.description}</p><label class="block mt-6 text-[10px] uppercase font-bold text-slate-500">Choisir une option</label><select id="website-product-variant" class="mt-2 w-full border border-slate-200 rounded-xl px-4 py-3 text-sm">${product.variants.map(v => `<option value="${v}">${v}</option>`).join('')}</select><button type="button" onclick="window.addWebsiteModelProduct('${product.id}', document.getElementById('website-product-variant').value)" class="mt-4 w-full py-3.5 rounded-xl ${theme.accent} text-white text-xs font-bold uppercase">Ajouter au panier</button><div class="grid grid-cols-3 gap-2 mt-5 text-center text-[9px] text-slate-500"><span class="p-2 bg-slate-50 rounded">✓ En stock</span><span class="p-2 bg-slate-50 rounded">🚚 Rapide</span><span class="p-2 bg-slate-50 rounded">🔒 Sécurisé</span></div></div></div></section>` : '';
+            } else if (websiteModelView === 'cart') {
+                const lines = getWebsiteCartLines(); const subtotal = getWebsiteCartSubtotal(); const shipping = subtotal >= 60 || subtotal === 0 ? 0 : 4.90;
+                content = `<section class="p-4 sm:p-8 bg-slate-50 min-h-[520px]"><div class="max-w-4xl mx-auto"><div class="flex items-center justify-between mb-6"><div><span class="text-[10px] uppercase text-slate-400 tracking-widest">Votre sélection</span><h3 class="text-2xl font-black">Mon panier</h3></div><button onclick="window.websiteModelNavigate('catalog')" class="text-xs ${theme.accentText} font-bold">Continuer mes achats</button></div>${lines.length ? `<div class="grid lg:grid-cols-[1fr_300px] gap-5"><div class="space-y-3">${lines.map(line => `<div class="bg-white border border-slate-200 rounded-2xl p-3 flex items-center gap-3"><div class="w-16 h-16 rounded-xl ${theme.light} flex items-center justify-center text-3xl">${line.product.icon}</div><div class="flex-1 min-w-0"><strong class="text-sm block truncate">${line.product.name}</strong><small class="text-slate-400">${line.variant}</small><div class="mt-2 flex items-center gap-2"><button onclick="window.updateWebsiteCart('${line.key}', -1)" class="w-7 h-7 border rounded">−</button><span class="text-xs font-bold">${line.qty}</span><button onclick="window.updateWebsiteCart('${line.key}', 1)" class="w-7 h-7 border rounded">+</button><button onclick="window.removeWebsiteCart('${line.key}')" class="ml-2 text-[9px] text-red-500">Supprimer</button></div></div><strong class="text-sm">${(line.product.price * line.qty).toFixed(2)} €</strong></div>`).join('')}</div><aside class="bg-white border border-slate-200 rounded-2xl p-5 h-fit"><h4 class="font-black mb-4">Récapitulatif</h4><div class="flex justify-between text-xs mb-2"><span>Sous-total</span><span>${subtotal.toFixed(2)} €</span></div><div class="flex justify-between text-xs mb-4"><span>Livraison</span><span>${shipping ? `${shipping.toFixed(2)} €` : 'Offerte'}</span></div><div class="border-t pt-4 flex justify-between font-black"><span>Total</span><span>${(subtotal + shipping).toFixed(2)} €</span></div><button onclick="window.websiteModelNavigate('checkout')" class="mt-5 w-full py-3 rounded-xl ${theme.accent} text-white text-xs font-bold uppercase">Passer la commande</button><p class="text-[8px] text-center text-slate-400 mt-3">Commande 100 % simulée</p></aside></div>` : `<div class="bg-white border rounded-3xl py-16 text-center"><div class="text-6xl">🛒</div><h4 class="text-xl font-black mt-4">Votre panier est vide</h4><button onclick="window.websiteModelNavigate('catalog')" class="mt-5 px-5 py-3 rounded-xl ${theme.accent} text-white text-xs font-bold">Voir les produits</button></div>`}</div></section>`;
+            } else if (websiteModelView === 'checkout') {
+                const subtotal = getWebsiteCartSubtotal(); const shipping = subtotal >= 60 ? 0 : 4.90;
+                content = `<section class="p-4 sm:p-8 bg-slate-50 min-h-[520px]"><div class="max-w-4xl mx-auto"><button onclick="window.websiteModelNavigate('cart')" class="text-xs text-slate-500 mb-5">← Retour au panier</button><div class="grid lg:grid-cols-[1fr_300px] gap-5"><form onsubmit="window.submitWebsiteModelOrder(event)" class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4"><div><span class="text-[10px] uppercase text-slate-400">Étape finale</span><h3 class="text-2xl font-black">Finaliser ma commande</h3></div><div class="grid sm:grid-cols-2 gap-3"><input name="firstName" required placeholder="Prénom *" class="border rounded-xl px-4 py-3 text-xs"><input name="lastName" required placeholder="Nom *" class="border rounded-xl px-4 py-3 text-xs"><input name="email" required type="email" placeholder="Adresse e-mail *" class="border rounded-xl px-4 py-3 text-xs sm:col-span-2"><input name="address" required placeholder="Adresse de livraison *" class="border rounded-xl px-4 py-3 text-xs sm:col-span-2"><input name="postal" required pattern="[0-9]{4,5}" placeholder="Code postal *" class="border rounded-xl px-4 py-3 text-xs"><input name="city" required placeholder="Ville *" class="border rounded-xl px-4 py-3 text-xs"></div><fieldset><legend class="text-[10px] uppercase font-bold text-slate-500 mb-2">Livraison</legend><label class="flex items-center gap-3 border rounded-xl p-3 text-xs"><input type="radio" name="delivery" value="Domicile" checked> Livraison à domicile · ${shipping ? `${shipping.toFixed(2)} €` : 'Offerte'}</label><label class="flex items-center gap-3 border rounded-xl p-3 text-xs mt-2"><input type="radio" name="delivery" value="Point relais"> Point relais · Gratuit</label></fieldset><fieldset><legend class="text-[10px] uppercase font-bold text-slate-500 mb-2">Paiement de démonstration</legend><label class="flex items-center gap-3 border border-emerald-200 bg-emerald-50 rounded-xl p-3 text-xs"><input type="radio" name="payment" value="Carte bancaire simulée" checked> 💳 Carte bancaire simulée</label><p class="text-[9px] text-slate-400 mt-2">Aucune donnée bancaire et aucun paiement réel ne sont demandés.</p></fieldset><label class="flex items-start gap-2 text-[10px] text-slate-500"><input type="checkbox" required class="mt-0.5"> J’accepte les conditions de cette commande de démonstration.</label><button type="submit" class="w-full py-3.5 rounded-xl ${theme.accent} text-white text-xs font-bold uppercase">Confirmer la commande · ${(subtotal + shipping).toFixed(2)} €</button></form><aside class="bg-white border border-slate-200 rounded-2xl p-5 h-fit"><h4 class="font-black mb-3">Votre commande</h4>${getWebsiteCartLines().map(line => `<div class="flex justify-between gap-3 text-[10px] py-2 border-b"><span>${line.qty} × ${line.product.name}</span><strong>${(line.qty * line.product.price).toFixed(2)} €</strong></div>`).join('')}<div class="flex justify-between font-black mt-4"><span>Total</span><span>${(subtotal + shipping).toFixed(2)} €</span></div></aside></div></div></section>`;
+            } else if (websiteModelView === 'success' && websiteModelOrder) {
+                content = `<section class="min-h-[520px] bg-emerald-50 px-5 py-16 flex items-center justify-center"><div class="max-w-lg w-full bg-white border border-emerald-200 rounded-3xl p-7 text-center shadow-xl"><div class="w-20 h-20 rounded-full bg-emerald-100 text-4xl flex items-center justify-center mx-auto">✓</div><span class="block text-[10px] uppercase tracking-widest text-emerald-600 mt-5">Commande confirmée</span><h3 class="text-2xl font-black mt-2">Merci ${window.escapeHTML(websiteModelOrder.firstName)} !</h3><p class="text-sm text-slate-500 mt-3">Votre commande de démonstration a bien été enregistrée.</p><div class="mt-5 p-4 bg-slate-50 rounded-xl text-left text-xs space-y-2"><div class="flex justify-between"><span>Numéro</span><strong>${websiteModelOrder.number}</strong></div><div class="flex justify-between"><span>Total simulé</span><strong>${websiteModelOrder.total.toFixed(2)} €</strong></div><div class="flex justify-between"><span>Livraison</span><strong>${window.escapeHTML(websiteModelOrder.delivery)}</strong></div></div><p class="text-[9px] text-slate-400 mt-4">Aucun paiement réel n’a été effectué.</p><div class="grid sm:grid-cols-2 gap-2 mt-6"><button onclick="window.resetWebsiteModelShop()" class="py-3 rounded-xl border border-slate-200 text-xs font-bold">Retour à la boutique</button><button onclick="window.requestWebsiteModelQuote()" class="py-3 rounded-xl ${theme.accent} text-white text-xs font-bold">Créer ce site pour moi</button></div></div></section>`;
+            } else {
+                content = getWebsiteCatalogHTML(theme, websiteModelView === 'home');
+            }
+            target.innerHTML = `<div class="text-slate-900 font-sans bg-white min-h-[520px]">${getWebsiteModelHeader(theme)}${content}<footer class="px-5 py-7 bg-slate-900 text-white grid sm:grid-cols-3 gap-4 text-xs"><div><strong>${theme.brand}</strong><p class="text-slate-400 mt-1">Votre boutique, simplement.</p></div><div><strong>Service client</strong><p class="text-slate-400 mt-1">Livraison · Retours · FAQ</p></div><div><strong>Paiements</strong><p class="text-slate-400 mt-1">Visa · Mastercard · Bancontact</p></div></footer></div>`;
         }
 
         window.openWebsiteModels = () => {
@@ -1360,39 +1618,90 @@
         window.selectWebsiteModel = (model) => {
             if (!WEBSITE_MODEL_PRODUCTS[model]) return;
             activeWebsiteModel = model;
-            ['fashion', 'food'].forEach(name => {
+            websiteModelView = 'home';
+            websiteModelSearch = '';
+            websiteModelCategory = 'Tous';
+            ['fashion', 'food', 'electronics'].forEach(name => {
                 const tab = document.getElementById(`model-tab-${name}`);
                 const selected = name === model;
                 tab?.classList.toggle('border-fuchsia-400', selected && model === 'fashion');
                 tab?.classList.toggle('border-emerald-400', selected && model === 'food');
+                tab?.classList.toggle('border-blue-400', selected && model === 'electronics');
                 tab?.classList.toggle('bg-fuchsia-500/10', selected && model === 'fashion');
                 tab?.classList.toggle('bg-emerald-500/10', selected && model === 'food');
+                tab?.classList.toggle('bg-blue-500/10', selected && model === 'electronics');
                 tab?.classList.toggle('border-slate-700', !selected);
             });
             renderWebsiteModel();
         };
-        window.addWebsiteModelProduct = (index) => {
-            if (!WEBSITE_MODEL_PRODUCTS[activeWebsiteModel][index]) return;
-            websiteModelCart[activeWebsiteModel] += 1;
-            const counter = document.getElementById('website-model-cart');
-            if (counter) counter.textContent = websiteModelCart[activeWebsiteModel];
-            window.showToast('Produit ajouté au panier de démonstration.');
+        window.websiteModelNavigate = (view) => {
+            if (view === 'checkout' && !getWebsiteCartCount()) return window.showToast('Ajoutez un produit avant de commander.', 'error');
+            websiteModelView = view;
+            renderWebsiteModel();
+            document.getElementById('website-model-preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
+        window.searchWebsiteModel = (value, cursorPosition) => {
+            websiteModelSearch = value;
+            websiteModelView = 'catalog';
+            renderWebsiteModel();
+            requestAnimationFrame(() => {
+                const input = document.getElementById('website-model-search');
+                if (!input) return;
+                input.focus();
+                const cursor = Math.min(Number(cursorPosition) || value.length, input.value.length);
+                input.setSelectionRange(cursor, cursor);
+            });
+        };
+        window.filterWebsiteModel = (category) => { websiteModelCategory = category; websiteModelView = 'catalog'; renderWebsiteModel(); };
+        window.openWebsiteProduct = (productId) => { websiteModelSelectedProduct = productId; websiteModelView = 'product'; renderWebsiteModel(); };
+        window.addWebsiteModelProduct = (productId, variant) => {
+            const product = WEBSITE_MODEL_PRODUCTS[activeWebsiteModel].find(item => item.id === productId);
+            if (!product) return;
+            const selectedVariant = variant || product.variants[0] || 'Standard';
+            const key = `${product.id}::${selectedVariant}`;
+            websiteModelCart[activeWebsiteModel][key] = (websiteModelCart[activeWebsiteModel][key] || 0) + 1;
+            window.showToast(`${product.name} ajouté au panier.`);
+            renderWebsiteModel();
+        };
+        window.updateWebsiteCart = (key, delta) => { const cart = websiteModelCart[activeWebsiteModel]; cart[key] = Math.max(0, (cart[key] || 0) + delta); if (!cart[key]) delete cart[key]; renderWebsiteModel(); };
+        window.removeWebsiteCart = (key) => { delete websiteModelCart[activeWebsiteModel][key]; renderWebsiteModel(); };
         window.showModelCart = () => {
-            const count = websiteModelCart[activeWebsiteModel];
-            window.showToast(count ? `Panier de démonstration : ${count} article${count > 1 ? 's' : ''}.` : 'Le panier de démonstration est vide.');
+            websiteModelView = 'cart';
+            renderWebsiteModel();
         };
+        window.submitWebsiteModelOrder = (event) => {
+            event.preventDefault();
+            if (!getWebsiteCartCount()) return window.showToast('Votre panier est vide.', 'error');
+            const form = new FormData(event.currentTarget);
+            const subtotal = getWebsiteCartSubtotal();
+            const delivery = String(form.get('delivery') || 'Domicile');
+            const shipping = delivery === 'Point relais' || subtotal >= 60 ? 0 : 4.90;
+            websiteModelOrder = { firstName: String(form.get('firstName') || ''), delivery, total: subtotal + shipping, number: `CMD-${Date.now().toString().slice(-8)}` };
+            websiteModelCart[activeWebsiteModel] = {};
+            websiteModelView = 'success';
+            renderWebsiteModel();
+        };
+        window.resetWebsiteModelShop = () => { websiteModelOrder = null; websiteModelSearch = ''; websiteModelCategory = 'Tous'; websiteModelView = 'home'; renderWebsiteModel(); };
         window.scrollModelTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         window.requestWebsiteModelQuote = () => {
-            const selectedLabel = activeWebsiteModel === 'fashion' ? 'boutique de vêtements' : 'boutique alimentaire';
+            const selectedLabel = activeWebsiteModel === 'fashion'
+                ? 'boutique de vêtements'
+                : (activeWebsiteModel === 'electronics' ? 'boutique électroménager et électronique' : 'boutique alimentaire');
             window.closeWebsiteModels();
             if (window.appState.isAdmin) {
-                window.createAdminPrototypeQuoteRequest('ux-design');
-                window.showToast(`Prototype : modèle ${selectedLabel} sélectionné.`);
+                window.openQuoteRequestModal('ux-design');
+                const field = document.getElementById('quote-request-requirements');
+                if (field && !field.value.trim()) {
+                    field.value = `Je souhaite simuler une demande de devis pour le modèle ${selectedLabel}.`;
+                    field.dispatchEvent(new Event('input'));
+                }
             } else {
                 window.openQuoteRequestModal('ux-design');
                 const field = document.getElementById('quote-request-requirements');
-                if (field && !field.value.trim()) field.value = `Je souhaite recevoir un devis pour le modèle ${selectedLabel}.`;
+                if (field && !field.value.trim()) {
+                    field.value = `Je souhaite recevoir un devis pour le modèle ${selectedLabel}.`;
+                    field.dispatchEvent(new Event('input'));
+                }
             }
         };
 
@@ -1853,7 +2162,7 @@
                 
                 if (stripeClientId) {
                     const verifiedClient = window.appState.allProfiles.find(client =>
-                        client.id === stripeClientId && client.email !== ADMIN_EMAIL && client.authVerified === true);
+                        client.id === stripeClientId && !isAdminProfile(client) && client.authVerified === true);
                     if (!verifiedClient) {
                         window.appState.selectedStripeClientId = '';
                         window.showToast("Ce compte client n’est pas vérifié par Firebase.", "error");
@@ -1938,7 +2247,7 @@
             const authRole = window.appState.authRole;
 
             if (authRole === 'admin') {
-                if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+                if (!isAdminEmail(email)) {
                     window.appState.authError = "Identifiant Admin incorrect. Vous devez utiliser l'adresse d'administration réservée.";
                     window.appState.authLoading = false;
                     renderApp();
@@ -1952,7 +2261,7 @@
                     return;
                 }
             } else {
-                if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+                if (isAdminEmail(email)) {
                     window.appState.authError = "L'adresse d'administration doit être utilisée uniquement dans l'Espace Admin dédié.";
                     window.appState.authLoading = false;
                     renderApp();
@@ -2037,7 +2346,7 @@
             if(container) {
                 const { allProfiles } = window.appState;
                 const filtered = allProfiles.filter(client =>
-                    client.email !== ADMIN_EMAIL && client.authVerified === true && (
+                    !isAdminProfile(client) && client.authVerified === true && (
                         client.email.toLowerCase().includes(queryVal.toLowerCase()) ||
                         window.getClientName(client.email).toLowerCase().includes(queryVal.toLowerCase())
                     )
@@ -2383,7 +2692,7 @@ service cloud.firestore {
                 'ux-design': { status: 'inactive', subEnd: null }
             });
             const firebaseClientProfiles = window.appState.allProfiles.filter(client =>
-                client.email !== ADMIN_EMAIL && client.authVerified === true);
+                !isAdminProfile(client) && client.authVerified === true);
             const prototypeProfile = {
                 ...window.getAdminPrototypeClient?.(),
                 id: PROTOTYPE_CLIENT_ID,
@@ -2392,7 +2701,7 @@ service cloud.firestore {
                 simulation: true
             };
             const unverifiedClientProfiles = window.appState.allProfiles.filter(client =>
-                client.email && client.email !== ADMIN_EMAIL && client.authVerified !== true);
+                client.email && !isAdminProfile(client) && client.authVerified !== true);
             const prototypePendingQuotes = (prototypeProfile.quotes || []).filter(quote => quote.status === 'pending');
             const adminPendingQuotes = [
                 ...window.appState.allQuotes.filter(quote => quote.status === 'pending'),
@@ -2449,13 +2758,16 @@ service cloud.firestore {
                 .sort((a, b) => a.timestamp - b.timestamp);
 
             // Filtrage des demandes de devis appartenant au client connecté
-            const clientQuotes = window.appState.allQuotes.filter(q => q.userId === user.uid);
+            const clientQuotes = (isAdmin
+                ? (prototypeProfile.quotes || [])
+                : window.appState.allQuotes.filter(q => q.userId === user.uid))
+                .sort((a, b) => (b.date || 0) - (a.date || 0));
             
             // Construction du bloc dynamique de suivi de devis côté client
             let clientQuotesHTML = "";
             if (clientQuotes.length > 0) {
                 clientQuotesHTML = `
-                <div class="mt-8 border-t border-slate-800/80 pt-6">
+                <div id="quote-tracking-section" class="mt-8 border-t border-slate-800/80 pt-6">
                     <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-mono mb-4 flex items-center gap-1.5">
                         <i data-lucide="file-text"></i> Suivi de mes demandes de Devis (${clientQuotes.length})
                     </h4>
@@ -2466,10 +2778,10 @@ service cloud.firestore {
                             let cardBorder = "border-slate-800 bg-slate-950/30";
                             
                             if (q.status === 'pending') {
-                                statusBadge = `<span class="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-400 text-[10px] font-mono">⏳ En attente d'estimation</span>`;
+                                statusBadge = `<span class="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-400 text-[10px] font-mono">⏳ Demande en cours d'examen</span>`;
                             } else if (q.status === 'proposed') {
                                 cardBorder = "border-purple-500/40 bg-[#16122e]/30 shadow-[0_0_15px_rgba(168,85,247,0.08)]";
-                                statusBadge = `<span class="px-2 py-0.5 rounded bg-purple-950/40 border border-purple-500/40 text-purple-300 text-[10px] font-mono font-bold animate-pulse">💡 Proposition : ${q.price.toFixed(2)} €</span>`;
+                                statusBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono font-bold">✓ Demande acceptée : ${q.price.toFixed(2)} €</span>`;
                                 actionButtons = `
                                 <div class="flex gap-2 mt-3 justify-end font-mono">
                                     <button onclick="window.clientPayQuote('${q.id}', '${q.serviceId}', ${q.price})" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] uppercase font-bold transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)] min-h-[32px]">Accepter & Payer</button>
@@ -2487,7 +2799,9 @@ service cloud.firestore {
                             // Ajout des besoins du client en détail sous la carte correspondante
                             const requirementsHTML = q.requirements ? `
                             <div class="mt-2 p-2 bg-slate-950/60 rounded border border-slate-900 text-[10px] text-slate-400 italic font-sans break-words max-h-[80px] overflow-y-auto">
-                                <strong>Vos besoins :</strong> "${q.requirements.replace(/"/g, '&quot;')}"
+                                ${q.projectTitle ? `<strong class="block text-cyan-400 not-italic mb-1">Projet : ${window.escapeHTML(q.projectTitle)}</strong>` : ''}
+                                <strong>Votre souhait :</strong> "${window.escapeHTML(q.requirements)}"
+                                <span class="block mt-1 not-italic text-[9px] text-slate-500">Budget : ${window.escapeHTML(q.budget || 'À définir')}${q.desiredDate ? ` · Date souhaitée : ${new Date(`${q.desiredDate}T12:00:00`).toLocaleDateString('fr-BE')}` : ''}</span>
                             </div>` : '';
 
                             return `
@@ -2607,8 +2921,8 @@ service cloud.firestore {
 
             const mobilePrimaryShortcuts = isAdmin ? [
                 { id: 'admin-console', icon: 'shield-check', label: 'Console' },
+                { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'admin-support', icon: 'messages-square', label: 'Support' },
-                { id: 'news-section', icon: 'newspaper', label: 'Actualités' }
             ] : [
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
@@ -2616,6 +2930,7 @@ service cloud.firestore {
             ];
             const mobileAllShortcuts = isAdmin ? [
                 { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
+                { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'admin-console', icon: 'shield-check', label: 'Console' },
                 { id: 'admin-prototype', icon: 'flask-conical', label: 'Prototype' },
                 { id: 'admin-quotes', icon: 'file-text', label: 'Devis clients' },
@@ -2858,6 +3173,9 @@ service cloud.firestore {
                                     const sState = servicesState[service.id] || { status: 'inactive', subEnd: null, freeReactivationUsed: false };
                                     const isActive = sState.status === 'active' && sState.subEnd > virtualDate;
                                     const daysLeft = sState.subEnd ? Math.max(0, Math.ceil((sState.subEnd - virtualDate) / (1000 * 60 * 60 * 24))) : 0;
+                                    const latestServiceQuote = service.type === 'devis'
+                                        ? clientQuotes.find(quote => quote.serviceId === service.id)
+                                        : null;
                                     
                                     let borderStyle = "border-slate-800/80 hover:border-slate-700 bg-slate-950/40";
                                     let stateBadge = `<span class="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold font-mono">Inactif</span>`;
@@ -2865,6 +3183,15 @@ service cloud.firestore {
                                     if (isActive) {
                                         borderStyle = "border-emerald-500/30 hover:border-emerald-500/50 bg-[#061e1b]/20 shadow-[0_0_15px_rgba(16,185,129,0.03)]";
                                         stateBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/40 text-emerald-400 text-[9px] sm:text-[10px] uppercase font-bold font-mono">Actif (${daysLeft}j)</span>`;
+                                    } else if (service.type === 'devis' && latestServiceQuote?.status === 'pending') {
+                                        borderStyle = "border-amber-500/30 bg-amber-950/10";
+                                        stateBadge = `<span class="px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/30 text-amber-300 text-[9px] uppercase font-bold font-mono">En examen</span>`;
+                                    } else if (service.type === 'devis' && latestServiceQuote?.status === 'proposed') {
+                                        borderStyle = "border-emerald-500/30 bg-emerald-950/10";
+                                        stateBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[9px] uppercase font-bold font-mono">Acceptée</span>`;
+                                    } else if (service.type === 'devis' && latestServiceQuote?.status === 'rejected') {
+                                        borderStyle = "border-red-500/30 bg-red-950/10";
+                                        stateBadge = `<span class="px-2 py-0.5 rounded bg-red-950/40 border border-red-500/30 text-red-300 text-[9px] uppercase font-bold font-mono">Refusée</span>`;
                                     } else if (sState.status === 'expired') {
                                         borderStyle = "border-red-500/20 hover:border-red-500/40 bg-[#1d0e14]/20";
                                         stateBadge = `<span class="px-2 py-0.5 rounded bg-red-950/30 border border-red-500/30 text-red-400 text-[9px] sm:text-[10px] uppercase font-bold font-mono">Expiré</span>`;
@@ -2893,7 +3220,15 @@ service cloud.firestore {
                                     }
 
                                     let actionButton = '';
-                                    if (isActive) {
+                                    if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'pending') {
+                                        actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-amber-950/35 text-amber-300 border border-amber-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">⏳ Demande en cours d'examen</button>`;
+                                    } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'proposed') {
+                                        actionButton = `<button type="button" onclick="window.clientPayQuote('${latestServiceQuote.id}', '${service.id}', ${Number(latestServiceQuote.price) || 0})" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px]">✓ Demande acceptée · Payer</button>`;
+                                    } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'rejected') {
+                                        actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-red-950/35 text-red-300 border border-red-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">✕ Demande refusée</button>`;
+                                    } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'approved_paid') {
+                                        actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-emerald-950/35 text-emerald-300 border border-emerald-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">✓ Paiement accepté</button>`;
+                                    } else if (isActive) {
                                         actionButton = CLIENT_CANCELLATION_REQUEST_IDS.has(service.id)
                                             ? (sState.cancellationRequestedAt
                                                 ? `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-emerald-950/30 text-emerald-300 border border-emerald-500/30 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed opacity-90">Demande de désactivation envoyée</button>`
@@ -2918,6 +3253,12 @@ service cloud.firestore {
                                         </div>
                                         ${isAdmin ? `<div class="flex items-center gap-1.5 text-[9px] uppercase font-bold font-mono text-purple-300"><i data-lucide="flask-conical" class="w-3 h-3"></i> Mode client prototype · règles réelles · paiement simulé</div>` : ''}
                                         <p class="text-xs text-slate-400 flex-1 font-light leading-relaxed font-sans">${service.description}</p>
+
+                                        ${service.id === 'custom-app' ? `
+                                            <button type="button" onclick="window.openAppModels()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] sm:text-[11px] uppercase font-bold transition-all shadow-[0_0_14px_rgba(139,92,246,.22)] flex items-center justify-center gap-2 min-h-[40px]">
+                                                <i data-lucide="smartphone" class="w-4 h-4"></i> Voir nos applications
+                                            </button>
+                                        ` : ''}
                                         
                                         ${service.id === 'ux-design' ? `
                                             <button type="button" onclick="window.openWebsiteModels()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-fuchsia-600/90 to-purple-600/90 hover:from-fuchsia-500 hover:to-purple-500 text-white text-[10px] sm:text-[11px] uppercase font-bold transition-all shadow-[0_0_14px_rgba(192,38,211,.2)] flex items-center justify-center gap-2 min-h-[40px]">
@@ -2969,7 +3310,8 @@ service cloud.firestore {
                             </div>
                         </div>
 
-                        <!-- WIDGET 2 : TCHAT -->
+                        ${!isAdmin ? `
+                        <!-- WIDGET 2 : TCHAT CLIENT RÉEL (MASQUÉ POUR L'ADMIN) -->
                         <div id="client-support" class="mobile-anchor mobile-compact-section bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 h-[350px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
                             <h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider border-b border-slate-800/80 pb-2 flex items-center gap-2">
                                 <i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i> Support & Messagerie
@@ -3001,6 +3343,7 @@ service cloud.firestore {
                                 </button>
                             </form>
                         </div>
+                        ` : ''}
 
                         <!-- WIDGET 3 : TRANSACTIONS -->
                         <div id="client-payments" class="mobile-anchor mobile-compact-section bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 max-h-[300px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
@@ -3161,7 +3504,7 @@ service cloud.firestore {
                             ${SERVICES_DATA.map(service => {
                                 const prototypeState = window.appState.prototypeClient?.services?.[service.id] || { status: 'inactive', subEnd: null };
                                 const prototypeActive = prototypeState.status === 'active' && prototypeState.subEnd > virtualDate;
-                                const prototypeExpired = prototypeState.status === 'active' && prototypeState.subEnd && prototypeState.subEnd <= virtualDate;
+                                const prototypeExpired = prototypeState.status === 'expired' || Boolean(prototypeState.subEnd && prototypeState.subEnd <= virtualDate);
                                 const prototypeDays = prototypeActive ? Math.max(1, Math.ceil((prototypeState.subEnd - virtualDate) / 86400000)) : 0;
                                 return `<div class="bg-slate-950/75 border ${prototypeActive ? 'border-emerald-500/30' : prototypeExpired ? 'border-amber-500/30' : 'border-slate-800'} rounded-xl p-3 flex flex-col gap-3">
                                     <div class="flex items-start justify-between gap-2">
@@ -3171,7 +3514,11 @@ service cloud.firestore {
                                     <div class="flex items-center gap-1.5 mt-auto">
                                         <input id="prototype-days-${service.id}" type="number" min="1" max="3650" value="${prototypeActive ? prototypeDays : (service.durationDays || 30)}" aria-label="Durée prototype en jours" class="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-[10px] text-white text-center focus:outline-none focus:border-cyan-500" />
                                         <button type="button" onclick="window.setAdminPrototypeService('${service.id}')" class="flex-1 px-2 py-1.5 rounded-lg text-[9px] uppercase font-bold bg-cyan-950/50 text-cyan-300 border border-cyan-500/30">Régler les jours</button>
-                                        <button type="button" onclick="document.getElementById('services-section')?.scrollIntoView({behavior:'smooth',block:'start'})" class="px-2 py-1.5 rounded-lg bg-purple-950/40 text-purple-300 border border-purple-500/25 text-[9px] uppercase font-bold">Tester</button>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-1.5">
+                                        <button type="button" onclick="window.expireAdminPrototypeService('${service.id}')" class="px-2 py-2 rounded-lg bg-amber-950/40 text-amber-300 border border-amber-500/25 text-[8px] uppercase font-bold">Simuler expiré</button>
+                                        <button type="button" onclick="window.stopAdminPrototypeService('${service.id}')" class="px-2 py-2 rounded-lg bg-slate-900 text-slate-400 border border-slate-700 text-[8px] uppercase font-bold">Inactif</button>
+                                        <button type="button" onclick="window.mobileGoTo('services-section')" class="px-2 py-2 rounded-lg bg-purple-950/40 text-purple-300 border border-purple-500/25 text-[8px] uppercase font-bold">Tester client</button>
                                     </div>
                                 </div>`;
                             }).join('')}
@@ -3181,6 +3528,25 @@ service cloud.firestore {
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Info globale héritée</span><strong class="${globalAnnouncement?.text ? 'text-emerald-300' : 'text-slate-500'}">${globalAnnouncement?.text ? 'Visible dans la simulation' : 'Aucune diffusion'}</strong></div>
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">PIMP CARD hérité</span><strong class="${pimpCardUrl ? 'text-fuchsia-300' : 'text-slate-500'}">${pimpCardUrl ? 'Lien disponible' : 'Lien non configuré'}</strong></div>
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Configuration</span><strong class="text-purple-300">Globale + personnalisée</strong></div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-slate-800/80">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                                <div><h5 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="message-square-dashed" class="w-4 h-4 text-cyan-400"></i> Messagerie · Simulation prototype</h5><p class="text-[9px] text-slate-500 mt-1">Conversation locale indépendante de la messagerie Firebase.</p></div>
+                                <span class="self-start px-2 py-1 rounded-full bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 text-[8px] uppercase font-bold">Local uniquement · Aucun envoi réel</span>
+                            </div>
+                            <div id="prototype-support-box" class="h-[240px] overflow-y-auto rounded-xl bg-slate-950/80 border border-slate-800 p-3 space-y-3">
+                                ${(prototypeProfile.supportMessages || []).length ? (prototypeProfile.supportMessages || []).map(message => `
+                                    <div class="flex flex-col ${message.sender === 'client' ? 'items-start' : 'items-end'}">
+                                        <span class="text-[8px] text-slate-500 mb-1">${message.sender === 'client' ? 'Client prototype' : 'Admin simulé'} · ${new Date(message.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                        <div class="max-w-[88%] rounded-xl px-3 py-2 text-[10px] leading-relaxed ${message.sender === 'client' ? 'bg-cyan-950/70 border border-cyan-500/25 text-cyan-100' : 'bg-purple-950/70 border border-purple-500/25 text-purple-100'}">${window.escapeHTML(message.text)}</div>
+                                    </div>`).join('') : `<div class="h-full flex items-center justify-center text-center text-[10px] text-slate-600 px-6">Envoyez un premier message pour simuler une conversation entre le client prototype et l’Administrateur.</div>`}
+                            </div>
+                            <div class="mt-3 flex flex-col sm:flex-row gap-2">
+                                <input id="prototype-support-input" type="text" placeholder="Écrire un message de simulation..." autocomplete="off" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 min-h-[40px]" onkeydown="if(event.key==='Enter'){event.preventDefault();window.sendPrototypeSupportMessage('client')}" />
+                                <button type="button" onclick="window.sendPrototypeSupportMessage('client')" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[9px] uppercase font-bold min-h-[40px]">Envoyer comme Client</button>
+                                <button type="button" onclick="window.sendPrototypeSupportMessage('admin')" class="px-3 py-2 rounded-lg bg-purple-700 hover:bg-purple-600 text-white text-[9px] uppercase font-bold min-h-[40px]">Répondre comme Admin</button>
+                            </div>
+                            <button type="button" onclick="window.clearPrototypeSupportMessages()" class="mt-2 text-[8px] uppercase text-red-400 hover:text-red-300">Vider la conversation simulée</button>
                         </div>
                     </div>
 
@@ -3199,12 +3565,13 @@ service cloud.firestore {
                                                 <p class="text-xs font-bold text-slate-300 font-sans truncate">${q.serviceName}</p>
                                                 <p class="text-[10px] text-slate-500 font-mono mt-1 truncate">${q.userEmail}</p>
                                                 ${q.simulation ? '<span class="inline-block mt-1 px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[8px] uppercase font-bold">Simulation prototype</span>' : ''}
+                                                ${(q.projectTitle || q.budget || q.desiredDate) ? `<div class="mt-2 grid grid-cols-1 gap-1 rounded bg-slate-950/60 border border-slate-800 p-2 text-[9px] font-mono"><span><b class="text-slate-500">Projet :</b> ${window.escapeHTML(q.projectTitle || 'Sans nom')}</span><span><b class="text-slate-500">Budget :</b> ${window.escapeHTML(q.budget || 'À définir')}</span><span><b class="text-slate-500">Date souhaitée :</b> ${q.desiredDate ? new Date(`${q.desiredDate}T12:00:00`).toLocaleDateString('fr-BE') : 'À définir'}</span></div>` : ''}
                                                 
                                                 <!-- Affichage des besoins rédigés par le client dans l'Admin -->
                                                 ${q.requirements ? `
                                                 <div class="mt-2 p-2.5 bg-slate-950/80 rounded border border-slate-850/50 text-[10px] text-slate-300 font-sans break-words leading-relaxed max-h-[120px] overflow-y-auto">
                                                     <strong class="text-cyan-400 block mb-0.5 uppercase text-[8px] font-mono">Besoins du client :</strong>
-                                                    "${q.requirements.replace(/"/g, '&quot;')}"
+                                                    "${window.escapeHTML(q.requirements)}"
                                                 </div>` : ''}
                                             </div>
                                             <div class="flex flex-col gap-2">
@@ -3238,6 +3605,7 @@ service cloud.firestore {
                                     ${[...new Set(window.appState.allMessages.filter(m => m.userId && m.userId !== 'admin').map(m => m.userId))].filter(uId => {
                                         const p = window.appState.allProfiles.find(profile => profile.id === uId);
                                         const email = p?.email || window.appState.allMessages.find(m => m.userId === uId)?.userEmail || '';
+                                        if (isAdminProfile(p) || isAdminProfileEmail(email)) return false;
                                         const search = window.appState.adminChatSearchQuery.toLowerCase().trim();
                                         return !search || email.toLowerCase().includes(search) || window.getClientName(email).toLowerCase().includes(search);
                                     }).map(uId => {
@@ -3320,7 +3688,7 @@ service cloud.firestore {
                                             class="w-full bg-slate-950 border border-slate-850 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 min-h-[36px]">
                                             <option value="">-- Choisir un client --</option>
                                             <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedCredClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
-                                            ${window.appState.allProfiles.filter(p => p.email !== ADMIN_EMAIL).map(p => `
+                                            ${window.appState.allProfiles.filter(p => !isAdminProfile(p)).map(p => `
                                                 <option value="${p.id}" ${window.appState.selectedCredClientId === p.id ? 'selected' : ''}>
                                                     ${window.getClientName(p.email)} (${p.email})
                                                 </option>
@@ -3579,7 +3947,7 @@ service cloud.firestore {
                                     class="bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-[10px] text-white focus:outline-none focus:border-purple-500 min-h-[28px] flex-1 sm:flex-none">
                                     <option value="">-- Choisir un client --</option>
                                     <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedPriceClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
-                                    ${window.appState.allProfiles.filter(p => p.email !== ADMIN_EMAIL).map(p => `
+                                    ${window.appState.allProfiles.filter(p => !isAdminProfile(p)).map(p => `
                                         <option value="${p.id}" ${window.appState.selectedPriceClientId === p.id ? 'selected' : ''}>
                                             👤 ${window.getClientName(p.email)} (${p.email})
                                         </option>
@@ -3788,7 +4156,7 @@ service cloud.firestore {
             const routeIds = [
                 'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
                 'news-section', 'community-section', 'admin-console', 'admin-quotes',
-                'admin-support', 'admin-services', 'admin-stripe', 'admin-pimp-card',
+                'admin-prototype', 'admin-support', 'admin-services', 'admin-stripe', 'admin-pimp-card',
                 'admin-pending-profiles', 'admin-clients'
             ];
             const resolvedId = targetId === 'dashboard-top' ? 'overview-section' : targetId;
@@ -4163,6 +4531,7 @@ service cloud.firestore {
             window.appState.prototypeClient.stripeLinks = window.appState.prototypeClient.stripeLinks || {};
             window.appState.prototypeClient.quotes = window.appState.prototypeClient.quotes || [];
             window.appState.prototypeClient.events = window.appState.prototypeClient.events || [];
+            window.appState.prototypeClient.supportMessages = window.appState.prototypeClient.supportMessages || [];
             return window.appState.prototypeClient;
         };
 
@@ -4170,6 +4539,37 @@ service cloud.firestore {
             const prototype = window.getAdminPrototypeClient();
             prototype.events.unshift({ type, serviceId, detail, timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now() });
             prototype.events = prototype.events.slice(0, 100);
+        };
+
+        // Messagerie strictement locale du profil prototype : aucune écriture Firebase.
+        window.sendPrototypeSupportMessage = (sender) => {
+            if (!window.appState.isAdmin || !['client', 'admin'].includes(sender)) return;
+            const input = document.getElementById('prototype-support-input');
+            const text = String(input?.value || '').trim();
+            if (!text) return;
+            const prototype = window.getAdminPrototypeClient();
+            prototype.supportMessages.push({
+                id: `prototype-message-${Date.now()}`,
+                sender,
+                text,
+                timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now(),
+                simulation: true
+            });
+            prototype.supportMessages = prototype.supportMessages.slice(-100);
+            window.addAdminPrototypeEvent('support_simulation', '', `Message simulé envoyé comme ${sender === 'client' ? 'Client prototype' : 'Admin'}`);
+            window.saveAdminPrototype();
+            renderApp();
+        };
+
+        window.clearPrototypeSupportMessages = () => {
+            if (!window.appState.isAdmin) return;
+            window.showCyberConfirm("Vider uniquement la conversation du prototype ? Aucun message Firebase ne sera supprimé.", () => {
+                const prototype = window.getAdminPrototypeClient();
+                prototype.supportMessages = [];
+                window.addAdminPrototypeEvent('support_simulation_cleared', '', 'Conversation prototype vidée');
+                window.saveAdminPrototype();
+                renderApp();
+            });
         };
 
         // Applique au prototype la même expiration que pour un compte client.
@@ -4219,7 +4619,7 @@ service cloud.firestore {
             });
         };
 
-        window.createAdminPrototypeQuoteRequest = (serviceId) => {
+        window.createAdminPrototypeQuoteRequest = (serviceId, details = {}) => {
             if (!window.appState.isAdmin) return;
             const service = SERVICES_DATA.find(item => item.id === serviceId);
             if (!service) return;
@@ -4234,7 +4634,15 @@ service cloud.firestore {
             };
             prototype.quotes = prototype.quotes || [];
             const existingPending = prototype.quotes.find(quote => quote.serviceId === serviceId && quote.status === 'pending');
-            if (!existingPending) {
+            if (existingPending) {
+                Object.assign(existingPending, {
+                    projectTitle: details.projectTitle || existingPending.projectTitle || '',
+                    budget: details.budget || existingPending.budget || 'À définir',
+                    desiredDate: details.desiredDate || existingPending.desiredDate || '',
+                    requirements: details.requirements || existingPending.requirements,
+                    updatedAt: now
+                });
+            } else {
                 prototype.quotes.unshift({
                     id: `prototype-${Date.now()}-${serviceId}`,
                     userId: PROTOTYPE_CLIENT_ID,
@@ -4242,7 +4650,10 @@ service cloud.firestore {
                     serviceId,
                     serviceName: service.name,
                     status: 'pending',
-                    requirements: 'Demande de devis générée depuis le profil client prototype.',
+                    projectTitle: details.projectTitle || '',
+                    budget: details.budget || 'À définir',
+                    desiredDate: details.desiredDate || '',
+                    requirements: details.requirements || 'Demande de devis générée depuis le profil client prototype.',
                     date: now,
                     simulation: true
                 });
@@ -4299,6 +4710,32 @@ service cloud.firestore {
             renderApp();
         };
 
+        // Force immédiatement l'état expiré afin de tester le même parcours
+        // qu'un client arrivé à la fin de son abonnement.
+        window.expireAdminPrototypeService = (serviceId) => {
+            if (!window.appState.isAdmin) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (!service) return;
+            const prototype = window.getAdminPrototypeClient();
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            const current = prototype.services[serviceId] || {};
+            prototype.services[serviceId] = {
+                ...current,
+                status: 'expired',
+                activatedAt: current.activatedAt || (now - ((service.durationDays || 30) * 86400000)),
+                subEnd: now - 1000,
+                expiredAt: now - 1000,
+                expiryNotifiedAt: now,
+                renewalRequestedAt: null,
+                cancellationRequestedAt: null,
+                simulation: true
+            };
+            window.addAdminPrototypeEvent('expiration_simulation', serviceId, `${service.name} forcé à l'état expiré`);
+            window.saveAdminPrototype();
+            window.showToast(`Prototype : ${service.name} est maintenant expiré.`);
+            renderApp();
+        };
+
         // Coupe un service prototype sans modifier les données Firebase réelles.
         window.stopAdminPrototypeService = (serviceId) => {
             if (!window.appState.isAdmin) return;
@@ -4310,9 +4747,14 @@ service cloud.firestore {
                 ...(prototype.services[serviceId] || {}),
                 status: 'inactive',
                 subEnd: null,
+                expiredAt: null,
+                expiryNotifiedAt: null,
+                renewalRequestedAt: null,
+                cancellationRequestedAt: null,
                 stoppedAt: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now(),
                 simulation: true
             };
+            window.addAdminPrototypeEvent('inactive_simulation', serviceId, `${service.name} remis à l'état inactif`);
             window.saveAdminPrototype();
             window.showToast(`Simulation : ${service.name} désactivé.`);
             renderApp();
@@ -4555,7 +4997,7 @@ service cloud.firestore {
         window.adminVerifyClientProfile = (clientId) => {
             if (!window.appState.isAdmin) return;
             const client = window.appState.allProfiles.find(profile =>
-                profile.id === clientId && profile.email !== ADMIN_EMAIL && profile.authVerified !== true);
+                profile.id === clientId && !isAdminProfile(profile) && profile.authVerified !== true);
             if (!client) {
                 window.showToast("Ce profil est introuvable ou déjà vérifié.", "error");
                 return;
@@ -4579,7 +5021,7 @@ service cloud.firestore {
 
         window.openClientPersonalInfo = (clientId) => {
             if (!window.appState.isAdmin) return;
-            const client = window.appState.allProfiles.find(profile => profile.id === clientId && profile.email !== ADMIN_EMAIL);
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
             const modal = document.getElementById('client-personal-info-modal');
             if (!client || !modal) {
                 window.showToast("Informations client introuvables.", "error");
@@ -4609,7 +5051,7 @@ service cloud.firestore {
 
         window.adminRejectClientProfile = (clientId) => {
             if (!window.appState.isAdmin) return;
-            const client = window.appState.allProfiles.find(profile => profile.id === clientId && profile.email !== ADMIN_EMAIL);
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
             if (!client) return;
             window.showCyberConfirm(`Refuser la vérification du profil ${client.email} ?`, async () => {
                 try {
@@ -4628,7 +5070,7 @@ service cloud.firestore {
 
         window.adminDeleteClientProfile = (clientId) => {
             if (!window.appState.isAdmin) return;
-            const client = window.appState.allProfiles.find(profile => profile.id === clientId && profile.email !== ADMIN_EMAIL);
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
             if (!client) return;
             window.showCyberConfirm(`Supprimer définitivement du site le profil ${client.email} et bloquer sa reconnexion ?`, async () => {
                 try {
@@ -4753,13 +5195,22 @@ service cloud.firestore {
             if (!service) return;
 
             window.appState.quoteRequestServiceId = sId;
+            window.appState.quoteRequestPrototype = window.appState.isAdmin === true;
 
             const modal = document.getElementById('quote-request-modal');
             const serviceNameSpan = document.getElementById('quote-modal-service-name');
             const textarea = document.getElementById('quote-request-requirements');
 
-            if (serviceNameSpan) serviceNameSpan.innerText = service.name;
+            if (serviceNameSpan) serviceNameSpan.innerText = window.appState.quoteRequestPrototype ? `${service.name} · SIMULATION PROTOTYPE` : service.name;
             if (textarea) textarea.value = ""; // Réinitialiser le texte de saisie
+            const titleInput = document.getElementById('quote-request-title');
+            const budgetInput = document.getElementById('quote-request-budget');
+            const deadlineInput = document.getElementById('quote-request-deadline');
+            const counter = document.getElementById('quote-requirements-count');
+            if (titleInput) titleInput.value = '';
+            if (budgetInput) budgetInput.value = 'À définir';
+            if (deadlineInput) deadlineInput.value = '';
+            if (counter) counter.textContent = '0';
 
             if (modal) {
                 modal.classList.remove('hidden');
@@ -4772,6 +5223,7 @@ service cloud.firestore {
             const modal = document.getElementById('quote-request-modal');
             if (modal) modal.classList.add('hidden');
             window.appState.quoteRequestServiceId = null;
+            window.appState.quoteRequestPrototype = false;
         };
 
         // Envoyer la demande de devis avec les besoins personnalisés rédigés
@@ -4782,9 +5234,24 @@ service cloud.firestore {
 
             const textarea = document.getElementById('quote-request-requirements');
             const requirementsText = textarea ? textarea.value.trim() : "";
+            const projectTitle = String(document.getElementById('quote-request-title')?.value || '').trim();
+            const budget = String(document.getElementById('quote-request-budget')?.value || 'À définir');
+            const desiredDate = String(document.getElementById('quote-request-deadline')?.value || '');
 
-            if (!requirementsText) {
-                window.showToast("Veuillez renseigner vos besoins avant d'envoyer la demande.", "error");
+            if (requirementsText.length < 10) {
+                window.showToast("Expliquez votre souhait avec au moins 10 caractères.", "error");
+                textarea?.focus();
+                return;
+            }
+
+            if (window.appState.quoteRequestPrototype) {
+                window.createAdminPrototypeQuoteRequest(sId, {
+                    projectTitle,
+                    budget,
+                    desiredDate,
+                    requirements: requirementsText
+                });
+                window.closeQuoteRequestModal();
                 return;
             }
 
@@ -4796,6 +5263,9 @@ service cloud.firestore {
                     serviceId: sId,
                     serviceName: service.name,
                     status: 'pending',
+                    projectTitle,
+                    budget,
+                    desiredDate,
                     requirements: requirementsText, // Besoins client transmis
                     date: window.getVirtualTimestamp()
                 });
@@ -5015,6 +5485,19 @@ service cloud.firestore {
         // Le client refuse une proposition de devis
         window.clientRejectQuote = async (quoteId) => {
             window.showCyberConfirm("Confirmez-vous le refus de cette proposition de tarif ?", async () => {
+                if (window.appState.isAdmin && quoteId.startsWith('prototype-')) {
+                    const prototype = window.getAdminPrototypeClient();
+                    const quote = (prototype.quotes || []).find(item => item.id === quoteId);
+                    if (!quote) return;
+                    quote.status = 'rejected_by_client';
+                    quote.updatedAt = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    prototype.services[quote.serviceId] = { ...(prototype.services[quote.serviceId] || {}), quoteStatus: 'rejected_by_client', simulation: true };
+                    window.addAdminPrototypeEvent('quote_rejected_by_client', quote.serviceId, 'Proposition refusée par le Client prototype');
+                    window.saveAdminPrototype();
+                    window.showToast("Prototype : proposition de tarif refusée.");
+                    renderApp();
+                    return;
+                }
                 try {
                     const quoteRef = doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quoteId);
                     await updateDoc(quoteRef, { status: 'rejected_by_client' });
@@ -5028,6 +5511,32 @@ service cloud.firestore {
 
         // Le client accepte la proposition de devis et initie le paiement Stripe
         window.clientPayQuote = (quoteId, serviceId, price) => {
+            if (window.appState.isAdmin && quoteId.startsWith('prototype-')) {
+                const service = SERVICES_DATA.find(item => item.id === serviceId);
+                const prototype = window.getAdminPrototypeClient();
+                const quote = (prototype.quotes || []).find(item => item.id === quoteId);
+                if (!service || !quote) return;
+                window.showCyberConfirm(`SIMULATION CLIENT — Accepter la proposition de ${Number(price).toFixed(2)} € et simuler le paiement ?`, () => {
+                    const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    quote.status = 'approved_paid';
+                    quote.paidAt = now;
+                    prototype.services[serviceId] = {
+                        ...(prototype.services[serviceId] || {}),
+                        status: 'active',
+                        activatedAt: now,
+                        subEnd: now + ((service.durationDays || 30) * 86400000),
+                        quoteStatus: 'approved_paid',
+                        quotePrice: Number(price),
+                        prototypePaymentStatus: 'paid',
+                        simulation: true
+                    };
+                    window.addAdminPrototypeEvent('quote_paid', serviceId, `Devis accepté et paiement simulé : ${Number(price).toFixed(2)} €`);
+                    window.saveAdminPrototype();
+                    window.showToast(`Prototype : devis accepté, ${service.name} est activé.`);
+                    renderApp();
+                });
+                return;
+            }
             window.appState.payingServiceId = serviceId;
             window.appState.payingQuoteId = quoteId;
             window.appState.payingCustomPrice = price;
