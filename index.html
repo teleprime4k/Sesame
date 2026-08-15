@@ -1963,6 +1963,20 @@
                 state[field] = window.getVirtualTimestamp();
                 state.simulation = true;
                 prototype.services[sId] = state;
+                if (isCancellation) {
+                    prototype.supportMessages = prototype.supportMessages || [];
+                    prototype.supportMessages.push({
+                        id: `prototype-cancellation-${Date.now()}-${sId}`,
+                        sender: 'client',
+                        text: `[Demande de désactivation] Client Prototype souhaite désactiver le service ${service.name}. Merci de traiter cette demande.`,
+                        timestamp: window.getVirtualTimestamp(),
+                        notificationType: 'cancellation_request',
+                        serviceId: sId,
+                        readByAdmin: false,
+                        simulation: true
+                    });
+                    prototype.supportMessages = prototype.supportMessages.slice(-100);
+                }
                 window.addAdminPrototypeEvent(requestType, sId, isCancellation
                     ? `Demande de désactivation envoyée pour ${service.name}`
                     : `Demande de renouvellement envoyée pour ${service.name}`);
@@ -2910,6 +2924,9 @@ service cloud.firestore {
             const unreadSupportMessages = window.appState.allMessages.filter(m => isAdmin
                 ? m.sender === 'user' && m.readByAdmin === false
                 : m.userId === user.uid && m.sender === 'admin' && m.readByClient === false);
+            const unreadPrototypeSupportMessages = isAdmin
+                ? (prototypeProfile.supportMessages || []).filter(message => message.sender === 'client' && message.readByAdmin === false)
+                : [];
             const communityJoined = isAdmin || profile?.communityChatJoined === true;
             const communityMessages = window.appState.allClientMessages.filter(m => m.groupId === 'sesame-community');
             const communityMembers = window.appState.allCommunityMembers;
@@ -3008,6 +3025,19 @@ service cloud.firestore {
                         <span class="min-w-0">
                             <strong class="block text-white text-xs uppercase font-mono">${unreadSupportMessages.length} nouveau${unreadSupportMessages.length > 1 ? 'x' : ''} message${unreadSupportMessages.length > 1 ? 's' : ''}</strong>
                             <span class="block text-[10px] text-purple-200 truncate">${isAdmin ? `Message de ${window.getClientName(unreadSupportMessages[0].userEmail)}` : 'Réponse du support Sésame'} — cliquez ici pour ouvrir et retirer la notification.</span>
+                        </span>
+                    </span>
+                    <span class="text-[9px] uppercase text-cyan-300 font-bold shrink-0">Ouvrir</span>
+                </button>` : ''}
+
+                ${unreadPrototypeSupportMessages.length ? `
+                <button onclick="window.openPrototypeSupportNotification()"
+                    class="relative z-20 w-full text-left bg-gradient-to-r from-amber-950/90 to-cyan-950/75 border border-amber-400/70 p-4 rounded-2xl shadow-[0_0_25px_rgba(251,191,36,0.28)] flex items-center justify-between gap-3 animate-pulse">
+                    <span class="flex items-center gap-3 min-w-0">
+                        <span class="p-2 bg-amber-900/70 rounded-lg"><i data-lucide="bell-ring" class="w-5 h-5 text-amber-200"></i></span>
+                        <span class="min-w-0">
+                            <strong class="block text-white text-xs uppercase font-mono">Simulation prototype · nouvelle demande</strong>
+                            <span class="block text-[10px] text-amber-100 truncate">Demande de désactivation de ${window.escapeHTML(SERVICES_DATA.find(service => service.id === unreadPrototypeSupportMessages[0].serviceId)?.name || 'service')} — cliquez pour ouvrir et retirer la notification.</span>
                         </span>
                     </span>
                     <span class="text-[9px] uppercase text-cyan-300 font-bold shrink-0">Ouvrir</span>
@@ -3529,7 +3559,7 @@ service cloud.firestore {
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">PIMP CARD hérité</span><strong class="${pimpCardUrl ? 'text-fuchsia-300' : 'text-slate-500'}">${pimpCardUrl ? 'Lien disponible' : 'Lien non configuré'}</strong></div>
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Configuration</span><strong class="text-purple-300">Globale + personnalisée</strong></div>
                         </div>
-                        <div class="mt-4 pt-4 border-t border-slate-800/80">
+                        <div id="prototype-support-section" class="mt-4 pt-4 border-t border-slate-800/80">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                                 <div><h5 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="message-square-dashed" class="w-4 h-4 text-cyan-400"></i> Messagerie · Simulation prototype</h5><p class="text-[9px] text-slate-500 mt-1">Conversation locale indépendante de la messagerie Firebase.</p></div>
                                 <span class="self-start px-2 py-1 rounded-full bg-emerald-950/50 border border-emerald-500/30 text-emerald-300 text-[8px] uppercase font-bold">Local uniquement · Aucun envoi réel</span>
@@ -4570,6 +4600,18 @@ service cloud.firestore {
                 window.saveAdminPrototype();
                 renderApp();
             });
+        };
+
+        window.openPrototypeSupportNotification = () => {
+            if (!window.appState.isAdmin) return;
+            const prototype = window.getAdminPrototypeClient();
+            const unreadMessages = (prototype.supportMessages || []).filter(message => message.sender === 'client' && message.readByAdmin === false);
+            if (!unreadMessages.length) return;
+            unreadMessages.forEach(message => { message.readByAdmin = true; });
+            window.addAdminPrototypeEvent('prototype_notification_opened', unreadMessages[0].serviceId || '', 'Notification locale de demande de désactivation ouverte');
+            window.saveAdminPrototype();
+            renderApp();
+            setTimeout(() => document.getElementById('prototype-support-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
         };
 
         // Applique au prototype la même expiration que pour un compte client.
