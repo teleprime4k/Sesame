@@ -656,6 +656,7 @@
             quoteRequestServiceId: null,
             quoteRequestPrototype: false,
             onboardingDraft: null,
+            subscriptionCorrectionOpen: false,
             prototypeOnboardingOpen: false,
 
             // Personnalisation des liens Stripe par client
@@ -966,7 +967,7 @@
             } else if (!window.appState.isAdmin && window.appState.profile &&
                 (!window.appState.profile.firstName?.trim() || !window.appState.profile.lastName?.trim())) {
                 root.innerHTML = getRequiredProfileCompletionHTML();
-            } else if (!window.appState.isAdmin && window.appState.profile?.onboardingRequired === true && window.appState.profile?.onboardingCompleted !== true) {
+            } else if (!window.appState.isAdmin && (window.appState.subscriptionCorrectionOpen || (window.appState.profile?.onboardingRequired === true && window.appState.profile?.onboardingCompleted !== true))) {
                 root.innerHTML = getSubscriptionOnboardingHTML(false);
             } else if (window.appState.isAdmin && window.appState.prototypeOnboardingOpen) {
                 root.innerHTML = getSubscriptionOnboardingHTML(true);
@@ -2546,6 +2547,21 @@
             renderApp();
         };
 
+        window.openSubscriptionCorrection = () => {
+            if (window.appState.isAdmin) return;
+            const status = window.appState.profile?.subscriptionOnboarding?.status;
+            if (!['not_found', 'correction_required'].includes(status)) return;
+            window.appState.onboardingDraft = null;
+            window.appState.subscriptionCorrectionOpen = true;
+            renderApp();
+        };
+
+        window.closeSubscriptionCorrection = () => {
+            window.appState.onboardingDraft = null;
+            window.appState.subscriptionCorrectionOpen = false;
+            renderApp();
+        };
+
         window.closePrototypeOnboarding = () => {
             window.appState.onboardingDraft = null;
             window.appState.prototypeOnboardingOpen = false;
@@ -2554,6 +2570,15 @@
 
         window.startPrototypeOnboarding = () => {
             if (!window.appState.isAdmin) return;
+            window.appState.onboardingDraft = null;
+            window.appState.prototypeOnboardingOpen = true;
+            renderApp();
+        };
+
+        window.startPrototypeSubscriptionCorrection = () => {
+            if (!window.appState.isAdmin) return;
+            const status = window.getAdminPrototypeClient()?.subscriptionOnboarding?.status;
+            if (!['not_found', 'correction_required'].includes(status)) return;
             window.appState.onboardingDraft = null;
             window.appState.prototypeOnboardingOpen = true;
             renderApp();
@@ -2593,6 +2618,7 @@
                     text: `[Rattachement d’abonnement] ${window.getClientName(user.email)} demande le rattachement et la réactivation de ${service.name}${draft.username ? ` — Username : ${draft.username}` : ''}.`
                 });
                 window.appState.onboardingDraft = null;
+                window.appState.subscriptionCorrectionOpen = false;
                 window.showToast(service ? 'Demande envoyée à l’administrateur.' : 'Bienvenue dans votre espace client.');
             } catch (error) {
                 console.error(error);
@@ -2856,13 +2882,16 @@
         function getSubscriptionOnboardingHTML(isPrototype = false) {
             const draft = window.appState.onboardingDraft;
             const selectedService = draft ? SERVICES_DATA.find(service => service.id === draft.serviceId) : null;
+            const correctionRequest = isPrototype
+                ? (['not_found', 'correction_required'].includes(window.getAdminPrototypeClient()?.subscriptionOnboarding?.status) ? window.getAdminPrototypeClient().subscriptionOnboarding : null)
+                : (window.appState.subscriptionCorrectionOpen ? window.appState.profile?.subscriptionOnboarding : null);
             return `
             <div class="min-h-screen bg-[#030712] flex items-center justify-center p-4 relative overflow-hidden">
                 <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(6,182,212,.12),_transparent_48%)] pointer-events-none"></div>
                 <div class="relative w-full max-w-2xl bg-slate-900/95 border border-cyan-500/40 rounded-2xl p-5 sm:p-8 shadow-[0_0_40px_rgba(6,182,212,.16)]">
                     <div class="flex items-start gap-3 mb-5">
                         <div class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-500/30 flex items-center justify-center shrink-0"><i data-lucide="link-2" class="w-6 h-6 text-cyan-400"></i></div>
-                        <div><span class="inline-block px-2 py-1 rounded bg-${isPrototype ? 'purple' : 'cyan'}-950 border border-${isPrototype ? 'purple' : 'cyan'}-500/30 text-${isPrototype ? 'purple' : 'cyan'}-300 text-[8px] uppercase font-bold mb-2">${isPrototype ? 'Simulation prototype · local uniquement' : 'Première connexion obligatoire'}</span><h2 class="text-lg sm:text-xl text-white font-bold">Bienvenue ! Possédez-vous déjà un abonnement chez nous ?</h2><p class="text-xs text-slate-400 mt-2">Cette étape permet de rattacher un abonnement existant à votre nouveau compte Sésame.</p></div>
+                        <div><span class="inline-block px-2 py-1 rounded bg-${isPrototype ? 'purple' : correctionRequest ? 'amber' : 'cyan'}-950 border border-${isPrototype ? 'purple' : correctionRequest ? 'amber' : 'cyan'}-500/30 text-${isPrototype ? 'purple' : correctionRequest ? 'amber' : 'cyan'}-300 text-[8px] uppercase font-bold mb-2">${isPrototype ? 'Simulation prototype · local uniquement' : correctionRequest ? 'Modification demandée par l’administrateur' : 'Première connexion obligatoire'}</span><h2 class="text-lg sm:text-xl text-white font-bold">${correctionRequest ? 'Corrigez votre demande de rattachement' : 'Bienvenue ! Possédez-vous déjà un abonnement chez nous ?'}</h2><p class="text-xs text-slate-400 mt-2">${correctionRequest ? `Sélectionnez le service que vous possédez réellement puis renvoyez la demande.${correctionRequest.suggestedServiceName ? ` Service conseillé : ${window.escapeHTML(correctionRequest.suggestedServiceName)}.` : ''}` : 'Cette étape permet de rattacher un abonnement existant à votre nouveau compte Sésame.'}</p>${correctionRequest?.adminNote ? `<p class="text-[10px] text-amber-200 mt-2">Message de l’administrateur : ${window.escapeHTML(correctionRequest.adminNote)}</p>` : ''}</div>
                     </div>
                     ${!draft ? `
                     <form onsubmit="window.prepareSubscriptionAttachment(event, ${isPrototype})" class="space-y-3">
@@ -2883,7 +2912,7 @@
                         <button onclick="window.submitSubscriptionReactivation(${isPrototype})" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-bold uppercase text-xs">${selectedService ? 'Réactiver mon abonnement' : 'Confirmer et accéder à mon espace'}</button>
                         <button onclick="window.cancelSubscriptionAttachment(${isPrototype})" class="w-full py-2 text-xs text-slate-500 hover:text-cyan-300">Modifier ma réponse</button>
                     </div>`}
-                    ${isPrototype ? `<button onclick="window.closePrototypeOnboarding()" class="w-full mt-4 py-2 text-xs text-slate-500 hover:text-red-300">Quitter la simulation</button>` : `<button onclick="window.handleLogout()" class="w-full mt-4 py-2 text-xs text-slate-500 hover:text-red-400">Se déconnecter</button>`}
+                    ${isPrototype ? `<button onclick="window.closePrototypeOnboarding()" class="w-full mt-4 py-2 text-xs text-slate-500 hover:text-red-300">${correctionRequest ? 'Retour au Compte client prototype' : 'Quitter la simulation'}</button>` : correctionRequest ? `<button onclick="window.closeSubscriptionCorrection()" class="w-full mt-4 py-2 text-xs text-slate-500 hover:text-cyan-300">Retour à mon espace</button>` : `<button onclick="window.handleLogout()" class="w-full mt-4 py-2 text-xs text-slate-500 hover:text-red-400">Se déconnecter</button>`}
                 </div>
             </div>`;
         }
@@ -3355,6 +3384,12 @@ service cloud.firestore {
                 <div class="relative z-20 w-full bg-gradient-to-r from-emerald-950/90 to-cyan-950/75 border border-emerald-400/60 p-4 rounded-2xl shadow-[0_0_24px_rgba(52,211,153,.22)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span class="flex items-center gap-3"><span class="p-2 bg-emerald-900/70 rounded-lg"><i data-lucide="badge-check" class="w-5 h-5 text-emerald-200"></i></span><span><strong class="block text-white text-xs uppercase font-mono">Votre abonnement ${window.escapeHTML(subscriptionAttachmentState.serviceName || '')} est désormais actif !</strong><span class="text-[10px] text-emerald-100">Le rattachement et la réactivation ont été validés.</span></span></span>
                     <button onclick="window.acknowledgeSubscriptionActivation()" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] uppercase font-bold shrink-0">J’ai lu</button>
+                </div>` : ''}
+
+                ${!isAdmin && ['not_found', 'correction_required'].includes(subscriptionAttachmentState?.status) ? `
+                <div class="relative z-20 w-full bg-gradient-to-r from-red-950/90 to-amber-950/75 border border-red-400/60 p-4 rounded-2xl shadow-[0_0_24px_rgba(248,113,113,.18)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span class="flex items-start gap-3"><span class="p-2 bg-red-900/70 rounded-lg shrink-0"><i data-lucide="${subscriptionAttachmentState.status === 'not_found' ? 'search-x' : 'file-pen-line'}" class="w-5 h-5 text-red-200"></i></span><span><strong class="block text-white text-xs uppercase font-mono">${subscriptionAttachmentState.status === 'not_found' ? 'Abonnement introuvable' : 'Demande de rattachement à modifier'}</strong><span class="block text-[10px] text-red-100 mt-1">${subscriptionAttachmentState.status === 'not_found' ? `Aucun abonnement ${window.escapeHTML(subscriptionAttachmentState.serviceName || '')} n’a été retrouvé à votre nom.` : `Le service sélectionné ne correspond pas à votre abonnement.${subscriptionAttachmentState.suggestedServiceName ? ` Service conseillé : ${window.escapeHTML(subscriptionAttachmentState.suggestedServiceName)}.` : ''}`}</span>${subscriptionAttachmentState.adminNote ? `<span class="block text-[10px] text-amber-200 mt-1">Message de l’administrateur : ${window.escapeHTML(subscriptionAttachmentState.adminNote)}</span>` : ''}</span></span>
+                    <button onclick="window.openSubscriptionCorrection()" class="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[9px] uppercase font-bold shrink-0">Modifier ma demande</button>
                 </div>` : ''}
 
                 ${!isAdmin && !profile?.retentionNoticeAcknowledgedAt ? `
@@ -3887,7 +3922,7 @@ service cloud.firestore {
                             ${pendingSubscriptionAttachments.length ? pendingSubscriptionAttachments.map(client => {
                                 const request = client.subscriptionOnboarding;
                                 const prototypeRequest = client.id === PROTOTYPE_CLIENT_ID || request?.simulation;
-                                return `<div class="p-3 rounded-lg bg-slate-900 border ${prototypeRequest ? 'border-cyan-500/35' : 'border-amber-500/25'} flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><strong class="block text-xs text-white truncate">${window.escapeHTML(request.serviceName || 'Service')}</strong><span class="block text-[9px] text-slate-400 truncate">${prototypeRequest ? 'Client Prototype · Simulation locale' : `${window.escapeHTML(window.getClientName(client.email))} · ${window.escapeHTML(client.email || '')}`}</span>${request.username ? `<span class="block mt-1 text-[9px] text-cyan-300">Username : <b>${window.escapeHTML(request.username)}</b></span>` : ''}</div><button onclick="window.adminValidateSubscriptionAttachment('${client.id}')" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white text-[9px] uppercase font-bold shrink-0">Valider le rattachement</button></div>`;
+                                return `<div class="p-3 rounded-lg bg-slate-900 border ${prototypeRequest ? 'border-cyan-500/35' : 'border-amber-500/25'} space-y-3"><div class="min-w-0"><strong class="block text-xs text-white truncate">${window.escapeHTML(request.serviceName || 'Service')}</strong><span class="block text-[9px] text-slate-400 truncate">${prototypeRequest ? 'Client Prototype · Simulation locale' : `${window.escapeHTML(window.getClientName(client.email))} · ${window.escapeHTML(client.email || '')}`}</span>${request.username ? `<span class="block mt-1 text-[9px] text-cyan-300">Username : <b>${window.escapeHTML(request.username)}</b></span>` : ''}<span class="block mt-1 text-[8px] text-slate-600">Envoyée le ${new Date(request.submittedAt || Date.now()).toLocaleString('fr-BE')}</span></div><div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><select id="attachment-service-${client.id}" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-[9px] text-white"><option value="">Service correct à conseiller</option>${SERVICES_DATA.map(service => `<option value="${service.id}">${service.name}</option>`).join('')}</select><input id="attachment-note-${client.id}" maxlength="180" placeholder="Note au client (facultatif)" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-[9px] text-white" /></div><div class="flex flex-wrap gap-2"><button onclick="window.adminValidateSubscriptionAttachment('${client.id}')" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white text-[8px] uppercase font-bold">Abonnement retrouvé</button><button onclick="window.adminReviewSubscriptionAttachment('${client.id}', 'not_found')" class="px-3 py-2 bg-red-700 hover:bg-red-600 rounded-lg text-white text-[8px] uppercase font-bold">Introuvable</button><button onclick="window.adminReviewSubscriptionAttachment('${client.id}', 'correction_required')" class="px-3 py-2 bg-amber-600 hover:bg-amber-500 rounded-lg text-white text-[8px] uppercase font-bold">Faire modifier</button></div></div>`;
                             }).join('') : '<p class="lg:col-span-2 py-4 text-center text-[10px] text-slate-600 italic">Aucune demande de rattachement en attente.</p>'}
                         </div>
                     </div>
@@ -3911,6 +3946,7 @@ service cloud.firestore {
                         </div>
                         ${prototypeProfile.subscriptionOnboarding?.status === 'pending_admin' ? `<div class="mb-4 p-3 rounded-xl bg-amber-950/45 border border-amber-500/40 text-amber-100 animate-pulse"><strong class="block text-[10px] uppercase font-mono">⏳ Rattachement et réactivation de l’abonnement en cours...</strong><span class="text-[9px]">${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} · Simulation locale</span></div>` : ''}
                         ${prototypeProfile.subscriptionOnboarding?.status === 'approved' && !prototypeProfile.subscriptionOnboarding.clientAcknowledgedAt ? `<div class="mb-4 p-3 rounded-xl bg-emerald-950/45 border border-emerald-500/40 text-emerald-100 flex items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">✓ ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} est désormais actif</strong><span class="text-[9px]">Validation administrateur simulée.</span></span><button onclick="window.acknowledgePrototypeSubscriptionActivation()" class="px-3 py-2 rounded bg-emerald-600 text-white text-[8px] uppercase font-bold">J’ai lu</button></div>` : ''}
+                        ${['not_found', 'correction_required'].includes(prototypeProfile.subscriptionOnboarding?.status) ? `<div class="mb-4 p-3 rounded-xl bg-gradient-to-r from-red-950/55 to-amber-950/45 border border-red-500/40 text-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">${prototypeProfile.subscriptionOnboarding.status === 'not_found' ? 'Abonnement prototype introuvable' : 'Demande prototype à modifier'}</strong><span class="block text-[9px] mt-1">${prototypeProfile.subscriptionOnboarding.status === 'not_found' ? `Aucun abonnement ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} retrouvé.` : `Sélectionnez le bon service.${prototypeProfile.subscriptionOnboarding.suggestedServiceName ? ` Service conseillé : ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.suggestedServiceName)}.` : ''}`}</span>${prototypeProfile.subscriptionOnboarding.adminNote ? `<span class="block text-[9px] text-amber-200 mt-1">Message de l’admin : ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.adminNote)}</span>` : ''}<span class="block text-[8px] text-purple-300 mt-1 uppercase font-bold">Simulation locale uniquement</span></span><button onclick="window.startPrototypeSubscriptionCorrection()" class="px-3 py-2 rounded bg-amber-600 hover:bg-amber-500 text-white text-[8px] uppercase font-bold shrink-0">Modifier la demande</button></div>` : ''}
                         ${(() => {
                             const credentials = prototypeProfile.credentials || {};
                             const entries = [
@@ -5188,6 +5224,55 @@ service cloud.firestore {
             window.saveAdminPrototype();
             window.showToast(`Prototype : demande de devis envoyée pour ${service.name}.`);
             renderApp();
+        };
+
+        window.adminReviewSubscriptionAttachment = (clientId, decision) => {
+            if (!window.appState.isAdmin || !['not_found', 'correction_required'].includes(decision)) return;
+            const prototypeRequest = clientId === PROTOTYPE_CLIENT_ID;
+            const client = prototypeRequest ? window.getAdminPrototypeClient() : window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+            const request = client?.subscriptionOnboarding;
+            if (!client || request?.status !== 'pending_admin') return window.showToast('Cette demande n’est plus disponible.', 'error');
+            const suggestedServiceId = String(document.getElementById(`attachment-service-${clientId}`)?.value || '');
+            const suggestedService = SERVICES_DATA.find(service => service.id === suggestedServiceId);
+            const adminNote = String(document.getElementById(`attachment-note-${clientId}`)?.value || '').trim();
+            if (decision === 'correction_required' && !suggestedService) return window.showToast('Choisissez le bon service à conseiller au client.', 'error');
+            const label = decision === 'not_found' ? 'indiquer que l’abonnement est introuvable' : `demander au client de sélectionner ${suggestedService.name}`;
+            window.showCyberConfirm(`Confirmer et ${label} ?`, async () => {
+                const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                const reviewedOnboarding = {
+                    ...request,
+                    status: decision,
+                    adminReviewedAt: now,
+                    adminNote,
+                    suggestedServiceId: suggestedService?.id || '',
+                    suggestedServiceName: suggestedService?.name || '',
+                    clientAcknowledgedAt: null
+                };
+                const responseText = decision === 'not_found'
+                    ? `Aucun abonnement ${request.serviceName || ''} n’a été retrouvé à votre nom. Modifiez votre demande si vous avez sélectionné le mauvais service.${adminNote ? ` Message : ${adminNote}` : ''}`
+                    : `Votre demande de rattachement doit être modifiée. Sélectionnez le service ${suggestedService.name} puis renvoyez-la.${adminNote ? ` Message : ${adminNote}` : ''}`;
+                if (prototypeRequest) {
+                    client.subscriptionOnboarding = { ...reviewedOnboarding, simulation: true };
+                    client.supportMessages.push({ id: `prototype-attachment-review-${Date.now()}`, sender: 'admin', text: responseText, timestamp: now, notificationType: decision === 'not_found' ? 'subscription_link_not_found' : 'subscription_link_correction', serviceId: request.serviceId, readByClient: false, simulation: true });
+                    window.addAdminPrototypeEvent(decision === 'not_found' ? 'subscription_link_not_found' : 'subscription_link_correction', request.serviceId || '', responseText);
+                    window.saveAdminPrototype();
+                    window.showToast('Prototype : réponse de rattachement enregistrée localement.');
+                    renderApp();
+                    return;
+                }
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { subscriptionOnboarding: reviewedOnboarding });
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                        userId: clientId, userEmail: client.email, sender: 'admin', readByClient: false, timestamp: now,
+                        notificationType: decision === 'not_found' ? 'subscription_link_not_found' : 'subscription_link_correction',
+                        serviceId: request.serviceId || '', text: responseText
+                    });
+                    window.showToast(`Réponse envoyée à ${window.getClientName(client.email)}.`);
+                } catch (error) {
+                    console.error(error);
+                    window.showToast('Impossible d’envoyer cette réponse.', 'error');
+                }
+            });
         };
 
         window.adminValidateSubscriptionAttachment = (clientId) => {
