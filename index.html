@@ -500,6 +500,9 @@
         const ADMIN_PROFILE_EMAILS = new Set(['dpstay@1.net']);
         const PROTOTYPE_CLIENT_ID = "__admin_client_prototype__";
         const ADMIN_SECRET_KEY = "2026"; 
+        const CLIENT_DATA_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
+        const retentionCleanupInProgress = new Set();
+        const isWithinClientRetention = (item, field = 'timestamp') => Number(item?.[field] || 0) >= Date.now() - CLIENT_DATA_RETENTION_MS;
         const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
         const isAdminEmail = (email) => normalizeEmail(email) === normalizeEmail(ADMIN_EMAIL);
         const isAdminProfileEmail = (email) => ADMIN_PROFILE_EMAILS.has(normalizeEmail(email));
@@ -603,6 +606,7 @@
             allProfiles: [],
             allQuotes: [],
             allMessages: [],
+            allDeletionHistory: [],
             presence: {},
             allClientMessages: [],
             allCommunityMembers: [],
@@ -610,6 +614,8 @@
             allTransactions: [], // Chiffre d'affaires admin
             stripeLinks: {}, // Stocke les liens d'administration généraux
             pimpCardUrl: '', // Lien PIMP CARD indépendant des liens Stripe
+            manageUrl: '', // Lien Manage King Prime (ancien lien Manage conservé)
+            manageGoldVibeUrl: '', // Lien Manage Gold Vibe
             globalAnnouncement: null, // Message de notification globale diffusé
             
             // Filtres & UI
@@ -672,12 +678,15 @@
         let unsubAdminProfiles = null;
         let unsubAdminQuotes = null;
         let unsubAdminMessages = null;
+        let unsubDeletionHistory = null;
         let unsubClientMessages = null;
         let unsubCommunityMembers = null;
         let unsubNews = null;
         let unsubAllTransactions = null;
         let unsubStripeConfig = null;
         let unsubPimpCardConfig = null;
+        let unsubManageConfig = null;
+        let unsubManageGoldVibeConfig = null;
         let unsubAnnouncement = null;
         let unsubPresence = null;
         let presenceHeartbeat = null;
@@ -776,6 +785,12 @@
                 console.error("Erreur de copie: ", e);
                 window.showToast("Échec de la copie.", "error");
             }
+        };
+
+        window.copyPrototypeCredential = (field) => {
+            if (!window.appState.isAdmin || !['subscriptionName', 'identifier', 'password', 'extra'].includes(field)) return;
+            const value = window.getAdminPrototypeClient?.().credentials?.[field];
+            if (value) window.copyToClipboard(String(value));
         };
 
         // Gérer le changement d'avatar et le convertir en base64 pour stockage direct Firestore
@@ -1160,6 +1175,21 @@
                         renderApp();
                     }, handlePermissionError);
 
+                    // Configuration Manage globale, indépendante de Stripe et de PIMP CARD.
+                    if (unsubManageConfig) unsubManageConfig();
+                    const manageRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'manage');
+                    unsubManageConfig = onSnapshot(manageRef, (snapshot) => {
+                        window.appState.manageUrl = snapshot.exists() ? String(snapshot.data().url || '') : '';
+                        renderApp();
+                    }, handlePermissionError);
+
+                    if (unsubManageGoldVibeConfig) unsubManageGoldVibeConfig();
+                    const manageGoldVibeRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'manageGoldVibe');
+                    unsubManageGoldVibeConfig = onSnapshot(manageGoldVibeRef, (snapshot) => {
+                        window.appState.manageGoldVibeUrl = snapshot.exists() ? String(snapshot.data().url || '') : '';
+                        renderApp();
+                    }, handlePermissionError);
+
                     // Écoute de la notification d'information globale
                     if (unsubAnnouncement) unsubAnnouncement();
                     const announceRef = doc(db, 'artifacts', appId, 'public', 'data', 'announcements', 'global');
@@ -1188,6 +1218,8 @@
                 if(unsubTransactions) unsubTransactions();
                 if(unsubStripeConfig) unsubStripeConfig();
                 if(unsubPimpCardConfig) unsubPimpCardConfig();
+                if(unsubManageConfig) unsubManageConfig();
+                if(unsubManageGoldVibeConfig) unsubManageGoldVibeConfig();
                 if(unsubAnnouncement) unsubAnnouncement();
                 teardownAdminListeners();
                 window.appState.profile = null;
@@ -1249,8 +1281,16 @@
                 const quotesCol = collection(db, 'artifacts', appId, 'public', 'data', 'quotes');
                 unsubAdminQuotes = onSnapshot(quotesCol, (snap) => {
                     const quotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (window.appState.isAdmin) {
+                        quotes.filter(quote => quote.deleteRequestedByClient === true || !isWithinClientRetention(quote, 'date')).forEach(quote => {
+                            const cleanupKey = `quote:${quote.id}`;
+                            if (retentionCleanupInProgress.has(cleanupKey)) return;
+                            retentionCleanupInProgress.add(cleanupKey);
+                            deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quote.id)).catch(console.error).finally(() => retentionCleanupInProgress.delete(cleanupKey));
+                        });
+                    }
                     quotes.sort((a,b) => b.date - a.date);
-                    window.appState.allQuotes = quotes;
+                    window.appState.allQuotes = quotes.filter(quote => quote.deleteRequestedByClient !== true && isWithinClientRetention(quote, 'date') && (window.appState.isAdmin || quote.userId === auth.currentUser?.uid));
                     renderApp();
                 }, handlePermissionError);
 
@@ -1260,8 +1300,16 @@
                     : query(messagesCol, where('userId', '==', auth.currentUser.uid));
                 unsubAdminMessages = onSnapshot(messagesSource, (snap) => {
                     const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                    if (window.appState.isAdmin) {
+                        msgs.filter(message => message.deleteRequestedByClient === true || !isWithinClientRetention(message, 'timestamp')).forEach(message => {
+                            const cleanupKey = `message:${message.id}`;
+                            if (retentionCleanupInProgress.has(cleanupKey)) return;
+                            retentionCleanupInProgress.add(cleanupKey);
+                            deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', message.id)).catch(console.error).finally(() => retentionCleanupInProgress.delete(cleanupKey));
+                        });
+                    }
                     msgs.sort((a, b) => a.timestamp - b.timestamp);
-                    window.appState.allMessages = msgs;
+                    window.appState.allMessages = msgs.filter(message => message.deleteRequestedByClient !== true && isWithinClientRetention(message, 'timestamp'));
                     renderApp();
                 }, handlePermissionError);
 
@@ -1296,6 +1344,16 @@
                     window.appState.allTransactions = txs;
                     renderApp();
                 }, handlePermissionError);
+
+                if (window.appState.isAdmin) {
+                    const deletionHistoryCol = collection(db, 'artifacts', appId, 'public', 'data', 'deletionHistory');
+                    unsubDeletionHistory = onSnapshot(deletionHistoryCol, (snap) => {
+                        window.appState.allDeletionHistory = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                        renderApp();
+                    }, handlePermissionError);
+                } else {
+                    window.appState.allDeletionHistory = [];
+                }
 
             } catch(err) {
                 handlePermissionError(err);
@@ -1342,6 +1400,7 @@
             if(unsubAdminProfiles) { unsubAdminProfiles(); unsubAdminProfiles = null; }
             if(unsubAdminQuotes) { unsubAdminQuotes(); unsubAdminQuotes = null; }
             if(unsubAdminMessages) { unsubAdminMessages(); unsubAdminMessages = null; }
+            if(unsubDeletionHistory) { unsubDeletionHistory(); unsubDeletionHistory = null; }
             if(unsubClientMessages) { unsubClientMessages(); unsubClientMessages = null; }
             if(unsubCommunityMembers) { unsubCommunityMembers(); unsubCommunityMembers = null; }
             if(unsubNews) { unsubNews(); unsubNews = null; }
@@ -2165,6 +2224,127 @@
             }
         };
 
+        window.acknowledgeRetentionNotice = async () => {
+            if (window.appState.isAdmin || !window.appState.user) return;
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid), { retentionNoticeAcknowledgedAt: Date.now() });
+                window.showToast("Information sur la conservation des données confirmée.");
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible de fermer cette information.", "error");
+            }
+        };
+
+        window.recordClientDeletionHistory = async (category, count, scopeLabel) => {
+            const user = window.appState.user;
+            if (!user || window.appState.isAdmin) return;
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'deletionHistory'), {
+                    userId: user.uid,
+                    userEmail: user.email,
+                    clientName: window.getClientName(user.email),
+                    category,
+                    count: Number(count) || 1,
+                    scopeLabel,
+                    timestamp: Date.now()
+                });
+            } catch (error) {
+                console.error('Historique de suppression non enregistré :', error);
+            }
+        };
+
+        window.clientClearSupportConversation = () => {
+            if (window.appState.isAdmin || !window.appState.user) return;
+            const messages = window.appState.allMessages.filter(message => message.userId === window.appState.user.uid);
+            if (!messages.length) return;
+            window.showCyberConfirm("Effacer toute votre conversation de support ? Elle disparaîtra immédiatement de votre espace.", async () => {
+                try {
+                    await Promise.all(messages.map(message => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', message.id))));
+                    await window.recordClientDeletionHistory('messages', messages.length, 'Conversation complète');
+                    window.showToast("Conversation effacée de votre espace client.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible d’effacer cette conversation.", "error");
+                }
+            });
+        };
+
+        window.clientDeleteSupportMessage = (messageId) => {
+            if (window.appState.isAdmin || !window.appState.user) return;
+            const message = window.appState.allMessages.find(item => item.id === messageId && item.userId === window.appState.user.uid);
+            if (!message) return;
+            window.showCyberConfirm("Effacer ce message de votre conversation ?", async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId));
+                    await window.recordClientDeletionHistory('messages', 1, 'Message individuel');
+                    window.showToast("Message effacé de votre espace client.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible d’effacer ce message.", "error");
+                }
+            });
+        };
+
+        window.clientClearQuoteHistory = () => {
+            if (window.appState.isAdmin) {
+                const prototype = window.getAdminPrototypeClient();
+                if (!(prototype.quotes || []).length) return;
+                window.showCyberConfirm("Effacer toutes les demandes et tous les suivis du Client Prototype ?", () => {
+                    prototype.quotes = [];
+                    Object.keys(prototype.services || {}).forEach(serviceId => {
+                        if (prototype.services[serviceId]?.quoteStatus) prototype.services[serviceId] = { ...prototype.services[serviceId], quoteStatus: null, quotePrice: null };
+                    });
+                    window.addAdminPrototypeEvent('quote_history_cleared', '', 'Demandes et suivis de devis effacés localement');
+                    window.saveAdminPrototype();
+                    window.showToast("Prototype : demandes et suivis effacés.");
+                    renderApp();
+                });
+                return;
+            }
+            const user = window.appState.user;
+            const quotes = window.appState.allQuotes.filter(quote => quote.userId === user?.uid);
+            if (!user || !quotes.length) return;
+            window.showCyberConfirm("Effacer toutes vos demandes de devis et leurs suivis ?", async () => {
+                try {
+                    await Promise.all(quotes.map(quote => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quote.id))));
+                    await window.recordClientDeletionHistory('quotes', quotes.length, 'Demandes et suivis complets');
+                    window.showToast("Demandes et suivis effacés de votre espace client.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible d’effacer les demandes et suivis.", "error");
+                }
+            });
+        };
+
+        window.clientDeleteQuoteHistory = (quoteId) => {
+            if (window.appState.isAdmin && quoteId.startsWith('prototype-')) {
+                const prototype = window.getAdminPrototypeClient();
+                const quote = (prototype.quotes || []).find(item => item.id === quoteId);
+                if (!quote) return;
+                window.showCyberConfirm("Effacer cette demande et son suivi du Client Prototype ?", () => {
+                    prototype.quotes = prototype.quotes.filter(item => item.id !== quoteId);
+                    prototype.services[quote.serviceId] = { ...(prototype.services[quote.serviceId] || {}), quoteStatus: null, quotePrice: null };
+                    window.addAdminPrototypeEvent('quote_deleted', quote.serviceId, 'Demande et suivi effacés localement');
+                    window.saveAdminPrototype();
+                    renderApp();
+                });
+                return;
+            }
+            const user = window.appState.user;
+            const quote = window.appState.allQuotes.find(item => item.id === quoteId && item.userId === user?.uid);
+            if (!quote || window.appState.isAdmin) return;
+            window.showCyberConfirm("Effacer cette demande et son suivi ?", async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quoteId));
+                    await window.recordClientDeletionHistory('quotes', 1, 'Demande ou suivi individuel');
+                    window.showToast("Demande et suivi effacés de votre espace client.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible d’effacer ce suivi.", "error");
+                }
+            });
+        };
+
         // ==========================================
         // 9. CONFIGURATION STRIPE PAR L'ADMIN
         // ==========================================
@@ -2423,6 +2603,22 @@
         window.setCatalogFilterTab = (tab) => {
             window.appState.activeCatalogTab = tab;
             renderApp();
+        };
+
+        window.scrollServicesToolbar = (direction) => {
+            const toolbar = document.getElementById('services-toolbar');
+            if (!toolbar) return;
+            const distance = Math.max(220, Math.round(toolbar.clientWidth * 0.65));
+            toolbar.scrollBy({ left: direction * distance, behavior: 'smooth' });
+        };
+
+        window.scrollServicesToolbarWheel = (event) => {
+            const toolbar = event.currentTarget;
+            if (!toolbar || toolbar.scrollWidth <= toolbar.clientWidth) return;
+            if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+                event.preventDefault();
+                toolbar.scrollLeft += event.deltaY;
+            }
         };
 
         // --- DECONNEXION SYSTEME ---
@@ -2811,7 +3007,7 @@ service cloud.firestore {
         }
 
         function getMainDashboardHTML() {
-            const { user, profile, transactions, allTransactions, activeCatalogTab, virtualDate, manualTimeMode, isAdmin, adminSelectedClient, adminSearchQuery, stripeLinks, pimpCardUrl, globalAnnouncement, adminFinanceYearFilter, adminFinanceMonthFilter } = window.appState;
+            const { user, profile, transactions, allTransactions, activeCatalogTab, virtualDate, manualTimeMode, isAdmin, adminSelectedClient, adminSearchQuery, stripeLinks, pimpCardUrl, manageUrl, manageGoldVibeUrl, globalAnnouncement, adminFinanceYearFilter, adminFinanceMonthFilter } = window.appState;
             if (isAdmin) window.normalizeAdminPrototypeServices?.();
             
             // Sur le compte Admin, les cartes du catalogue utilisent directement
@@ -2909,9 +3105,7 @@ service cloud.firestore {
             if (clientQuotes.length > 0) {
                 clientQuotesHTML = `
                 <div id="quote-tracking-section" class="mt-8 border-t border-slate-800/80 pt-6">
-                    <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-mono mb-4 flex items-center gap-1.5">
-                        <i data-lucide="file-text"></i> Suivi de mes demandes de Devis (${clientQuotes.length})
-                    </h4>
+                    <div class="mb-4 flex items-center justify-between gap-3"><h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-mono flex items-center gap-1.5"><i data-lucide="file-text"></i> Suivi de mes demandes de Devis (${clientQuotes.length})</h4><button type="button" onclick="window.clientClearQuoteHistory()" class="text-[9px] text-red-400 hover:text-red-300 uppercase font-bold shrink-0">Effacer demandes et suivis</button></div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         ${clientQuotes.map(q => {
                             let statusBadge = "";
@@ -2933,6 +3127,9 @@ service cloud.firestore {
                                 statusBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono">✅ Validé & Payé (${q.price.toFixed(2)} €)</span>`;
                             } else if (q.status === 'rejected') {
                                 statusBadge = `<span class="px-2 py-0.5 rounded bg-red-950/30 border border-red-500/20 text-red-400 text-[10px] font-mono">❌ Rejeté par l'admin</span>`;
+                                actionButtons = `<div class="flex justify-end mt-3"><button onclick="window.clientAcknowledgeQuoteRejection('${q.id}', '${q.serviceId}')" class="px-3 py-1.5 bg-red-950/50 hover:bg-red-900/60 text-red-200 border border-red-500/40 rounded text-[10px] uppercase font-bold min-h-[32px]">J’ai lu le refus</button></div>`;
+                            } else if (q.status === 'rejected_read') {
+                                statusBadge = `<span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 text-[10px] font-mono">Refus lu · Nouvelle demande possible</span>`;
                             } else if (q.status === 'rejected_by_client') {
                                 statusBadge = `<span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500 text-[10px] font-mono">❌ Refusé par vous</span>`;
                             }
@@ -2956,6 +3153,7 @@ service cloud.firestore {
                                     ${statusBadge}
                                 </div>
                                 ${actionButtons}
+                                <button type="button" onclick="window.clientDeleteQuoteHistory('${q.id}')" class="self-end mt-2 text-[8px] text-red-500 hover:text-red-300 uppercase">Effacer ce suivi</button>
                             </div>`;
                         }).join('')}
                     </div>
@@ -2981,7 +3179,7 @@ service cloud.firestore {
                 : defaultAvatarHTML;
 
             // Résoudre les valeurs des identifiants attribués à ce client
-            const hasCredentials = !isAdmin && profile && profile.credentials && (profile.credentials.identifier || profile.credentials.password || profile.credentials.extra);
+            const hasCredentials = !isAdmin && profile && profile.credentials && (profile.credentials.subscriptionName || profile.credentials.identifier || profile.credentials.password || profile.credentials.extra);
             
             // Résoudre les identifiants pour l'affichage de l'Admin en mode édition réactive
             const activeCredClient = window.appState.selectedCredClientId === PROTOTYPE_CLIENT_ID
@@ -2990,6 +3188,7 @@ service cloud.firestore {
             const activeCredId = activeCredClient?.credentials?.identifier || "";
             const activeCredPass = activeCredClient?.credentials?.password || "";
             const activeCredExtra = activeCredClient?.credentials?.extra || "";
+            const activeCredSubscriptionName = activeCredClient?.credentials?.subscriptionName || "";
 
             // Calcul du Chiffre d'Affaires Global (CA) de l'Admin
             let globalCA = 0;
@@ -3082,6 +3281,8 @@ service cloud.firestore {
                 { id: 'admin-services', icon: 'badge-check', label: 'Forcer services' },
                 { id: 'admin-stripe', icon: 'credit-card', label: 'Liens Stripe' },
                 { id: 'admin-pimp-card', icon: 'external-link', label: 'Lien PIMP CARD' },
+                { id: 'admin-manage-link', icon: 'crown', label: 'Manage King Prime' },
+                { id: 'admin-manage-gold-vibe-link', icon: 'gem', label: 'Manage Gold Vibe' },
                 { id: 'admin-pending-profiles', icon: 'user-round-check', label: 'Profils à vérifier' },
                 { id: 'admin-clients', icon: 'users-round', label: 'Comptes clients' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
@@ -3156,6 +3357,12 @@ service cloud.firestore {
                     <button onclick="window.acknowledgeSubscriptionActivation()" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] uppercase font-bold shrink-0">J’ai lu</button>
                 </div>` : ''}
 
+                ${!isAdmin && !profile?.retentionNoticeAcknowledgedAt ? `
+                <div class="relative z-20 w-full bg-slate-900/95 border border-cyan-500/35 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span class="flex items-start gap-3"><span class="p-2 bg-cyan-950 rounded-lg shrink-0"><i data-lucide="calendar-clock" class="w-5 h-5 text-cyan-300"></i></span><span><strong class="block text-white text-xs uppercase font-mono">Conservation de vos données : 1 an</strong><span class="block text-[10px] text-slate-300 mt-1">Vos conversations, demandes de devis et suivis sont supprimés automatiquement après un an. Vous pouvez aussi les effacer manuellement à tout moment.</span></span></span>
+                    <button onclick="window.acknowledgeRetentionNotice()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[9px] uppercase font-bold shrink-0">J’ai compris</button>
+                </div>` : ''}
+
                 ${unreadSupportMessages.length ? `
                 <button onclick="window.openUnreadSupportNotification()"
                     class="relative z-20 w-full text-left bg-gradient-to-r from-purple-950/80 to-cyan-950/70 border border-purple-500/60 p-4 rounded-2xl shadow-[0_0_22px_rgba(168,85,247,0.2)] flex items-center justify-between gap-3 animate-pulse">
@@ -3226,7 +3433,11 @@ service cloud.firestore {
                         </div>
                     </div>
                     
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 w-full md:w-auto font-mono text-[11px] sm:text-xs">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 w-full md:w-auto font-mono text-[11px] sm:text-xs">
+                        ${profile.credentials.subscriptionName ? `
+                        <div class="flex items-center justify-between gap-3 bg-slate-950/80 border border-purple-500/25 rounded-lg px-2.5 py-1.5 min-w-0">
+                            <div class="truncate"><span class="text-purple-300 text-[8px] block uppercase">Nom de l’abonnement</span><span class="text-white truncate font-bold block">${window.escapeHTML(profile.credentials.subscriptionName)}</span></div>
+                        </div>` : ''}
                         ${profile.credentials.identifier ? `
                         <div class="flex items-center justify-between gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1.5 min-w-0">
                             <div class="truncate">
@@ -3316,7 +3527,9 @@ service cloud.firestore {
                             <!-- Filtre onglets -->
                             <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center border-b border-slate-800/80 pb-4 gap-3">
                                 <h3 class="text-sm sm:text-base font-bold text-white font-mono uppercase tracking-wider">Nos Services Disponibles</h3>
-                                <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800/50 font-mono items-center overflow-x-auto no-scrollbar max-w-full gap-1">
+                                <div class="flex items-center gap-1 min-w-0 sm:max-w-[72%]">
+                                    <button type="button" onclick="window.scrollServicesToolbar(-1)" class="hidden md:flex w-8 h-8 shrink-0 items-center justify-center rounded-lg bg-slate-950 border border-slate-700 text-cyan-400 hover:bg-cyan-950/40 hover:border-cyan-500/50" title="Défiler vers la gauche"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                                    <div id="services-toolbar" onwheel="window.scrollServicesToolbarWheel(event)" class="flex flex-1 min-w-0 bg-slate-950 p-1 rounded-lg border border-slate-800/50 font-mono items-center overflow-x-auto no-scrollbar max-w-full gap-1 scroll-smooth" tabindex="0" aria-label="Filtres et raccourcis des services, défilement horizontal">
                                     ${['Tous', 'Mensuel', 'Annuel', 'Devis'].map(tab => `
                                         <button onclick="window.setCatalogFilterTab('${tab}')" 
                                             class="px-3 py-1.5 text-[11px] font-bold uppercase rounded-lg transition-all shrink-0 min-h-[30px] flex items-center justify-center ${
@@ -3333,6 +3546,18 @@ service cloud.firestore {
                                         title="Ouvrir PIMP CARD">
                                         <i data-lucide="palette" class="w-3 h-3 text-purple-400"></i> PIMP CARD
                                     </a>` : ''}
+                                    ${isAdmin && manageUrl && /^https:\/\//i.test(manageUrl) ? `<a href="${window.escapeHTML(manageUrl)}" target="_blank" rel="noopener noreferrer"
+                                        class="ml-1 px-3 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 hover:border-emerald-500/60 text-emerald-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 uppercase tracking-wider shadow-[0_0_10px_rgba(16,185,129,0.15)] shrink-0 min-h-[30px]"
+                                        title="Ouvrir Manage King Prime">
+                                        <i data-lucide="crown" class="w-3 h-3 text-emerald-400"></i> Manage King Prime
+                                    </a>` : ''}
+                                    ${isAdmin && manageGoldVibeUrl && /^https:\/\//i.test(manageGoldVibeUrl) ? `<a href="${window.escapeHTML(manageGoldVibeUrl)}" target="_blank" rel="noopener noreferrer"
+                                        class="ml-1 px-3 py-1.5 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 uppercase tracking-wider shadow-[0_0_10px_rgba(245,158,11,0.15)] shrink-0 min-h-[30px]"
+                                        title="Ouvrir Manage Gold Vibe">
+                                        <i data-lucide="gem" class="w-3 h-3 text-amber-400"></i> Manage Gold Vibe
+                                    </a>` : ''}
+                                    </div>
+                                    <button type="button" onclick="window.scrollServicesToolbar(1)" class="hidden md:flex w-8 h-8 shrink-0 items-center justify-center rounded-lg bg-slate-950 border border-slate-700 text-cyan-400 hover:bg-cyan-950/40 hover:border-cyan-500/50" title="Défiler vers la droite"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
                                 </div>
                             </div>
 
@@ -3394,7 +3619,7 @@ service cloud.firestore {
                                     } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'proposed') {
                                         actionButton = `<button type="button" onclick="window.clientPayQuote('${latestServiceQuote.id}', '${service.id}', ${Number(latestServiceQuote.price) || 0})" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px]">✓ Demande acceptée · Payer</button>`;
                                     } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'rejected') {
-                                        actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-red-950/35 text-red-300 border border-red-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">✕ Demande refusée</button>`;
+                                        actionButton = `<button type="button" onclick="window.clientAcknowledgeQuoteRejection('${latestServiceQuote.id}', '${service.id}')" class="w-full py-2 px-2 bg-red-950/45 hover:bg-red-900/60 text-red-200 border border-red-500/45 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px]">✕ Demande refusée · J’ai lu</button>`;
                                     } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'approved_paid') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-emerald-950/35 text-emerald-300 border border-emerald-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">✓ Paiement accepté</button>`;
                                     } else if (isActive) {
@@ -3482,9 +3707,7 @@ service cloud.firestore {
                         ${!isAdmin ? `
                         <!-- WIDGET 2 : TCHAT CLIENT RÉEL (MASQUÉ POUR L'ADMIN) -->
                         <div id="client-support" class="mobile-anchor mobile-compact-section bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 h-[350px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
-                            <h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider border-b border-slate-800/80 pb-2 flex items-center gap-2">
-                                <i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i> Support & Messagerie
-                            </h3>
+                            <div class="border-b border-slate-800/80 pb-2 flex items-center justify-between gap-2"><h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i> Support & Messagerie</h3>${clientMessages.length ? `<button type="button" onclick="window.clientClearSupportConversation()" class="text-[9px] text-red-400 hover:text-red-300 uppercase font-bold shrink-0">Effacer la conversation</button>` : ''}</div>
                             <div class="flex items-center gap-2 -mt-2 px-1 text-[10px] font-mono ${isUserOnline('admin') ? 'text-emerald-400' : 'text-slate-500'}">
                                 <span class="relative flex w-2.5 h-2.5"><span class="absolute inset-0 rounded-full ${isUserOnline('admin') ? 'bg-emerald-400 animate-ping opacity-40' : ''}"></span><span class="relative w-2.5 h-2.5 rounded-full ${isUserOnline('admin') ? 'bg-emerald-500' : 'bg-slate-600'}"></span></span>
                                 <span>Administrateur Sésame · ${isUserOnline('admin') ? 'Connecté' : 'Déconnecté'}</span>
@@ -3501,6 +3724,7 @@ service cloud.firestore {
                                             <div class="p-2.5 rounded-lg max-w-[85%] leading-relaxed ${m.sender === 'user' ? 'bg-cyan-950/60 text-cyan-200 border border-cyan-500/20' : 'bg-purple-950/60 text-purple-200 border border-purple-500/20'}">
                                                 ${m.text}
                                             </div>
+                                            <button type="button" onclick="window.clientDeleteSupportMessage('${m.id}')" class="mt-1 text-[8px] text-red-500 hover:text-red-300 uppercase">Effacer ce message</button>
                                         </div>
                                     `).join('')}
                             </div>
@@ -3668,6 +3892,11 @@ service cloud.firestore {
                         </div>
                     </div>
 
+                    <div id="admin-deletion-history" class="mobile-anchor bg-gradient-to-br from-red-950/20 to-slate-950/80 border border-red-500/30 rounded-xl p-4 sm:p-5">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-4"><div><h4 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="history" class="w-4 h-4 text-red-400"></i> Historique des suppressions clients</h4><p class="text-[9px] text-slate-500 mt-1">Journal informatif : aucun contenu supprimé ni mot de passe n’est conservé.</p></div><div class="flex items-center gap-2"><span class="px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-slate-400 text-[9px] font-bold">${window.appState.allDeletionHistory.length} entrée${window.appState.allDeletionHistory.length > 1 ? 's' : ''}</span>${window.appState.allDeletionHistory.length ? `<button type="button" onclick="window.adminClearDeletionHistory()" class="px-3 py-2 rounded-lg bg-red-800 hover:bg-red-700 text-white text-[9px] uppercase font-bold">Vider l’historique</button>` : ''}</div></div>
+                        <div class="max-h-[260px] overflow-y-auto space-y-2 pr-1">${window.appState.allDeletionHistory.length ? window.appState.allDeletionHistory.map(entry => `<div class="p-3 rounded-lg bg-slate-950 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div class="min-w-0"><strong class="block text-[10px] text-white truncate">${window.escapeHTML(entry.clientName || 'Client')} · ${window.escapeHTML(entry.userEmail || '')}</strong><span class="block text-[9px] ${entry.category === 'messages' ? 'text-cyan-300' : 'text-amber-300'} mt-1">${entry.category === 'messages' ? 'Conversation / message' : 'Demande / suivi de devis'} · ${window.escapeHTML(entry.scopeLabel || '')}</span></div><span class="text-[9px] text-slate-500 shrink-0">${Number(entry.count || 1)} élément${Number(entry.count || 1) > 1 ? 's' : ''} · ${new Date(entry.timestamp).toLocaleString('fr-BE')}</span></div>`).join('') : '<p class="py-6 text-center text-[10px] text-slate-600 italic">Aucune suppression effectuée par un client.</p>'}</div>
+                    </div>
+
                     <!-- COMPTE CLIENT PROTOTYPE DE L'ADMINISTRATEUR -->
                     <div id="admin-prototype" class="mobile-anchor bg-gradient-to-br from-cyan-950/30 via-slate-950/80 to-purple-950/30 border border-cyan-500/25 rounded-xl p-4 sm:p-5 w-full">
                         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 border-b border-slate-800/80 pb-4">
@@ -3682,6 +3911,17 @@ service cloud.firestore {
                         </div>
                         ${prototypeProfile.subscriptionOnboarding?.status === 'pending_admin' ? `<div class="mb-4 p-3 rounded-xl bg-amber-950/45 border border-amber-500/40 text-amber-100 animate-pulse"><strong class="block text-[10px] uppercase font-mono">⏳ Rattachement et réactivation de l’abonnement en cours...</strong><span class="text-[9px]">${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} · Simulation locale</span></div>` : ''}
                         ${prototypeProfile.subscriptionOnboarding?.status === 'approved' && !prototypeProfile.subscriptionOnboarding.clientAcknowledgedAt ? `<div class="mb-4 p-3 rounded-xl bg-emerald-950/45 border border-emerald-500/40 text-emerald-100 flex items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">✓ ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} est désormais actif</strong><span class="text-[9px]">Validation administrateur simulée.</span></span><button onclick="window.acknowledgePrototypeSubscriptionActivation()" class="px-3 py-2 rounded bg-emerald-600 text-white text-[8px] uppercase font-bold">J’ai lu</button></div>` : ''}
+                        ${(() => {
+                            const credentials = prototypeProfile.credentials || {};
+                            const entries = [
+                                ['subscriptionName', 'Nom de l’abonnement', credentials.subscriptionName],
+                                ['identifier', 'Identifiant', credentials.identifier],
+                                ['password', 'Mot de passe', credentials.password],
+                                ['extra', 'Note complémentaire', credentials.extra]
+                            ].filter(([, , value]) => String(value || '').trim());
+                            if (!entries.length) return '';
+                            return `<div class="mb-4 relative bg-gradient-to-r from-cyan-950/35 to-purple-950/35 border border-cyan-500/40 p-3 sm:p-4 rounded-xl shadow-[0_0_20px_rgba(6,182,212,.13)] overflow-hidden"><div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3"><div class="flex items-center gap-2"><span class="p-2 bg-cyan-950 rounded-lg border border-cyan-500/20"><i data-lucide="key" class="w-4 h-4 text-cyan-400"></i></span><span><strong class="block text-xs text-white uppercase font-mono">Identifiants confidentiels · Simulation</strong><small class="text-[9px] text-slate-400">Copie locale du bandeau visible par un client.</small></span></div><span class="self-start px-2 py-1 rounded-full bg-purple-950 border border-purple-500/30 text-purple-300 text-[8px] uppercase font-bold">Prototype uniquement</span></div><div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2">${entries.map(([field, label, value]) => `<div class="flex items-center justify-between gap-2 bg-slate-950/85 border ${field === 'subscriptionName' ? 'border-purple-500/30' : 'border-slate-800'} rounded-lg px-2.5 py-2 min-w-0"><div class="truncate"><span class="${field === 'subscriptionName' ? 'text-purple-300' : 'text-slate-500'} text-[8px] block uppercase">${label}</span><span class="text-white truncate font-bold block text-[11px]">${window.escapeHTML(value)}</span></div><button type="button" onclick="window.copyPrototypeCredential('${field}')" class="p-1.5 hover:bg-slate-900 rounded text-cyan-400 hover:text-cyan-300 shrink-0 min-h-[30px] min-w-[30px] flex items-center justify-center" title="Copier ${label.toLowerCase()}"><i data-lucide="copy" class="w-4 h-4"></i></button></div>`).join('')}</div></div>`;
+                        })()}
                         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                             ${SERVICES_DATA.map(service => {
                                 const prototypeState = window.appState.prototypeClient?.services?.[service.id] || { status: 'inactive', subEnd: null };
@@ -3709,7 +3949,7 @@ service cloud.firestore {
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Profil</span><strong class="text-cyan-300">prototype@sesame.local</strong></div>
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Info globale héritée</span><strong class="${globalAnnouncement?.text ? 'text-emerald-300' : 'text-slate-500'}">${globalAnnouncement?.text ? 'Visible dans la simulation' : 'Aucune diffusion'}</strong></div>
                             <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">PIMP CARD hérité</span><strong class="${pimpCardUrl ? 'text-fuchsia-300' : 'text-slate-500'}">${pimpCardUrl ? 'Lien disponible' : 'Lien non configuré'}</strong></div>
-                            <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Configuration</span><strong class="text-purple-300">Globale + personnalisée</strong></div>
+                            <div class="rounded-lg bg-slate-950/75 border border-slate-800 p-2.5"><span class="text-slate-500 block uppercase">Manage King / Gold</span><strong class="${manageUrl || manageGoldVibeUrl ? 'text-amber-300' : 'text-slate-500'}">${[manageUrl, manageGoldVibeUrl].filter(Boolean).length} lien${[manageUrl, manageGoldVibeUrl].filter(Boolean).length > 1 ? 's' : ''} configuré${[manageUrl, manageGoldVibeUrl].filter(Boolean).length > 1 ? 's' : ''}</strong></div>
                         </div>
                         <div id="prototype-support-section" class="mt-4 pt-4 border-t border-slate-800/80">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -3721,6 +3961,7 @@ service cloud.firestore {
                                     <div class="flex flex-col ${message.sender === 'client' ? 'items-start' : 'items-end'}">
                                         <span class="text-[8px] text-slate-500 mb-1">${message.sender === 'client' ? 'Client prototype' : 'Admin simulé'} · ${new Date(message.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                                         <div class="max-w-[88%] rounded-xl px-3 py-2 text-[10px] leading-relaxed ${message.sender === 'client' ? 'bg-cyan-950/70 border border-cyan-500/25 text-cyan-100' : 'bg-purple-950/70 border border-purple-500/25 text-purple-100'}">${window.escapeHTML(message.text)}</div>
+                                        <button type="button" onclick="window.deletePrototypeSupportMessage('${message.id}')" class="mt-1 text-[8px] text-red-500 hover:text-red-300 uppercase">Effacer ce message</button>
                                     </div>`).join('') : `<div class="h-full flex items-center justify-center text-center text-[10px] text-slate-600 px-6">Envoyez un premier message pour simuler une conversation entre le client prototype et l’Administrateur.</div>`}
                             </div>
                             <div class="mt-3 flex flex-col sm:flex-row gap-2">
@@ -3879,6 +4120,10 @@ service cloud.firestore {
                                     </div>
                                     
                                     <div class="space-y-2">
+                                        <div>
+                                            <input type="text" id="cred-subscription-name" placeholder="Nom de l’abonnement utilisé" value="${window.escapeHTML(activeCredSubscriptionName)}"
+                                                class="w-full bg-slate-950 border border-purple-900/60 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-600 min-h-[34px]" />
+                                        </div>
                                         <div>
                                             <input type="text" id="cred-identifier" placeholder="Identifiant" value="${activeCredId}"
                                                 class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 min-h-[34px]" />
@@ -4119,6 +4364,28 @@ service cloud.firestore {
                             </button>
                         </div>
 
+                        <!-- MANAGE KING PRIME : réglage réservé à l'Admin -->
+                        <div id="admin-manage-link" class="mobile-anchor bg-slate-950/60 border border-emerald-900/40 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
+                            <div class="border-b border-slate-800 pb-2.5">
+                                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="crown" class="text-emerald-400 w-4 h-4"></i> Manage King Prime</h4>
+                                <p class="text-[9px] text-slate-500 mt-1">Lien réservé au compte administrateur. Il n’est jamais affiché dans les comptes clients.</p>
+                            </div>
+                            <label for="manage-admin-url" class="text-[9px] text-emerald-300 uppercase font-bold">Adresse du lien</label>
+                            <input id="manage-admin-url" type="url" placeholder="https://..." value="${window.escapeHTML(manageUrl || '')}" class="w-full bg-slate-950 border border-emerald-900/60 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-emerald-500 text-[10px] min-h-[40px]" />
+                            <button type="button" onclick="window.updateManageLink()" class="w-full sm:w-auto self-end px-4 py-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold uppercase text-[10px] flex items-center justify-center gap-2 min-h-[40px]"><i data-lucide="save" class="w-4 h-4"></i> Enregistrer King Prime</button>
+                        </div>
+
+                        <!-- MANAGE GOLD VIBE : second lien réservé à l'Admin -->
+                        <div id="admin-manage-gold-vibe-link" class="mobile-anchor bg-slate-950/60 border border-amber-900/40 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
+                            <div class="border-b border-slate-800 pb-2.5">
+                                <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5"><i data-lucide="gem" class="text-amber-400 w-4 h-4"></i> Manage Gold Vibe</h4>
+                                <p class="text-[9px] text-slate-500 mt-1">Second lien indépendant, réservé exclusivement au compte administrateur.</p>
+                            </div>
+                            <label for="manage-gold-vibe-admin-url" class="text-[9px] text-amber-300 uppercase font-bold">Adresse du lien</label>
+                            <input id="manage-gold-vibe-admin-url" type="url" placeholder="https://..." value="${window.escapeHTML(manageGoldVibeUrl || '')}" class="w-full bg-slate-950 border border-amber-900/60 rounded-lg px-3 py-2.5 text-slate-200 focus:outline-none focus:border-amber-500 text-[10px] min-h-[40px]" />
+                            <button type="button" onclick="window.updateManageGoldVibeLink()" class="w-full sm:w-auto self-end px-4 py-2.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white font-bold uppercase text-[10px] flex items-center justify-center gap-2 min-h-[40px]"><i data-lucide="save" class="w-4 h-4"></i> Enregistrer Gold Vibe</button>
+                        </div>
+
                         <!-- AJUSTEMENT DE TARIFS COMPTES CLIENTS AVEC PRIX BARRÉS -->
                         <div class="bg-slate-950/60 border border-purple-900/30 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-2.5 gap-2">
@@ -4325,6 +4592,53 @@ service cloud.firestore {
             } catch (error) {
                 console.error(error);
                 window.showToast("Impossible d’enregistrer le lien PIMP CARD.", "error");
+            }
+        };
+
+        // Manage King Prime conserve le document de l'ancien bouton Manage.
+        window.updateManageLink = async () => {
+            if (!window.appState.isAdmin) return;
+            const input = document.getElementById('manage-admin-url');
+            const value = String(input?.value || '').trim();
+            if (value && !/^https:\/\//i.test(value)) {
+                window.showToast("Le lien Manage King Prime doit commencer par https://", "error");
+                input?.focus();
+                return;
+            }
+            try {
+                const manageRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'manage');
+                await setDoc(manageRef, {
+                    url: value,
+                    updatedAt: Date.now(),
+                    updatedBy: window.appState.user?.email || ADMIN_EMAIL
+                }, { merge: true });
+                window.showToast(value ? "Lien Manage King Prime enregistré." : "Bouton Manage King Prime désactivé.");
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible d’enregistrer le lien Manage King Prime.", "error");
+            }
+        };
+
+        window.updateManageGoldVibeLink = async () => {
+            if (!window.appState.isAdmin) return;
+            const input = document.getElementById('manage-gold-vibe-admin-url');
+            const value = String(input?.value || '').trim();
+            if (value && !/^https:\/\//i.test(value)) {
+                window.showToast("Le lien Manage Gold Vibe doit commencer par https://", "error");
+                input?.focus();
+                return;
+            }
+            try {
+                const manageGoldVibeRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'manageGoldVibe');
+                await setDoc(manageGoldVibeRef, {
+                    url: value,
+                    updatedAt: Date.now(),
+                    updatedBy: window.appState.user?.email || ADMIN_EMAIL
+                }, { merge: true });
+                window.showToast(value ? "Lien Manage Gold Vibe enregistré." : "Bouton Manage Gold Vibe désactivé.");
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible d’enregistrer le lien Manage Gold Vibe.", "error");
             }
         };
 
@@ -4754,6 +5068,19 @@ service cloud.firestore {
             });
         };
 
+        window.deletePrototypeSupportMessage = (messageId) => {
+            if (!window.appState.isAdmin) return;
+            const prototype = window.getAdminPrototypeClient();
+            const message = (prototype.supportMessages || []).find(item => item.id === messageId);
+            if (!message) return;
+            window.showCyberConfirm("Effacer ce message de la conversation prototype ?", () => {
+                prototype.supportMessages = prototype.supportMessages.filter(item => item.id !== messageId);
+                window.addAdminPrototypeEvent('support_message_deleted', '', 'Message prototype effacé localement');
+                window.saveAdminPrototype();
+                renderApp();
+            });
+        };
+
         window.openPrototypeSupportNotification = () => {
             if (!window.appState.isAdmin) return;
             const prototype = window.getAdminPrototypeClient();
@@ -4772,6 +5099,11 @@ service cloud.firestore {
             const prototype = window.getAdminPrototypeClient();
             const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
             let changed = false;
+            const retentionCutoff = Date.now() - CLIENT_DATA_RETENTION_MS;
+            const retainedSupportMessages = (prototype.supportMessages || []).filter(message => Number(message.timestamp || 0) >= retentionCutoff);
+            const retainedQuotes = (prototype.quotes || []).filter(quote => Number(quote.date || 0) >= retentionCutoff);
+            if (retainedSupportMessages.length !== (prototype.supportMessages || []).length) { prototype.supportMessages = retainedSupportMessages; changed = true; }
+            if (retainedQuotes.length !== (prototype.quotes || []).length) { prototype.quotes = retainedQuotes; changed = true; }
             for (const [serviceId, state] of Object.entries(prototype.services)) {
                 if (state?.subEnd && state.subEnd <= now && state.status !== 'expired') {
                     prototype.services[serviceId] = { ...state, status: 'expired', expiredAt: state.subEnd, expiryNotifiedAt: now, simulation: true };
@@ -4892,6 +5224,16 @@ service cloud.firestore {
                     console.error(error);
                     window.showToast('Impossible de valider ce rattachement.', 'error');
                 }
+            });
+        };
+
+        window.adminClearDeletionHistory = () => {
+            if (!window.appState.isAdmin || !window.appState.allDeletionHistory.length) return;
+            window.showCyberConfirm(`Vider définitivement les ${window.appState.allDeletionHistory.length} entrées de l’historique des suppressions clients ?`, async () => {
+                const results = await Promise.allSettled(window.appState.allDeletionHistory.map(entry => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'deletionHistory', entry.id))));
+                const failedCount = results.filter(result => result.status === 'rejected').length;
+                if (failedCount) window.showToast(`Historique partiellement vidé : ${failedCount} échec${failedCount > 1 ? 's' : ''}.`, "error");
+                else window.showToast("Historique des suppressions clients vidé.");
             });
         };
 
@@ -5541,7 +5883,8 @@ service cloud.firestore {
             const idInput = document.getElementById('cred-identifier');
             const passInput = document.getElementById('cred-password');
             const extraInput = document.getElementById('cred-extra');
-            if(!idInput || !passInput || !extraInput) return;
+            const subscriptionNameInput = document.getElementById('cred-subscription-name');
+            if(!idInput || !passInput || !extraInput || !subscriptionNameInput) return;
             
             const clientId = window.appState.selectedCredClientId;
             if(!clientId) {
@@ -5551,7 +5894,7 @@ service cloud.firestore {
 
             if (clientId === PROTOTYPE_CLIENT_ID) {
                 const prototype = window.getAdminPrototypeClient();
-                prototype.credentials = { identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
+                prototype.credentials = { subscriptionName: subscriptionNameInput.value.trim(), identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
                 window.addAdminPrototypeEvent('credentials', '', 'Identifiants de simulation mis à jour');
                 window.saveAdminPrototype();
                 window.showToast("Prototype : identifiants enregistrés dans la simulation.");
@@ -5563,6 +5906,7 @@ service cloud.firestore {
                 const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
                 await updateDoc(clientRef, {
                     credentials: {
+                        subscriptionName: subscriptionNameInput.value.trim(),
                         identifier: idInput.value.trim(),
                         password: passInput.value.trim(),
                         extra: extraInput.value.trim()
@@ -5738,6 +6082,35 @@ service cloud.firestore {
                 console.error(e);
                 window.showToast("Erreur de traitement du devis", "error");
             }
+        };
+
+        // Le client confirme avoir lu le refus de l'Admin. La carte est alors
+        // libérée afin qu'une nouvelle demande de devis puisse être envoyée.
+        window.clientAcknowledgeQuoteRejection = (quoteId, serviceId) => {
+            window.showCyberConfirm("Confirmez-vous avoir lu le refus ? Vous pourrez ensuite refaire une nouvelle demande de devis.", async () => {
+                const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                if (window.appState.isAdmin && quoteId.startsWith('prototype-')) {
+                    const prototype = window.getAdminPrototypeClient();
+                    const quote = (prototype.quotes || []).find(item => item.id === quoteId);
+                    if (!quote || quote.status !== 'rejected') return;
+                    quote.status = 'rejected_read';
+                    quote.rejectionAcknowledgedAt = now;
+                    prototype.services[serviceId] = { ...(prototype.services[serviceId] || {}), quoteStatus: null, quoteRejectedReadAt: now, simulation: true };
+                    window.addAdminPrototypeEvent('quote_rejection_read', serviceId, 'Refus de devis lu par le Client prototype · Nouvelle demande autorisée');
+                    window.saveAdminPrototype();
+                    window.showToast("Prototype : refus lu. Vous pouvez refaire une demande de devis.");
+                    renderApp();
+                    return;
+                }
+                try {
+                    const quoteRef = doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quoteId);
+                    await updateDoc(quoteRef, { status: 'rejected_read', rejectionAcknowledgedAt: now });
+                    window.showToast("Refus confirmé comme lu. Vous pouvez refaire une demande de devis.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible de confirmer la lecture du refus.", "error");
+                }
+            });
         };
 
         // Le client refuse une proposition de devis
