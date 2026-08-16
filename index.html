@@ -649,6 +649,8 @@
             // Saisie temporaire de besoins de devis
             quoteRequestServiceId: null,
             quoteRequestPrototype: false,
+            onboardingDraft: null,
+            prototypeOnboardingOpen: false,
 
             // Personnalisation des liens Stripe par client
             selectedStripeClientId: "",
@@ -949,6 +951,10 @@
             } else if (!window.appState.isAdmin && window.appState.profile &&
                 (!window.appState.profile.firstName?.trim() || !window.appState.profile.lastName?.trim())) {
                 root.innerHTML = getRequiredProfileCompletionHTML();
+            } else if (!window.appState.isAdmin && window.appState.profile?.onboardingRequired === true && window.appState.profile?.onboardingCompleted !== true) {
+                root.innerHTML = getSubscriptionOnboardingHTML(false);
+            } else if (window.appState.isAdmin && window.appState.prototypeOnboardingOpen) {
+                root.innerHTML = getSubscriptionOnboardingHTML(true);
             } else {
                 root.innerHTML = getMainDashboardHTML();
             }
@@ -1018,6 +1024,8 @@
                             isAdmin: window.appState.isAdmin,
                             lastAuthenticatedAt: Date.now(),
                             status: window.appState.isAdmin ? 'active' : 'inactive',
+                            onboardingRequired: !window.appState.isAdmin,
+                            onboardingCompleted: window.appState.isAdmin,
                             usageTotal: 0,
                             createdAt: Date.now(),
                             services: {
@@ -2304,6 +2312,8 @@
                         authVerified: true,
                         lastAuthenticatedAt: Date.now(),
                         status: authRole === 'admin' ? 'active' : 'inactive',
+                        onboardingRequired: authRole === 'client',
+                        onboardingCompleted: authRole === 'admin',
                         usageTotal: 0,
                         createdAt: Date.now(),
                         services: Object.fromEntries(SERVICES_DATA.map(s => [s.id, { status: 'inactive', subEnd: null, freeReactivationUsed: false }]))
@@ -2331,6 +2341,83 @@
             window.appState.authSuccessMessage = '';
             window.appState.authLoading = false; 
             renderApp();
+        };
+
+        window.toggleSubscriptionUsernameField = (serviceId) => {
+            const wrap = document.getElementById('subscription-username-wrap');
+            const input = document.getElementById('subscription-username');
+            const needsUsername = serviceId === 'cdn-global';
+            wrap?.classList.toggle('hidden', !needsUsername);
+            if (input) input.required = needsUsername;
+        };
+
+        window.prepareSubscriptionAttachment = (event, isPrototype = false) => {
+            event.preventDefault();
+            const selected = document.querySelector('input[name="existing-subscription-service"]:checked')?.value || '';
+            const username = String(document.getElementById('subscription-username')?.value || '').trim();
+            if (!selected) return window.showToast('Veuillez sélectionner une réponse.', 'error');
+            if (selected === 'cdn-global' && !username) return window.showToast('Le Username du PASS TV CINÉ & SPORT est obligatoire.', 'error');
+            window.appState.onboardingDraft = { serviceId: selected === 'none' ? '' : selected, username: selected === 'cdn-global' ? username : '', prototype: Boolean(isPrototype) };
+            renderApp();
+        };
+
+        window.cancelSubscriptionAttachment = () => {
+            window.appState.onboardingDraft = null;
+            renderApp();
+        };
+
+        window.closePrototypeOnboarding = () => {
+            window.appState.onboardingDraft = null;
+            window.appState.prototypeOnboardingOpen = false;
+            renderApp();
+        };
+
+        window.startPrototypeOnboarding = () => {
+            if (!window.appState.isAdmin) return;
+            window.appState.onboardingDraft = null;
+            window.appState.prototypeOnboardingOpen = true;
+            renderApp();
+        };
+
+        window.submitSubscriptionReactivation = async (isPrototype = false) => {
+            const draft = window.appState.onboardingDraft;
+            if (!draft) return;
+            const service = draft.serviceId ? SERVICES_DATA.find(item => item.id === draft.serviceId) : null;
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            if (isPrototype) {
+                const prototype = window.getAdminPrototypeClient();
+                prototype.subscriptionOnboarding = service ? {
+                    status: 'pending_admin', serviceId: service.id, serviceName: service.name, username: draft.username || '', submittedAt: now, simulation: true
+                } : { status: 'none', submittedAt: now, completedAt: now, simulation: true };
+                if (service) {
+                    prototype.supportMessages.push({ id: `prototype-attachment-${Date.now()}`, sender: 'client', text: `[Rattachement d’abonnement] Client Prototype demande le rattachement et la réactivation de ${service.name}${draft.username ? ` — Username : ${draft.username}` : ''}.`, timestamp: now, notificationType: 'subscription_link_request', serviceId: service.id, readByAdmin: false, simulation: true });
+                    window.addAdminPrototypeEvent('subscription_link_request', service.id, `Rattachement et réactivation demandés pour ${service.name}`);
+                }
+                window.saveAdminPrototype();
+                window.appState.onboardingDraft = null;
+                window.appState.prototypeOnboardingOpen = false;
+                window.showToast(service ? 'Prototype : demande de rattachement envoyée localement.' : 'Prototype : parcours terminé sans abonnement existant.');
+                renderApp();
+                return;
+            }
+            const user = window.appState.user;
+            if (!user) return;
+            const onboarding = service ? {
+                status: 'pending_admin', serviceId: service.id, serviceName: service.name, username: draft.username || '', submittedAt: now, adminValidatedAt: null, clientAcknowledgedAt: null
+            } : { status: 'none', submittedAt: now, completedAt: now };
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid), { onboardingRequired: false, onboardingCompleted: true, subscriptionOnboarding: onboarding });
+                if (service) await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                    userId: user.uid, userEmail: user.email, sender: 'user', readByAdmin: false, timestamp: now,
+                    notificationType: 'subscription_link_request', serviceId: service.id,
+                    text: `[Rattachement d’abonnement] ${window.getClientName(user.email)} demande le rattachement et la réactivation de ${service.name}${draft.username ? ` — Username : ${draft.username}` : ''}.`
+                });
+                window.appState.onboardingDraft = null;
+                window.showToast(service ? 'Demande envoyée à l’administrateur.' : 'Bienvenue dans votre espace client.');
+            } catch (error) {
+                console.error(error);
+                window.showToast('Impossible d’enregistrer cette étape.', 'error');
+            }
         };
 
         window.setCatalogFilterTab = (tab) => {
@@ -2570,6 +2657,41 @@
             </div>`;
         }
 
+        function getSubscriptionOnboardingHTML(isPrototype = false) {
+            const draft = window.appState.onboardingDraft;
+            const selectedService = draft ? SERVICES_DATA.find(service => service.id === draft.serviceId) : null;
+            return `
+            <div class="min-h-screen bg-[#030712] flex items-center justify-center p-4 relative overflow-hidden">
+                <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(6,182,212,.12),_transparent_48%)] pointer-events-none"></div>
+                <div class="relative w-full max-w-2xl bg-slate-900/95 border border-cyan-500/40 rounded-2xl p-5 sm:p-8 shadow-[0_0_40px_rgba(6,182,212,.16)]">
+                    <div class="flex items-start gap-3 mb-5">
+                        <div class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-500/30 flex items-center justify-center shrink-0"><i data-lucide="link-2" class="w-6 h-6 text-cyan-400"></i></div>
+                        <div><span class="inline-block px-2 py-1 rounded bg-${isPrototype ? 'purple' : 'cyan'}-950 border border-${isPrototype ? 'purple' : 'cyan'}-500/30 text-${isPrototype ? 'purple' : 'cyan'}-300 text-[8px] uppercase font-bold mb-2">${isPrototype ? 'Simulation prototype · local uniquement' : 'Première connexion obligatoire'}</span><h2 class="text-lg sm:text-xl text-white font-bold">Bienvenue ! Possédez-vous déjà un abonnement chez nous ?</h2><p class="text-xs text-slate-400 mt-2">Cette étape permet de rattacher un abonnement existant à votre nouveau compte Sésame.</p></div>
+                    </div>
+                    ${!draft ? `
+                    <form onsubmit="window.prepareSubscriptionAttachment(event, ${isPrototype})" class="space-y-3">
+                        <p class="text-[10px] uppercase text-slate-500 font-bold">Étape 1 · Sélectionnez votre abonnement</p>
+                        <label class="flex items-center gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-cyan-500/40"><input type="radio" name="existing-subscription-service" value="none" onchange="window.toggleSubscriptionUsernameField(this.value)" class="accent-cyan-500" required><span class="text-xs text-slate-300">Non, je ne possède encore aucun abonnement</span></label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            ${SERVICES_DATA.map(service => `<label class="flex items-start gap-3 p-3 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer hover:border-cyan-500/40"><input type="radio" name="existing-subscription-service" value="${service.id}" onchange="window.toggleSubscriptionUsernameField(this.value)" class="mt-0.5 accent-cyan-500" required><span><strong class="block text-[11px] text-white">${service.name}</strong><small class="text-[9px] text-slate-500">Rattacher ce service</small></span></label>`).join('')}
+                        </div>
+                        <div id="subscription-username-wrap" class="hidden p-3 rounded-xl bg-cyan-950/25 border border-cyan-500/25">
+                            <label class="block text-[10px] uppercase text-cyan-300 mb-1">Username du PASS TV CINÉ & SPORT</label>
+                            <input id="subscription-username" maxlength="100" autocomplete="off" placeholder="Exemple : client_sport_123" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-cyan-500" />
+                        </div>
+                        <button class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 rounded-xl text-white font-bold uppercase text-xs">${'Rattacher mon abonnement à mon compte'}</button>
+                    </form>` : `
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800"><span class="block text-[9px] uppercase text-slate-500 mb-1">Étape 2 · Vérification</span><strong class="text-white text-sm">${selectedService ? selectedService.name : 'Aucun abonnement existant'}</strong>${draft.username ? `<p class="text-xs text-cyan-300 mt-2">Username : <b>${window.escapeHTML(draft.username)}</b></p>` : ''}</div>
+                        <p class="text-xs text-slate-400">${selectedService ? 'Confirmez maintenant la demande de rattachement et de réactivation. L’administrateur devra ensuite la valider.' : 'Confirmez pour terminer cette étape et accéder à votre espace client.'}</p>
+                        <button onclick="window.submitSubscriptionReactivation(${isPrototype})" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white font-bold uppercase text-xs">${selectedService ? 'Réactiver mon abonnement' : 'Confirmer et accéder à mon espace'}</button>
+                        <button onclick="window.cancelSubscriptionAttachment(${isPrototype})" class="w-full py-2 text-xs text-slate-500 hover:text-cyan-300">Modifier ma réponse</button>
+                    </div>`}
+                    ${isPrototype ? `<button onclick="window.closePrototypeOnboarding()" class="w-full mt-4 py-2 text-xs text-slate-500 hover:text-red-300">Quitter la simulation</button>` : `<button onclick="window.handleLogout()" class="w-full mt-4 py-2 text-xs text-slate-500 hover:text-red-400">Se déconnecter</button>`}
+                </div>
+            </div>`;
+        }
+
         function getPermissionDiagnosticScreenHTML() {
             return `
             <div class="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 font-mono relative overflow-y-auto">
@@ -2717,6 +2839,11 @@ service cloud.firestore {
             const unverifiedClientProfiles = window.appState.allProfiles.filter(client =>
                 client.email && !isAdminProfile(client) && client.authVerified !== true);
             const prototypePendingQuotes = (prototypeProfile.quotes || []).filter(quote => quote.status === 'pending');
+            const subscriptionAttachmentState = isAdmin ? prototypeProfile.subscriptionOnboarding : profile?.subscriptionOnboarding;
+            const pendingSubscriptionAttachments = [
+                ...window.appState.allProfiles.filter(client => !isAdminProfile(client) && client.subscriptionOnboarding?.status === 'pending_admin'),
+                ...(prototypeProfile.subscriptionOnboarding?.status === 'pending_admin' ? [prototypeProfile] : [])
+            ];
             const adminPendingQuotes = [
                 ...window.appState.allQuotes.filter(quote => quote.status === 'pending'),
                 ...prototypePendingQuotes
@@ -3017,6 +3144,18 @@ service cloud.firestore {
                     </div>
                 </header>
 
+                ${!isAdmin && subscriptionAttachmentState?.status === 'pending_admin' ? `
+                <div class="relative z-20 w-full bg-gradient-to-r from-amber-950/90 to-cyan-950/75 border border-amber-400/60 p-4 rounded-2xl shadow-[0_0_24px_rgba(251,191,36,.22)] flex items-center gap-3 animate-pulse">
+                    <span class="p-2 bg-amber-900/70 rounded-lg"><i data-lucide="loader-circle" class="w-5 h-5 text-amber-200 animate-spin"></i></span>
+                    <div><strong class="block text-white text-xs uppercase font-mono">Rattachement et réactivation de l’abonnement en cours...</strong><span class="text-[10px] text-amber-100">${window.escapeHTML(subscriptionAttachmentState.serviceName || '')} · En attente de validation par l’administrateur.</span></div>
+                </div>` : ''}
+
+                ${!isAdmin && subscriptionAttachmentState?.status === 'approved' && !subscriptionAttachmentState.clientAcknowledgedAt ? `
+                <div class="relative z-20 w-full bg-gradient-to-r from-emerald-950/90 to-cyan-950/75 border border-emerald-400/60 p-4 rounded-2xl shadow-[0_0_24px_rgba(52,211,153,.22)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span class="flex items-center gap-3"><span class="p-2 bg-emerald-900/70 rounded-lg"><i data-lucide="badge-check" class="w-5 h-5 text-emerald-200"></i></span><span><strong class="block text-white text-xs uppercase font-mono">Votre abonnement ${window.escapeHTML(subscriptionAttachmentState.serviceName || '')} est désormais actif !</strong><span class="text-[10px] text-emerald-100">Le rattachement et la réactivation ont été validés.</span></span></span>
+                    <button onclick="window.acknowledgeSubscriptionActivation()" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] uppercase font-bold shrink-0">J’ai lu</button>
+                </div>` : ''}
+
                 ${unreadSupportMessages.length ? `
                 <button onclick="window.openUnreadSupportNotification()"
                     class="relative z-20 w-full text-left bg-gradient-to-r from-purple-950/80 to-cyan-950/70 border border-purple-500/60 p-4 rounded-2xl shadow-[0_0_22px_rgba(168,85,247,0.2)] flex items-center justify-between gap-3 animate-pulse">
@@ -3037,7 +3176,7 @@ service cloud.firestore {
                         <span class="p-2 bg-amber-900/70 rounded-lg"><i data-lucide="bell-ring" class="w-5 h-5 text-amber-200"></i></span>
                         <span class="min-w-0">
                             <strong class="block text-white text-xs uppercase font-mono">Simulation prototype · nouvelle demande</strong>
-                            <span class="block text-[10px] text-amber-100 truncate">Demande de désactivation de ${window.escapeHTML(SERVICES_DATA.find(service => service.id === unreadPrototypeSupportMessages[0].serviceId)?.name || 'service')} — cliquez pour ouvrir et retirer la notification.</span>
+                            <span class="block text-[10px] text-amber-100 truncate">${unreadPrototypeSupportMessages[0].notificationType === 'subscription_link_request' ? 'Demande de rattachement et réactivation' : 'Demande de désactivation'} · ${window.escapeHTML(SERVICES_DATA.find(service => service.id === unreadPrototypeSupportMessages[0].serviceId)?.name || 'service')} — cliquez pour ouvrir et retirer la notification.</span>
                         </span>
                     </span>
                     <span class="text-[9px] uppercase text-cyan-300 font-bold shrink-0">Ouvrir</span>
@@ -3518,6 +3657,17 @@ service cloud.firestore {
                         </div>
                     </div>
 
+                    <div class="bg-slate-950/70 border ${pendingSubscriptionAttachments.length ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-4">
+                        <div class="flex items-center justify-between gap-3 mb-3"><div><h4 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="link-2" class="w-4 h-4 text-amber-400"></i> Rattachements d’abonnements</h4><p class="text-[9px] text-slate-500 mt-1">Demandes envoyées lors de la première connexion des nouveaux clients.</p></div><span class="px-2 py-1 rounded-full ${pendingSubscriptionAttachments.length ? 'bg-amber-950 text-amber-300 border border-amber-500/30 animate-pulse' : 'bg-slate-900 text-slate-500 border border-slate-800'} text-[8px] uppercase font-bold">${pendingSubscriptionAttachments.length} en attente</span></div>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                            ${pendingSubscriptionAttachments.length ? pendingSubscriptionAttachments.map(client => {
+                                const request = client.subscriptionOnboarding;
+                                const prototypeRequest = client.id === PROTOTYPE_CLIENT_ID || request?.simulation;
+                                return `<div class="p-3 rounded-lg bg-slate-900 border ${prototypeRequest ? 'border-cyan-500/35' : 'border-amber-500/25'} flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div class="min-w-0"><strong class="block text-xs text-white truncate">${window.escapeHTML(request.serviceName || 'Service')}</strong><span class="block text-[9px] text-slate-400 truncate">${prototypeRequest ? 'Client Prototype · Simulation locale' : `${window.escapeHTML(window.getClientName(client.email))} · ${window.escapeHTML(client.email || '')}`}</span>${request.username ? `<span class="block mt-1 text-[9px] text-cyan-300">Username : <b>${window.escapeHTML(request.username)}</b></span>` : ''}</div><button onclick="window.adminValidateSubscriptionAttachment('${client.id}')" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white text-[9px] uppercase font-bold shrink-0">Valider le rattachement</button></div>`;
+                            }).join('') : '<p class="lg:col-span-2 py-4 text-center text-[10px] text-slate-600 italic">Aucune demande de rattachement en attente.</p>'}
+                        </div>
+                    </div>
+
                     <!-- COMPTE CLIENT PROTOTYPE DE L'ADMINISTRATEUR -->
                     <div id="admin-prototype" class="mobile-anchor bg-gradient-to-br from-cyan-950/30 via-slate-950/80 to-purple-950/30 border border-cyan-500/25 rounded-xl p-4 sm:p-5 w-full">
                         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4 border-b border-slate-800/80 pb-4">
@@ -3528,8 +3678,10 @@ service cloud.firestore {
                                     <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Profil client complet de simulation : services, identifiants, devis, tarifs, liens Stripe, PIMP CARD et information globale. Sélectionnez « Client Prototype » dans les outils de la Console ; aucune donnée d'un vrai client ne sera modifiée.</p>
                                 </div>
                             </div>
-                            <button type="button" onclick="window.resetAdminPrototype()" class="px-3 py-2 rounded-lg bg-slate-950 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/40 text-slate-400 hover:text-red-300 text-[9px] uppercase font-bold transition-all shrink-0">Réinitialiser la simulation</button>
+                            <div class="flex flex-col sm:flex-row gap-2 shrink-0"><button type="button" onclick="window.startPrototypeOnboarding()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 border border-cyan-400/30 text-white text-[9px] uppercase font-bold transition-all">Simuler une première connexion</button><button type="button" onclick="window.resetAdminPrototype()" class="px-3 py-2 rounded-lg bg-slate-950 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/40 text-slate-400 hover:text-red-300 text-[9px] uppercase font-bold transition-all">Réinitialiser la simulation</button></div>
                         </div>
+                        ${prototypeProfile.subscriptionOnboarding?.status === 'pending_admin' ? `<div class="mb-4 p-3 rounded-xl bg-amber-950/45 border border-amber-500/40 text-amber-100 animate-pulse"><strong class="block text-[10px] uppercase font-mono">⏳ Rattachement et réactivation de l’abonnement en cours...</strong><span class="text-[9px]">${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} · Simulation locale</span></div>` : ''}
+                        ${prototypeProfile.subscriptionOnboarding?.status === 'approved' && !prototypeProfile.subscriptionOnboarding.clientAcknowledgedAt ? `<div class="mb-4 p-3 rounded-xl bg-emerald-950/45 border border-emerald-500/40 text-emerald-100 flex items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">✓ ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} est désormais actif</strong><span class="text-[9px]">Validation administrateur simulée.</span></span><button onclick="window.acknowledgePrototypeSubscriptionActivation()" class="px-3 py-2 rounded bg-emerald-600 text-white text-[8px] uppercase font-bold">J’ai lu</button></div>` : ''}
                         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                             ${SERVICES_DATA.map(service => {
                                 const prototypeState = window.appState.prototypeClient?.services?.[service.id] || { status: 'inactive', subEnd: null };
@@ -4608,7 +4760,7 @@ service cloud.firestore {
             const unreadMessages = (prototype.supportMessages || []).filter(message => message.sender === 'client' && message.readByAdmin === false);
             if (!unreadMessages.length) return;
             unreadMessages.forEach(message => { message.readByAdmin = true; });
-            window.addAdminPrototypeEvent('prototype_notification_opened', unreadMessages[0].serviceId || '', 'Notification locale de demande de désactivation ouverte');
+            window.addAdminPrototypeEvent('prototype_notification_opened', unreadMessages[0].serviceId || '', 'Notification locale du Client prototype ouverte');
             window.saveAdminPrototype();
             renderApp();
             setTimeout(() => document.getElementById('prototype-support-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
@@ -4703,6 +4855,70 @@ service cloud.firestore {
             window.addAdminPrototypeEvent('quote', serviceId, `Demande de devis envoyée pour ${service.name}`);
             window.saveAdminPrototype();
             window.showToast(`Prototype : demande de devis envoyée pour ${service.name}.`);
+            renderApp();
+        };
+
+        window.adminValidateSubscriptionAttachment = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            const prototypeRequest = clientId === PROTOTYPE_CLIENT_ID;
+            const client = prototypeRequest ? window.getAdminPrototypeClient() : window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+            const request = client?.subscriptionOnboarding;
+            const service = SERVICES_DATA.find(item => item.id === request?.serviceId);
+            if (!client || !request || request.status !== 'pending_admin' || !service) return window.showToast('Cette demande n’est plus disponible.', 'error');
+            window.showCyberConfirm(`Valider le rattachement et réactiver ${service.name} pour ${prototypeRequest ? 'le Client Prototype' : window.getClientName(client.email)} ?`, async () => {
+                const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                const currentServiceState = client.services?.[service.id] || {};
+                const activatedService = { ...currentServiceState, status: 'active', activatedAt: now, reactivatedAt: now, subEnd: now + ((service.durationDays || 30) * 86400000), linkedExistingSubscription: true, linkedUsername: request.username || '', simulation: prototypeRequest };
+                const approvedOnboarding = { ...request, status: 'approved', adminValidatedAt: now, clientAcknowledgedAt: null };
+                if (prototypeRequest) {
+                    client.services[service.id] = activatedService;
+                    client.subscriptionOnboarding = { ...approvedOnboarding, simulation: true };
+                    client.supportMessages.push({ id: `prototype-attachment-approved-${Date.now()}`, sender: 'admin', text: `Votre abonnement ${service.name} est désormais rattaché et actif.`, timestamp: now, notificationType: 'subscription_link_validated', serviceId: service.id, readByClient: false, simulation: true });
+                    window.addAdminPrototypeEvent('subscription_link_approved', service.id, `Rattachement validé et ${service.name} réactivé`);
+                    window.saveAdminPrototype();
+                    window.showToast(`Prototype : ${service.name} rattaché et réactivé.`);
+                    renderApp();
+                    return;
+                }
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { [`services.${service.id}`]: activatedService, subscriptionOnboarding: approvedOnboarding, status: 'active' });
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                        userId: clientId, userEmail: client.email, sender: 'admin', readByClient: false, timestamp: now,
+                        notificationType: 'subscription_link_validated', serviceId: service.id,
+                        text: `Votre abonnement ${service.name} est désormais rattaché à votre compte et actif.`
+                    });
+                    window.showToast(`Rattachement validé pour ${window.getClientName(client.email)}.`);
+                } catch (error) {
+                    console.error(error);
+                    window.showToast('Impossible de valider ce rattachement.', 'error');
+                }
+            });
+        };
+
+        window.acknowledgeSubscriptionActivation = async () => {
+            if (window.appState.isAdmin || !window.appState.user || window.appState.profile?.subscriptionOnboarding?.status !== 'approved') return;
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid), {
+                    subscriptionOnboarding: { ...window.appState.profile.subscriptionOnboarding, status: 'approved_read', clientAcknowledgedAt: Date.now() }
+                });
+                window.showToast('Notification marquée comme lue.');
+            } catch (error) {
+                console.error(error);
+                window.showToast('Impossible de fermer cette notification.', 'error');
+            }
+        };
+
+        window.acknowledgePrototypeSubscriptionActivation = () => {
+            if (!window.appState.isAdmin) return;
+            const prototype = window.getAdminPrototypeClient();
+            if (prototype.subscriptionOnboarding?.status !== 'approved') return;
+            prototype.subscriptionOnboarding = { ...prototype.subscriptionOnboarding, status: 'approved_read', clientAcknowledgedAt: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now() };
+            (prototype.supportMessages || []).forEach(message => {
+                if (message.notificationType === 'subscription_link_validated') message.readByClient = true;
+            });
+            window.addAdminPrototypeEvent('subscription_activation_read', prototype.subscriptionOnboarding.serviceId || '', 'Notification de validation lue par le Client prototype');
+            window.saveAdminPrototype();
+            window.showToast('Prototype : notification de validation lue et masquée.');
             renderApp();
         };
 
