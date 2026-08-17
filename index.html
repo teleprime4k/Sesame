@@ -3287,6 +3287,13 @@ service cloud.firestore {
             const communityMembers = window.appState.allCommunityMembers;
             const unreadPeerMessages = communityJoined ? communityMessages.filter(m =>
                 m.senderId !== user.uid && !(m.readBy || []).includes(user.uid)) : [];
+            const lastNewsReadAt = Number(profile?.newsLastReadAt || 0);
+            const unreadNewsCount = isAdmin ? 0 : window.appState.allNews.filter(news => Number(news.publishedAt || 0) > lastNewsReadAt).length;
+            const prototypeLastNewsReadAt = Number(prototypeProfile.newsLastReadAt || 0);
+            const prototypeUnreadNewsCount = window.appState.allNews.filter(news => Number(news.publishedAt || 0) > prototypeLastNewsReadAt).length;
+            const prototypeCommunityJoined = prototypeProfile.communityChatJoined === true;
+            const prototypeCommunityLastReadAt = Number(prototypeProfile.communityLastReadAt || 0);
+            const prototypeUnreadCommunityCount = prototypeCommunityJoined ? communityMessages.filter(message => Number(message.timestamp || 0) > prototypeCommunityLastReadAt).length : 0;
 
             // Identification du fuseau horaire
             const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
@@ -3892,8 +3899,15 @@ service cloud.firestore {
                                         </div>`;
                                     }).join('') : '<p class="text-center text-xs text-slate-600 italic mt-20">Commencez la conversation.</p>'}
                                 </div>
+                                ${isAdmin ? (() => {
+                                    const lastMemberMessage = [...communityMessages].filter(message => message.senderRole !== 'admin').sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+                                    if (!lastMemberMessage) return '';
+                                    const suggestions = window.getSupportReplySuggestions(lastMemberMessage.text || '');
+                                    return `<div class="mt-3 p-3 rounded-xl bg-gradient-to-r from-purple-950/45 to-emerald-950/35 border border-purple-500/25"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2"><span class="text-[9px] uppercase font-bold text-purple-300 flex items-center gap-1"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i> Assistant · Administrateur Modérateur</span><span class="text-[8px] text-slate-500">Selon le dernier message d’un membre</span></div><div class="flex flex-wrap gap-1.5">${suggestions.map((suggestion, index) => `<button type="button" onclick="window.useGroupModeratorReplySuggestion(${index})" class="px-2 py-1.5 rounded bg-slate-950 hover:bg-purple-950 border border-slate-700 hover:border-purple-500/40 text-[8px] text-slate-300">${window.escapeHTML(suggestion.label)}</button>`).join('')}</div></div>`;
+                                })() : ''}
                                 <form onsubmit="window.sendPeerMessage(event)" class="flex gap-2 mt-3">
                                     <input id="peer-chat-input" maxlength="1000" required autocomplete="off" placeholder="Écrire un message dans le groupe…" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500" />
+                                    ${isAdmin ? `<button type="button" onclick="window.correctGroupModeratorReply()" title="Corriger les fautes courantes" class="px-3 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 rounded-lg text-cyan-300 text-[9px] uppercase font-bold flex items-center gap-1"><i data-lucide="spell-check-2" class="w-4 h-4"></i><span class="hidden sm:inline">Corriger</span></button>` : ''}
                                     <button class="px-4 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-white"><i data-lucide="send" class="w-4 h-4"></i></button>
                                 </form>`
                             : `<div class="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3"><i data-lucide="users" class="w-10 h-10 text-emerald-700"></i><p class="text-xs text-slate-500">Rejoignez le groupe Sésame pour lire les échanges et discuter avec tous les clients.</p></div>`}
@@ -3944,6 +3958,8 @@ service cloud.firestore {
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2 shrink-0"><button type="button" onclick="window.startPrototypeOnboarding()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 border border-cyan-400/30 text-white text-[9px] uppercase font-bold transition-all">Simuler une première connexion</button><button type="button" onclick="window.resetAdminPrototype()" class="px-3 py-2 rounded-lg bg-slate-950 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/40 text-slate-400 hover:text-red-300 text-[9px] uppercase font-bold transition-all">Réinitialiser la simulation</button></div>
                         </div>
+                        ${prototypeUnreadNewsCount ? `<div class="mb-4 p-3 rounded-xl bg-gradient-to-r from-cyan-950/55 to-purple-950/45 border border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse"><span class="flex items-center gap-3"><span class="relative p-2 bg-cyan-900/70 rounded-lg"><i data-lucide="newspaper" class="w-5 h-5 text-cyan-200"></i><b class="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[9px] leading-5 text-center">${prototypeUnreadNewsCount > 99 ? '99+' : prototypeUnreadNewsCount}</b></span><span><strong class="block text-white text-[10px] uppercase font-mono">Nouvelle${prototypeUnreadNewsCount > 1 ? 's' : ''} actualité${prototypeUnreadNewsCount > 1 ? 's' : ''}</strong><small class="text-[9px] text-cyan-200">Notification du Compte client prototype · simulation locale</small></span></span><button onclick="window.markPrototypeNewsAsRead()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[8px] uppercase font-bold shrink-0">Simuler la consultation</button></div>` : ''}
+                        <div class="mb-4 p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span class="flex items-center gap-3"><span class="relative p-2 bg-emerald-900/70 rounded-lg"><i data-lucide="messages-square" class="w-5 h-5 text-emerald-200"></i>${prototypeUnreadCommunityCount ? `<b class="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[9px] leading-5 text-center animate-pulse">${prototypeUnreadCommunityCount > 99 ? '99+' : prototypeUnreadCommunityCount}</b>` : ''}</span><span><strong class="block text-white text-[10px] uppercase font-mono">Groupe Sésame · Prototype</strong><small class="text-[9px] ${prototypeCommunityJoined ? 'text-emerald-300' : 'text-slate-500'}">${prototypeCommunityJoined ? prototypeUnreadCommunityCount ? `${prototypeUnreadCommunityCount} nouveau${prototypeUnreadCommunityCount > 1 ? 'x' : ''} message${prototypeUnreadCommunityCount > 1 ? 's' : ''} non lu${prototypeUnreadCommunityCount > 1 ? 's' : ''}` : 'Membre · aucun nouveau message' : 'Le prototype n’a pas encore rejoint le groupe'}</small></span></span><div class="flex gap-2">${prototypeCommunityJoined && prototypeUnreadCommunityCount ? `<button onclick="window.markPrototypeCommunityAsRead()" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[8px] uppercase font-bold">Simuler la consultation</button>` : ''}<button onclick="window.togglePrototypeCommunity(${prototypeCommunityJoined ? 'false' : 'true'})" class="px-3 py-2 rounded-lg ${prototypeCommunityJoined ? 'bg-red-950 text-red-300 border-red-500/30' : 'bg-emerald-700 text-white border-emerald-400/30'} border text-[8px] uppercase font-bold">${prototypeCommunityJoined ? 'Quitter' : 'Rejoindre'}</button></div></div>
                         ${prototypeProfile.subscriptionOnboarding?.status === 'pending_admin' ? `<div class="mb-4 p-3 rounded-xl bg-amber-950/45 border border-amber-500/40 text-amber-100 animate-pulse"><strong class="block text-[10px] uppercase font-mono">⏳ Rattachement et réactivation de l’abonnement en cours...</strong><span class="text-[9px]">${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} · Simulation locale</span></div>` : ''}
                         ${prototypeProfile.subscriptionOnboarding?.status === 'approved' && !prototypeProfile.subscriptionOnboarding.clientAcknowledgedAt ? `<div class="mb-4 p-3 rounded-xl bg-emerald-950/45 border border-emerald-500/40 text-emerald-100 flex items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">✓ ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} est désormais actif</strong><span class="text-[9px]">Validation administrateur simulée.</span></span><button onclick="window.acknowledgePrototypeSubscriptionActivation()" class="px-3 py-2 rounded bg-emerald-600 text-white text-[8px] uppercase font-bold">J’ai lu</button></div>` : ''}
                         ${['not_found', 'correction_required'].includes(prototypeProfile.subscriptionOnboarding?.status) ? `<div class="mb-4 p-3 rounded-xl bg-gradient-to-r from-red-950/55 to-amber-950/45 border border-red-500/40 text-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">${prototypeProfile.subscriptionOnboarding.status === 'not_found' ? 'Abonnement prototype introuvable' : 'Demande prototype à modifier'}</strong><span class="block text-[9px] mt-1">${prototypeProfile.subscriptionOnboarding.status === 'not_found' ? `Aucun abonnement ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} retrouvé.` : `Sélectionnez le bon service.${prototypeProfile.subscriptionOnboarding.suggestedServiceName ? ` Service conseillé : ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.suggestedServiceName)}.` : ''}`}</span>${prototypeProfile.subscriptionOnboarding.adminNote ? `<span class="block text-[9px] text-amber-200 mt-1">Message de l’admin : ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.adminNote)}</span>` : ''}<span class="block text-[8px] text-purple-300 mt-1 uppercase font-bold">Simulation locale uniquement</span></span><button onclick="window.startPrototypeSubscriptionCorrection()" class="px-3 py-2 rounded bg-amber-600 hover:bg-amber-500 text-white text-[8px] uppercase font-bold shrink-0">Modifier la demande</button></div>` : ''}
@@ -4000,8 +4016,15 @@ service cloud.firestore {
                                         <button type="button" onclick="window.deletePrototypeSupportMessage('${message.id}')" class="mt-1 text-[8px] text-red-500 hover:text-red-300 uppercase">Effacer ce message</button>
                                     </div>`).join('') : `<div class="h-full flex items-center justify-center text-center text-[10px] text-slate-600 px-6">Envoyez un premier message pour simuler une conversation entre le client prototype et l’Administrateur.</div>`}
                             </div>
+                            ${(() => {
+                                const lastPrototypeClientMessage = [...(prototypeProfile.supportMessages || [])].filter(message => message.sender === 'client').sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+                                if (!lastPrototypeClientMessage) return '';
+                                const suggestions = window.getSupportReplySuggestions(lastPrototypeClientMessage.text || '');
+                                return `<div class="mt-3 p-3 rounded-xl bg-gradient-to-r from-purple-950/45 to-cyan-950/35 border border-purple-500/25"><div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2"><span class="text-[9px] uppercase font-bold text-purple-300 flex items-center gap-1"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i> Assistant de réponse · Prototype</span><span class="text-[8px] text-slate-500">Analyse locale du dernier message client simulé</span></div><div class="flex flex-wrap gap-1.5">${suggestions.map((suggestion, index) => `<button type="button" onclick="window.usePrototypeReplySuggestion(${index})" class="px-2 py-1.5 rounded bg-slate-950 hover:bg-purple-950 border border-slate-700 hover:border-purple-500/40 text-[8px] text-slate-300">${window.escapeHTML(suggestion.label)}</button>`).join('')}</div></div>`;
+                            })()}
                             <div class="mt-3 flex flex-col sm:flex-row gap-2">
                                 <input id="prototype-support-input" type="text" placeholder="Écrire un message de simulation..." autocomplete="off" class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-500 min-h-[40px]" onkeydown="if(event.key==='Enter'){event.preventDefault();window.sendPrototypeSupportMessage('client')}" />
+                                <button type="button" onclick="window.correctPrototypeSupportReply()" class="px-3 py-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 text-cyan-300 text-[9px] uppercase font-bold min-h-[40px] flex items-center justify-center gap-1"><i data-lucide="spell-check-2" class="w-4 h-4"></i> Corriger</button>
                                 <button type="button" onclick="window.sendPrototypeSupportMessage('client')" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[9px] uppercase font-bold min-h-[40px]">Envoyer comme Client</button>
                                 <button type="button" onclick="window.sendPrototypeSupportMessage('admin')" class="px-3 py-2 rounded-lg bg-purple-700 hover:bg-purple-600 text-white text-[9px] uppercase font-bold min-h-[40px]">Répondre comme Admin</button>
                             </div>
@@ -4122,9 +4145,16 @@ service cloud.firestore {
                                                 </div>
                                             `).join('')}
                                         </div>
+                                        ${(() => {
+                                            const lastClientMessage = [...window.appState.allMessages].filter(message => message.userId === window.appState.adminSelectedClient && message.sender === 'user').sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+                                            if (!lastClientMessage) return '';
+                                            const suggestions = window.getSupportReplySuggestions(lastClientMessage.text || '');
+                                            return `<div class="mt-2 p-2 rounded-lg bg-gradient-to-r from-purple-950/45 to-cyan-950/35 border border-purple-500/25"><div class="flex items-center justify-between gap-2 mb-2"><span class="text-[9px] uppercase font-bold text-purple-300 flex items-center gap-1"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i> Assistant de réponse</span><span class="text-[8px] text-slate-500">Selon le dernier message client</span></div><div class="flex flex-wrap gap-1.5">${suggestions.map((suggestion, index) => `<button type="button" onclick="window.useAdminReplySuggestion(${index})" class="px-2 py-1.5 rounded bg-slate-950 hover:bg-purple-950 border border-slate-700 hover:border-purple-500/40 text-[8px] text-slate-300 text-left">${window.escapeHTML(suggestion.label)}</button>`).join('')}</div></div>`;
+                                        })()}
                                         <form onsubmit="window.adminSendSupportMessage(event)" class="mt-2 pt-2 border-t border-slate-800 flex gap-1 font-mono shrink-0">
                                             <input id="admin-chat-input" type="text" placeholder="Répondre..." autocomplete="off"
                                                 class="flex-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-[11px] focus:outline-none focus:border-purple-500 text-white min-h-[30px]" />
+                                            <button type="button" onclick="window.correctAdminSupportReply()" title="Corriger les fautes courantes" class="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 px-2 py-1 rounded text-cyan-300 text-[9px] font-bold shrink-0 min-h-[30px] flex items-center gap-1"><i data-lucide="spell-check-2" class="w-4 h-4"></i><span class="hidden sm:inline">Corriger</span></button>
                                             <button type="submit" class="bg-purple-600 hover:bg-purple-500 px-2.5 py-1 rounded text-white text-[11px] font-bold shrink-0 min-h-[30px]">OK</button>
                                         </form>
                                     ` : `
@@ -4157,8 +4187,12 @@ service cloud.firestore {
                                     
                                     <div class="space-y-2">
                                         <div>
-                                            <input type="text" id="cred-subscription-name" placeholder="Nom de l’abonnement utilisé" value="${window.escapeHTML(activeCredSubscriptionName)}"
-                                                class="w-full bg-slate-950 border border-purple-900/60 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-600 min-h-[34px]" />
+                                            <label for="cred-subscription-name" class="block text-[9px] text-purple-300 uppercase mb-1">Nom de l’abonnement utilisé :</label>
+                                            <select id="cred-subscription-name" class="w-full bg-slate-950 border border-purple-900/60 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 min-h-[36px]">
+                                                <option value="">-- Choisir l’abonnement --</option>
+                                                <option value="👑 King Prime" ${activeCredSubscriptionName.includes('King Prime') ? 'selected' : ''}>👑 King Prime</option>
+                                                <option value="💎 Gold Vibe" ${activeCredSubscriptionName.includes('Gold Vibe') ? 'selected' : ''}>💎 Gold Vibe</option>
+                                            </select>
                                         </div>
                                         <div>
                                             <input type="text" id="cred-identifier" placeholder="Identifiant" value="${activeCredId}"
@@ -4579,7 +4613,7 @@ service cloud.firestore {
                 <!-- BARRE DE NAVIGATION MOBILE -->
                 <nav class="mobile-nav-shell" aria-label="Raccourcis mobiles">
                     <button type="button" onclick="window.mobileGoTo('dashboard-top')" class="mobile-nav-button"><i data-lucide="house"></i><span>Accueil</span></button>
-                    ${mobilePrimaryShortcuts.map(item => `<button type="button" onclick="window.mobileGoTo('${item.id}')" class="mobile-nav-button"><i data-lucide="${item.icon}"></i><span>${item.label}</span></button>`).join('')}
+                    ${mobilePrimaryShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; return `<button type="button" onclick="window.mobileGoTo('${item.id}')" class="mobile-nav-button relative">${badgeCount ? `<span class="absolute top-0.5 left-1/2 ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-[#0b1322] text-white text-[9px] leading-[14px] font-black text-center animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}"></i><span>${item.label}</span></button>`; }).join('')}
                     <button type="button" onclick="window.openMobileShortcuts()" class="mobile-nav-button text-cyan-400"><i data-lucide="menu"></i><span>Menu</span></button>
                 </nav>
 
@@ -4592,7 +4626,7 @@ service cloud.firestore {
                             <button type="button" onclick="window.closeMobileShortcuts()" class="w-10 h-10 rounded-xl bg-slate-900 text-slate-400 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
                         </div>
                         <div class="mobile-shortcut-grid grid grid-cols-3 gap-2">
-                            ${mobileAllShortcuts.map(item => `<button type="button" onclick="${item.action === 'profile' ? 'window.closeMobileShortcuts();window.openMyPersonalInformation()' : `window.mobileGoTo('${item.id}')`}" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex flex-col items-center justify-center gap-2 text-center text-[10px] font-bold active:border-cyan-500 active:text-cyan-300"><i data-lucide="${item.icon}" class="w-5 h-5 text-cyan-400"></i><span>${item.label}</span></button>`).join('')}
+                            ${mobileAllShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; return `<button type="button" onclick="${item.action === 'profile' ? 'window.closeMobileShortcuts();window.openMyPersonalInformation()' : `window.mobileGoTo('${item.id}')`}" class="relative p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex flex-col items-center justify-center gap-2 text-center text-[10px] font-bold active:border-cyan-500 active:text-cyan-300">${badgeCount ? `<span class="absolute top-1.5 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] leading-[18px] font-black animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}" class="w-5 h-5 text-cyan-400"></i><span>${item.label}</span></button>`; }).join('')}
                         </div>
                     </div>
                 </div>
@@ -4762,11 +4796,63 @@ service cloud.firestore {
             window.closeMobileShortcuts();
             if (window.matchMedia('(max-width: 767px)').matches) {
                 window.applyMobileRoute(targetId);
+                if (targetId === 'news-section') window.markNewsAsRead();
+                if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
                 return;
             }
             const target = document.getElementById(targetId);
             if (!target) return;
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (targetId === 'news-section') window.markNewsAsRead();
+            if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
+        };
+
+        window.markNewsAsRead = async () => {
+            if (window.appState.isAdmin || !window.appState.user || !window.appState.allNews.length) return;
+            const latestPublishedAt = Math.max(...window.appState.allNews.map(news => Number(news.publishedAt || 0)));
+            if (latestPublishedAt <= Number(window.appState.profile?.newsLastReadAt || 0)) return;
+            window.appState.profile = { ...(window.appState.profile || {}), newsLastReadAt: latestPublishedAt };
+            renderApp();
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid), { newsLastReadAt: latestPublishedAt });
+            } catch (error) {
+                console.error(error);
+                window.showToast('Impossible d’enregistrer la lecture des actualités.', 'error');
+            }
+        };
+
+        window.markPrototypeNewsAsRead = () => {
+            if (!window.appState.isAdmin || !window.appState.allNews.length) return;
+            const prototype = window.getAdminPrototypeClient();
+            prototype.newsLastReadAt = Math.max(...window.appState.allNews.map(news => Number(news.publishedAt || 0)));
+            window.addAdminPrototypeEvent('news_read', '', 'Toutes les actualités ont été consultées dans la simulation');
+            window.saveAdminPrototype();
+            window.showToast('Prototype : actualités marquées comme consultées.');
+            renderApp();
+        };
+
+        window.togglePrototypeCommunity = (joined) => {
+            if (!window.appState.isAdmin) return;
+            const prototype = window.getAdminPrototypeClient();
+            prototype.communityChatJoined = Boolean(joined);
+            prototype.communityLastReadAt = joined ? (window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now()) : 0;
+            window.addAdminPrototypeEvent(joined ? 'community_joined' : 'community_left', '', joined ? 'Le prototype a rejoint le Groupe Sésame' : 'Le prototype a quitté le Groupe Sésame');
+            window.saveAdminPrototype();
+            window.showToast(joined ? 'Prototype : Groupe Sésame rejoint.' : 'Prototype : Groupe Sésame quitté.');
+            renderApp();
+        };
+
+        window.markPrototypeCommunityAsRead = () => {
+            if (!window.appState.isAdmin) return;
+            const prototype = window.getAdminPrototypeClient();
+            if (prototype.communityChatJoined !== true) return;
+            prototype.communityLastReadAt = window.appState.allClientMessages.length
+                ? Math.max(...window.appState.allClientMessages.filter(message => message.groupId === 'sesame-community').map(message => Number(message.timestamp || 0)), Date.now())
+                : Date.now();
+            window.addAdminPrototypeEvent('community_read', '', 'Messages du Groupe Sésame consultés dans la simulation');
+            window.saveAdminPrototype();
+            window.showToast('Prototype : messages du groupe marqués comme lus.');
+            renderApp();
         };
 
         // --- EXÉCUTION DU RENDU GLOBAL & ACTIONS ---
@@ -4790,6 +4876,88 @@ service cloud.firestore {
             }
             renderApp();
             setTimeout(() => document.getElementById(window.appState.isAdmin ? 'admin-chat-box' : 'client-chat-box')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+        };
+
+        window.getSupportReplySuggestions = (clientText = '') => {
+            const text = String(clientText).toLowerCase();
+            if (/(paiement|payer|stripe|prélev|carte bancaire|facture)/.test(text)) return [
+                { label: 'Paiement en vérification', text: 'Bonjour, merci pour votre message. Je vérifie actuellement votre paiement. Votre service sera activé uniquement après confirmation du paiement.' },
+                { label: 'Paiement non confirmé', text: 'Bonjour, le paiement n’apparaît pas encore comme confirmé. Merci de vérifier la transaction ou de réessayer depuis le lien de paiement de votre espace client.' },
+                { label: 'Paiement reçu', text: 'Bonjour, votre paiement a bien été reçu. Je procède maintenant à l’activation de votre service.' }
+            ];
+            if (/(identifiant|username|mot de passe|connexion|connecter|login|code)/.test(text)) return [
+                { label: 'Identifiants envoyés', text: 'Bonjour, vos identifiants sont disponibles dans votre espace client. Vous pouvez utiliser les boutons de copie pour éviter toute erreur de saisie.' },
+                { label: 'Vérification des accès', text: 'Bonjour, je vérifie vos identifiants et je reviens vers vous rapidement. Merci de ne pas partager votre mot de passe dans la conversation.' },
+                { label: 'Demander une capture', text: 'Bonjour, pouvez-vous m’envoyer une capture du message d’erreur, sans afficher votre mot de passe, afin que je puisse vous aider ?' }
+            ];
+            if (/(expir|réactiv|renouvel|abonnement|service.*actif|fonctionne plus)/.test(text)) return [
+                { label: 'Réactivation en cours', text: 'Bonjour, votre demande de réactivation est bien prise en compte. Je vérifie votre abonnement et je vous confirme dès que le service est de nouveau actif.' },
+                { label: 'Abonnement actif', text: 'Bonjour, votre abonnement est désormais actif. Merci de vous déconnecter puis de vous reconnecter afin d’actualiser votre espace client.' },
+                { label: 'Informations nécessaires', text: 'Bonjour, merci de m’indiquer le nom de votre abonnement ainsi que votre identifiant afin que je puisse effectuer la vérification.' }
+            ];
+            if (/(devis|prix|tarif|coût|combien|projet|site internet|application)/.test(text)) return [
+                { label: 'Devis à l’étude', text: 'Bonjour, votre demande de devis est bien reçue et actuellement en cours d’examen. Je reviendrai vers vous avec une proposition adaptée.' },
+                { label: 'Demander des précisions', text: 'Bonjour, pouvez-vous préciser votre besoin, les fonctionnalités souhaitées, votre budget et la date de livraison souhaitée ?' },
+                { label: 'Devis accepté', text: 'Bonjour, votre demande de devis a été acceptée. Le bouton de paiement est maintenant disponible sur la carte du service concerné.' }
+            ];
+            if (/(désactiv|supprim|résili|annul)/.test(text)) return [
+                { label: 'Demande reçue', text: 'Bonjour, votre demande a bien été reçue. Je vérifie les informations concernées et je vous confirme sa prise en compte.' },
+                { label: 'Demander confirmation', text: 'Bonjour, pouvez-vous me confirmer précisément le service que vous souhaitez désactiver ?' },
+                { label: 'Désactivation effectuée', text: 'Bonjour, la désactivation demandée a bien été effectuée. Le changement est maintenant visible dans votre espace client.' }
+            ];
+            if (/(merci|bonjour|bonsoir|salut)/.test(text)) return [
+                { label: 'Accueil', text: 'Bonjour, merci pour votre message. Comment puis-je vous aider concernant votre abonnement ou votre espace client ?' },
+                { label: 'Prise en charge', text: 'Bonjour, votre message est bien reçu. Je consulte votre dossier et je reviens vers vous rapidement.' },
+                { label: 'Disponible', text: 'Bonjour, je suis disponible pour vous aider. Merci de m’indiquer le service concerné et le problème rencontré.' }
+            ];
+            return [
+                { label: 'Message reçu', text: 'Bonjour, merci pour votre message. Votre demande est bien prise en compte et je reviens vers vous rapidement.' },
+                { label: 'Demander des détails', text: 'Bonjour, pouvez-vous me donner davantage de détails sur le problème rencontré et préciser le service concerné ?' },
+                { label: 'Vérification en cours', text: 'Bonjour, je vérifie votre dossier actuellement. Je vous informe dès que j’ai terminé.' }
+            ];
+        };
+
+        window.useAdminReplySuggestion = (index) => {
+            if (!window.appState.isAdmin || !window.appState.adminSelectedClient) return;
+            const latestClientMessage = [...window.appState.allMessages]
+                .filter(message => message.userId === window.appState.adminSelectedClient && message.sender === 'user')
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+            const suggestion = window.getSupportReplySuggestions(latestClientMessage?.text || '')[Number(index)];
+            const input = document.getElementById('admin-chat-input');
+            if (!suggestion || !input) return;
+            input.value = suggestion.text;
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        };
+
+        window.correctFrenchSupportText = (value = '') => {
+            let text = String(value).trim().replace(/\s+/g, ' ');
+            const corrections = [
+                [/\bjais\b/gi, 'j’ai'], [/\bje vais vérifier sa\b/gi, 'je vais vérifier cela'], [/\bsa a été\b/gi, 'ça a été'],
+                [/\bsa fonctionne\b/gi, 'ça fonctionne'], [/\bsa ne fonctionne pas\b/gi, 'ça ne fonctionne pas'], [/\bc est\b/gi, 'c’est'],
+                [/\bs il\b/gi, 's’il'], [/\bqu il\b/gi, 'qu’il'], [/\bn est\b/gi, 'n’est'], [/\bd accord\b/gi, 'd’accord'],
+                [/\bpas de soucis\b/gi, 'pas de souci'], [/\bje vous tiens au courant\b/gi, 'je vous tiendrai au courant'],
+                [/\bvotre demande a était\b/gi, 'votre demande a été'], [/\ba etait\b/gi, 'a été'], [/\ba était\b/gi, 'a été'],
+                [/\bidentifient\b/gi, 'identifiant'], [/\bmot de pass\b/gi, 'mot de passe'], [/\bconnexion\b/gi, 'connexion'],
+                [/\breactivation\b/gi, 'réactivation'], [/\breactiver\b/gi, 'réactiver'], [/\bprelevement\b/gi, 'prélèvement'],
+                [/\brecu\b/gi, 'reçu'], [/\ben cour\b/gi, 'en cours'], [/\bdes que\b/gi, 'dès que']
+            ];
+            corrections.forEach(([pattern, replacement]) => { text = text.replace(pattern, replacement); });
+            text = text.replace(/\s+([,.!?;:])/g, '$1').replace(/([,.!?;:])(?=\S)/g, '$1 ');
+            if (text) text = text.charAt(0).toUpperCase() + text.slice(1);
+            if (text && !/[.!?]$/.test(text)) text += '.';
+            return text;
+        };
+
+        window.correctAdminSupportReply = () => {
+            if (!window.appState.isAdmin) return;
+            const input = document.getElementById('admin-chat-input');
+            if (!input || !input.value.trim()) return window.showToast('Écrivez d’abord votre réponse.', 'error');
+            const corrected = window.correctFrenchSupportText(input.value);
+            if (corrected === input.value.trim()) window.showToast('Aucune faute courante détectée. Relisez avant l’envoi.');
+            else window.showToast('Correction appliquée. Vérifiez le texte avant l’envoi.');
+            input.value = corrected;
+            input.focus();
         };
 
         window.adminSendSupportMessage = async (e) => {
@@ -4856,6 +5024,30 @@ service cloud.firestore {
             window.appState.adminSelectedPeerConversation = conversationId || '';
             renderApp();
             setTimeout(() => document.getElementById('peer-chat-box')?.scrollTo(0, 999999), 50);
+        };
+
+        window.useGroupModeratorReplySuggestion = (index) => {
+            if (!window.appState.isAdmin) return;
+            const lastMemberMessage = [...window.appState.allClientMessages]
+                .filter(message => message.groupId === 'sesame-community' && message.senderRole !== 'admin')
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+            const suggestion = window.getSupportReplySuggestions(lastMemberMessage?.text || '')[Number(index)];
+            const input = document.getElementById('peer-chat-input');
+            if (!suggestion || !input) return;
+            input.value = suggestion.text;
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        };
+
+        window.correctGroupModeratorReply = () => {
+            if (!window.appState.isAdmin) return;
+            const input = document.getElementById('peer-chat-input');
+            if (!input || !input.value.trim()) return window.showToast('Écrivez d’abord votre réponse au groupe.', 'error');
+            const corrected = window.correctFrenchSupportText(input.value);
+            if (corrected === input.value.trim()) window.showToast('Groupe : aucune faute courante détectée.');
+            else window.showToast('Groupe : correction appliquée, vérifiez avant de publier.');
+            input.value = corrected;
+            input.focus();
         };
 
         window.sendPeerMessage = async (event) => {
@@ -5071,6 +5263,31 @@ service cloud.firestore {
             const prototype = window.getAdminPrototypeClient();
             prototype.events.unshift({ type, serviceId, detail, timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now() });
             prototype.events = prototype.events.slice(0, 100);
+        };
+
+        window.usePrototypeReplySuggestion = (index) => {
+            if (!window.appState.isAdmin) return;
+            const prototype = window.getAdminPrototypeClient();
+            const lastClientMessage = [...(prototype.supportMessages || [])]
+                .filter(message => message.sender === 'client')
+                .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
+            const suggestion = window.getSupportReplySuggestions(lastClientMessage?.text || '')[Number(index)];
+            const input = document.getElementById('prototype-support-input');
+            if (!suggestion || !input) return;
+            input.value = suggestion.text;
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        };
+
+        window.correctPrototypeSupportReply = () => {
+            if (!window.appState.isAdmin) return;
+            const input = document.getElementById('prototype-support-input');
+            if (!input || !input.value.trim()) return window.showToast('Écrivez d’abord une réponse simulée.', 'error');
+            const corrected = window.correctFrenchSupportText(input.value);
+            if (corrected === input.value.trim()) window.showToast('Prototype : aucune faute courante détectée.');
+            else window.showToast('Prototype : correction appliquée, vérifiez le texte.');
+            input.value = corrected;
+            input.focus();
         };
 
         // Messagerie strictement locale du profil prototype : aucune écriture Firebase.
@@ -5976,10 +6193,16 @@ service cloud.firestore {
                 window.showToast("Veuillez sélectionner un compte client.", "error");
                 return;
             }
+            const selectedSubscriptionName = subscriptionNameInput.value.trim();
+            if (!['👑 King Prime', '💎 Gold Vibe'].includes(selectedSubscriptionName)) {
+                window.showToast("Veuillez choisir 👑 King Prime ou 💎 Gold Vibe.", "error");
+                subscriptionNameInput.focus();
+                return;
+            }
 
             if (clientId === PROTOTYPE_CLIENT_ID) {
                 const prototype = window.getAdminPrototypeClient();
-                prototype.credentials = { subscriptionName: subscriptionNameInput.value.trim(), identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
+                prototype.credentials = { subscriptionName: selectedSubscriptionName, identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
                 window.addAdminPrototypeEvent('credentials', '', 'Identifiants de simulation mis à jour');
                 window.saveAdminPrototype();
                 window.showToast("Prototype : identifiants enregistrés dans la simulation.");
@@ -5991,7 +6214,7 @@ service cloud.firestore {
                 const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
                 await updateDoc(clientRef, {
                     credentials: {
-                        subscriptionName: subscriptionNameInput.value.trim(),
+                        subscriptionName: selectedSubscriptionName,
                         identifier: idInput.value.trim(),
                         password: passInput.value.trim(),
                         extra: extraInput.value.trim()
