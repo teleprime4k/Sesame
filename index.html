@@ -500,14 +500,24 @@
         const CLIENT_DATA_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
         const retentionCleanupInProgress = new Set();
         const isWithinClientRetention = (item, field = 'timestamp') => Number(item?.[field] || 0) >= Date.now() - CLIENT_DATA_RETENTION_MS;
+        const withTimeout = (promise, delayMs, message) => new Promise((resolve, reject) => {
+            const timeoutId = setTimeout(() => reject(new Error(message)), delayMs);
+            Promise.resolve(promise).then(
+                value => { clearTimeout(timeoutId); resolve(value); },
+                error => { clearTimeout(timeoutId); reject(error); }
+            );
+        });
         const resolveAdminRole = async (user) => {
             if (!user) return false;
+            const controller = new AbortController();
+            const abortTimeout = setTimeout(() => controller.abort(), 8000);
             try {
-                const idToken = await user.getIdToken(true);
+                const idToken = await withTimeout(user.getIdToken(true), 8000, 'Firebase token timeout');
                 const response = await fetch(ADMIN_SESSION_ENDPOINT, {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'verify-admin' })
+                    body: JSON.stringify({ action: 'verify-admin' }),
+                    signal: controller.signal
                 });
                 if (!response.ok) return null;
                 const result = await response.json();
@@ -515,6 +525,8 @@
             } catch (error) {
                 console.error('Vérification sécurisée du rôle administrateur impossible :', error);
                 return null;
+            } finally {
+                clearTimeout(abortTimeout);
             }
         };
         const isAdminProfile = (profile) => {
@@ -1015,6 +1027,7 @@
         // ==========================================
         // 5. INITIALISATION & LISTENERS
         // ==========================================
+        renderApp();
         onAuthStateChanged(auth, async (currentUser) => {
             // Sécurité anti-login automatique après inscription
             window.appState.user = currentUser;
@@ -1026,16 +1039,20 @@
                 if (secureAdminRole === null) {
                     window.appState.isAdmin = false;
                     window.appState.authError = "Service de sécurité Cloudflare indisponible. Connexion interrompue pour protéger les comptes.";
-                    await signOut(auth);
+                    window.appState.user = null;
+                    window.appState.loadingAuth = false;
                     renderApp();
+                    await signOut(auth);
                     return;
                 }
                 window.appState.isAdmin = secureAdminRole;
 
                 if (window.appState.authRole === 'admin' && !window.appState.isAdmin) {
                     window.appState.authError = "Accès administrateur refusé par la vérification sécurisée Cloudflare.";
-                    await signOut(auth);
+                    window.appState.user = null;
+                    window.appState.loadingAuth = false;
                     renderApp();
+                    await signOut(auth);
                     return;
                 }
 
@@ -1045,6 +1062,9 @@
                         const blockedSnap = await getDoc(blockedRef);
                         if (blockedSnap.exists()) {
                             window.appState.authError = "Ce compte a été supprimé et bloqué par l’administrateur Sésame.";
+                            window.appState.user = null;
+                            window.appState.loadingAuth = false;
+                            renderApp();
                             await signOut(auth);
                             return;
                         }
