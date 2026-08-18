@@ -495,45 +495,23 @@
         const db = getFirestore(app);
         const appId = "sesameouvretoi";
 
-        const ADMIN_SESSION_ENDPOINT = "https://icy-snow-93d1.teleprime4k.workers.dev/api/admin-session";
+        const ADMIN_EMAIL = "dpstay@1.net";
+        // Un seul compte possède le rôle Administrateur Sésame.
+        const ADMIN_PROFILE_EMAILS = new Set(['dpstay@1.net']);
         const PROTOTYPE_CLIENT_ID = "__admin_client_prototype__";
+        const ADMIN_SECRET_KEY = "2026"; 
         const CLIENT_DATA_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
         const retentionCleanupInProgress = new Set();
         const isWithinClientRetention = (item, field = 'timestamp') => Number(item?.[field] || 0) >= Date.now() - CLIENT_DATA_RETENTION_MS;
-        const withTimeout = (promise, delayMs, message) => new Promise((resolve, reject) => {
-            const timeoutId = setTimeout(() => reject(new Error(message)), delayMs);
-            Promise.resolve(promise).then(
-                value => { clearTimeout(timeoutId); resolve(value); },
-                error => { clearTimeout(timeoutId); reject(error); }
-            );
-        });
-        const resolveAdminRole = async (user) => {
-            if (!user) return false;
-            const controller = new AbortController();
-            const abortTimeout = setTimeout(() => controller.abort(), 8000);
-            try {
-                const idToken = await withTimeout(user.getIdToken(true), 8000, 'Firebase token timeout');
-                const response = await fetch(ADMIN_SESSION_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'verify-admin' }),
-                    signal: controller.signal
-                });
-                if (!response.ok) return null;
-                const result = await response.json();
-                return result?.isAdmin === true;
-            } catch (error) {
-                console.error('Vérification sécurisée du rôle administrateur impossible :', error);
-                return null;
-            } finally {
-                clearTimeout(abortTimeout);
-            }
-        };
+        const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+        const isAdminEmail = (email) => normalizeEmail(email) === normalizeEmail(ADMIN_EMAIL);
+        const isAdminProfileEmail = (email) => ADMIN_PROFILE_EMAILS.has(normalizeEmail(email));
         const isAdminProfile = (profile) => {
             if (!profile) return false;
             const declaredRole = String(profile.role || profile.accountType || '').trim().toLowerCase();
-            const adminUid = window.appState?.isAdmin ? auth.currentUser?.uid : null;
-            return declaredRole === 'admin'
+            const adminUid = isAdminEmail(auth.currentUser?.email) ? auth.currentUser?.uid : null;
+            return isAdminProfileEmail(profile.email)
+                || declaredRole === 'admin'
                 || profile.isAdmin === true
                 || Boolean(adminUid && profile.id === adminUid);
         };
@@ -619,6 +597,7 @@
             lastName: '',
             email: '',
             password: '',
+            adminSecret: '',
             showPassword: false,    
             
             // États Firestore / Métiers
@@ -718,7 +697,7 @@
 
         function presenceDocumentId(user = auth.currentUser) {
             if (!user) return '';
-            return window.appState.isAdmin ? 'admin' : user.uid;
+            return isAdminEmail(user.email) ? 'admin' : user.uid;
         }
 
         function isUserOnline(userId) {
@@ -1027,7 +1006,6 @@
         // ==========================================
         // 5. INITIALISATION & LISTENERS
         // ==========================================
-        renderApp();
         onAuthStateChanged(auth, async (currentUser) => {
             // Sécurité anti-login automatique après inscription
             window.appState.user = currentUser;
@@ -1035,26 +1013,7 @@
             window.appState.authLoading = false; 
 
             if (currentUser) {
-                const secureAdminRole = await resolveAdminRole(currentUser);
-                if (secureAdminRole === null) {
-                    window.appState.isAdmin = false;
-                    window.appState.authError = "Service de sécurité Cloudflare indisponible. Connexion interrompue pour protéger les comptes.";
-                    window.appState.user = null;
-                    window.appState.loadingAuth = false;
-                    renderApp();
-                    await signOut(auth);
-                    return;
-                }
-                window.appState.isAdmin = secureAdminRole;
-
-                if (window.appState.authRole === 'admin' && !window.appState.isAdmin) {
-                    window.appState.authError = "Accès administrateur refusé par la vérification sécurisée Cloudflare.";
-                    window.appState.user = null;
-                    window.appState.loadingAuth = false;
-                    renderApp();
-                    await signOut(auth);
-                    return;
-                }
+                window.appState.isAdmin = isAdminEmail(currentUser.email);
 
                 try {
                     if (!window.appState.isAdmin) {
@@ -1062,9 +1021,6 @@
                         const blockedSnap = await getDoc(blockedRef);
                         if (blockedSnap.exists()) {
                             window.appState.authError = "Ce compte a été supprimé et bloqué par l’administrateur Sésame.";
-                            window.appState.user = null;
-                            window.appState.loadingAuth = false;
-                            renderApp();
                             await signOut(auth);
                             return;
                         }
@@ -2453,11 +2409,11 @@
 
         window.setAuthRole = (role) => {
             window.appState.authRole = role;
-            if (role === 'admin') window.appState.isLoginMode = true;
             window.appState.authError = '';
             window.appState.authSuccessMessage = ''; // Reset messages à l'onglet change
             window.appState.email = '';
             window.appState.password = '';
+            window.appState.adminSecret = '';
             window.appState.firstName = '';
             window.appState.lastName = '';
             window.appState.authLoading = false; 
@@ -2469,16 +2425,19 @@
             
             const emailInput = document.getElementById('auth-email');
             const passwordInput = document.getElementById('auth-password');
+            const secretInput = document.getElementById('auth-secret');
             const firstNameInput = document.getElementById('auth-first-name');
             const lastNameInput = document.getElementById('auth-last-name');
             
             const email = emailInput ? emailInput.value.trim() : '';
             const password = passwordInput ? passwordInput.value : '';
+            const adminSecret = secretInput ? secretInput.value.trim() : '';
             const firstName = firstNameInput ? firstNameInput.value.trim() : '';
             const lastName = lastNameInput ? lastNameInput.value.trim() : '';
             
             window.appState.email = email;
             window.appState.password = password;
+            window.appState.adminSecret = adminSecret;
             window.appState.firstName = firstName;
             window.appState.lastName = lastName;
             
@@ -2491,13 +2450,26 @@
             const authRole = window.appState.authRole;
 
             if (authRole === 'admin') {
-                if (!isLoginMode) {
-                    window.appState.authError = "La création d’un compte administrateur est désactivée. Connectez-vous avec le compte administrateur Firebase existant.";
+                if (!isAdminEmail(email)) {
+                    window.appState.authError = "Identifiant Admin incorrect. Vous devez utiliser l'adresse d'administration réservée.";
+                    window.appState.authLoading = false;
+                    renderApp();
+                    return;
+                }
+                
+                if (!isLoginMode && adminSecret !== ADMIN_SECRET_KEY) {
+                    window.appState.authError = "Clé d'activation Admin invalide. Enregistrement de l'instance ROOT bloqué.";
                     window.appState.authLoading = false;
                     renderApp();
                     return;
                 }
             } else {
+                if (isAdminEmail(email)) {
+                    window.appState.authError = "L'adresse d'administration doit être utilisée uniquement dans l'Espace Admin dédié.";
+                    window.appState.authLoading = false;
+                    renderApp();
+                    return;
+                }
                 if (!isLoginMode && (!firstName || !lastName)) {
                     window.appState.authError = "Le prénom et le nom sont obligatoires pour créer un compte client.";
                     window.appState.authLoading = false;
@@ -2679,6 +2651,7 @@
         window.handleLogout = async () => {
             window.appState.email = '';
             window.appState.password = '';
+            window.appState.adminSecret = '';
             window.appState.authSuccessMessage = '';
             await publishPresence(false);
             signOut(auth).then(() => {
@@ -2751,7 +2724,8 @@
         };
 
         function getAuthScreenHTML() {
-            const { isLoginMode, authLoading, authError, authSuccessMessage, authRole, email, password, showPassword, firstName, lastName } = window.appState;
+            const { isLoginMode, authLoading, authError, authSuccessMessage, authRole, email, password, adminSecret, showPassword, firstName, lastName } = window.appState;
+            const showSecret = !isLoginMode && authRole === 'admin';
 
             return `
             <div class="auth-page min-h-screen flex flex-col items-center justify-center p-4 font-mono relative">
@@ -2840,6 +2814,18 @@
                       placeholder="${authRole === 'admin' ? 'Adresse administrateur' : 'exemple@email.com'}" />
                     </div>
                   </div>
+
+                  <!-- Clé d'activation Admin visible uniquement sur l'inscription admin -->
+                  ${showSecret ? `
+                  <div id="admin-secret-container" class="animate-fadeIn">
+                    <label for="auth-secret" class="block text-yellow-400 text-xs mb-1.5 font-semibold">Clé d’activation Admin</label>
+                    <input id="auth-secret" type="text" required
+                      value="${adminSecret}"
+                      oninput="window.handleAuthInput('adminSecret', this.value)"
+                      class="auth-input w-full border border-yellow-600/50 rounded-xl px-4 py-3 text-yellow-300 focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/15 transition-all"
+                      placeholder="Clé secrète de licence" />
+                    <p class="text-[10px] text-slate-500 mt-1 font-sans">Saisie requise pour créer le compte administrateur unique.</p>
+                  </div>` : ''}
 
                   <!-- Mot de passe sécurisé -->
                   <div class="auth-input-wrap">
@@ -2950,10 +2936,88 @@
                 </div>
 
                 <div class="space-y-4 text-sm text-slate-300">
-                  <p>Cloud Firestore refuse actuellement une opération. Pour des raisons de sécurité, les règles et l’identité administrateur ne sont plus intégrées dans le fichier HTML public.</p>
+                  <p>Votre application s'est connectée avec succès à votre projet Firebase, mais **Cloud Firestore bloque l'accès** en lecture/écriture car les règles de sécurité de votre base de données sont actuellement verrouillées.</p>
+                  
                   <div class="p-4 bg-slate-950 rounded-lg border border-slate-800">
-                    <h3 class="text-xs uppercase font-bold text-yellow-500 mb-2 flex items-center gap-2 font-mono"><i data-lucide="shield-check" class="w-4 h-4"></i> Vérification recommandée</h3>
-                    <p class="text-xs text-slate-400">Contrôlez les règles directement dans la Console Firebase et vérifiez que la fonction Cloudflare <strong>/api/admin-session</strong> est bien déployée. Aucun secret ne doit être copié dans cette page.</p>
+                    <h3 class="text-xs uppercase font-bold text-yellow-500 mb-2 flex items-center gap-2 font-mono">
+                      <i data-lucide="help-circle" class="w-4 h-4"></i> Comment résoudre cela en 30 secondes :
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-2 text-xs text-slate-400">
+                      <li>Rendez-vous sur votre <a href="https://console.firebase.google.com/project/sesameouvretoi-13/firestore/rules" target="_blank" class="text-cyan-400 hover:underline">Console Firebase SésameOuvreToi</a>.</li>
+                      <li>Cliquez sur l'onglet <strong>Règles (Rules)</strong> à côté de l'onglet Données.</li>
+                      <li>Copiez et collez le bloc de règles sécurisées ci-dessous.</li>
+                      <li>Cliquez sur le bouton bleu <strong>Publier (Publish)</strong> en haut à droite.</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <span class="block text-xs uppercase font-bold text-slate-400 mb-1 font-mono">Code des règles à copier-coller :</span>
+                    <pre class="bg-slate-950 p-4 rounded-lg border border-slate-800 text-xs text-emerald-400 overflow-x-auto font-mono">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /artifacts/sesameouvretoi/public/data/{collectionName}/{documentId} {
+      allow read, write: if request.auth != null &amp;&amp;
+        collectionName != 'clientChats' &amp;&amp; collectionName != 'profiles' &amp;&amp;
+        collectionName != 'communityMembers' &amp;&amp; collectionName != 'messages' &amp;&amp;
+        collectionName != 'news' &amp;&amp; collectionName != 'blockedAccounts' &amp;&amp;
+        collectionName != 'config' &amp;&amp; collectionName != 'presence';
+    }
+    match /artifacts/sesameouvretoi/public/data/config/{configId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/profiles/{profileId} {
+      allow read, write: if request.auth != null &amp;&amp;
+        (request.auth.uid == profileId || request.auth.token.email == 'dpstay@1.net');
+    }
+    match /artifacts/sesameouvretoi/public/data/presence/{presenceId} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null &amp;&amp;
+        (presenceId == request.auth.uid ||
+         (presenceId == 'admin' &amp;&amp; request.auth.token.email == 'dpstay@1.net'));
+      allow delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/blockedAccounts/{accountId} {
+      allow read: if request.auth != null &amp;&amp;
+        (request.auth.uid == accountId || request.auth.token.email == 'dpstay@1.net');
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/communityMembers/{memberId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        (request.auth.uid == memberId || request.auth.token.email == 'dpstay@1.net');
+    }
+    match /artifacts/sesameouvretoi/public/data/messages/{messageId} {
+      allow read: if request.auth != null &amp;&amp;
+        (resource.data.userId == request.auth.uid || request.auth.token.email == 'dpstay@1.net');
+      allow create: if request.auth != null &amp;&amp;
+        (request.resource.data.userId == request.auth.uid || request.auth.token.email == 'dpstay@1.net');
+      allow update: if request.auth != null &amp;&amp;
+        (resource.data.userId == request.auth.uid || request.auth.token.email == 'dpstay@1.net');
+      allow delete: if request.auth != null &amp;&amp; request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/news/{newsId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null &amp;&amp;
+        request.auth.token.email == 'dpstay@1.net';
+    }
+    match /artifacts/sesameouvretoi/public/data/clientChats/{messageId} {
+      allow read: if request.auth != null &amp;&amp; resource.data.groupId == 'sesame-community';
+      allow create: if request.auth != null &amp;&amp;
+        request.resource.data.groupId == 'sesame-community' &amp;&amp;
+        request.resource.data.senderId == request.auth.uid &amp;&amp;
+        (request.auth.token.email == 'dpstay@1.net' ||
+         get(/databases/$(database)/documents/artifacts/sesameouvretoi/public/data/profiles/$(request.auth.uid)).data.communityChatJoined == true);
+      allow update: if request.auth != null &amp;&amp;
+        (request.auth.token.email == 'dpstay@1.net' ||
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']));
+      allow delete: if request.auth != null &amp;&amp; request.auth.token.email == 'dpstay@1.net';
+    }
+  }
+}</pre>
                   </div>
                 </div>
 
@@ -4023,7 +4087,7 @@
                                     ${[...new Set(window.appState.allMessages.filter(m => m.userId && m.userId !== 'admin').map(m => m.userId))].filter(uId => {
                                         const p = window.appState.allProfiles.find(profile => profile.id === uId);
                                         const email = p?.email || window.appState.allMessages.find(m => m.userId === uId)?.userEmail || '';
-                                        if (isAdminProfile(p)) return false;
+                                        if (isAdminProfile(p) || isAdminProfileEmail(email)) return false;
                                         const search = window.appState.adminChatSearchQuery.toLowerCase().trim();
                                         return !search || email.toLowerCase().includes(search) || window.getClientName(email).toLowerCase().includes(search);
                                     }).map(uId => {
@@ -4592,7 +4656,7 @@
                 await setDoc(pimpCardRef, {
                     url: value,
                     updatedAt: Date.now(),
-                    updatedBy: window.appState.user?.email || 'Administrateur Sésame'
+                    updatedBy: window.appState.user?.email || ADMIN_EMAIL
                 }, { merge: true });
                 window.showToast(value ? "Lien PIMP CARD enregistré." : "Lien PIMP CARD désactivé.");
             } catch (error) {
@@ -4616,7 +4680,7 @@
                 await setDoc(manageRef, {
                     url: value,
                     updatedAt: Date.now(),
-                    updatedBy: window.appState.user?.email || 'Administrateur Sésame'
+                    updatedBy: window.appState.user?.email || ADMIN_EMAIL
                 }, { merge: true });
                 window.showToast(value ? "Lien Manage King Prime enregistré." : "Bouton Manage King Prime désactivé.");
             } catch (error) {
@@ -4639,7 +4703,7 @@
                 await setDoc(manageGoldVibeRef, {
                     url: value,
                     updatedAt: Date.now(),
-                    updatedBy: window.appState.user?.email || 'Administrateur Sésame'
+                    updatedBy: window.appState.user?.email || ADMIN_EMAIL
                 }, { merge: true });
                 window.showToast(value ? "Lien Manage Gold Vibe enregistré." : "Bouton Manage Gold Vibe désactivé.");
             } catch (error) {
@@ -4912,7 +4976,7 @@
                 const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
                 await addDoc(msgRef, {
                     userId: targetUserId,
-                    userEmail: window.appState.user?.email || 'Administrateur Sésame',
+                    userEmail: window.appState.user?.email || ADMIN_EMAIL,
                     text: text,
                     sender: 'admin',
                     senderName: 'Administrateur Sésame',
@@ -5808,7 +5872,7 @@
                     if (messageId) {
                         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId), {
                             reactivationConfirmedAt: now,
-                            reactivationConfirmedBy: window.appState.user?.email || 'Administrateur Sésame',
+                            reactivationConfirmedBy: window.appState.user?.email || ADMIN_EMAIL,
                             readByAdmin: true
                         });
                     }
@@ -5847,7 +5911,7 @@
                         verificationRejected: false,
                         authVerificationSource: 'admin_manual_review',
                         authVerifiedAt: Date.now(),
-                        authVerifiedBy: window.appState.user?.email || 'Administrateur Sésame'
+                        authVerifiedBy: window.appState.user?.email || ADMIN_EMAIL
                     });
                     window.showToast("Profil vérifié : il est maintenant disponible dans les sélections clients.");
                 } catch (error) {
@@ -5897,7 +5961,7 @@
                         authVerified: false,
                         verificationRejected: true,
                         verificationRejectedAt: Date.now(),
-                        verificationRejectedBy: window.appState.user?.email || 'Administrateur Sésame'
+                        verificationRejectedBy: window.appState.user?.email || ADMIN_EMAIL
                     });
                     window.showToast("Vérification refusée. Le profil reste exclu des sélections clients.");
                 } catch (error) {
@@ -5915,7 +5979,7 @@
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'blockedAccounts', clientId), {
                         email: client.email,
                         blockedAt: Date.now(),
-                        blockedBy: window.appState.user?.email || 'Administrateur Sésame',
+                        blockedBy: window.appState.user?.email || ADMIN_EMAIL,
                         reason: 'profile_deleted_by_admin'
                     });
                     await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'communityMembers', clientId)).catch(() => {});
@@ -6393,4 +6457,102 @@
                 if (!service || !quote) return;
                 window.showCyberConfirm(`SIMULATION CLIENT — Accepter la proposition de ${Number(price).toFixed(2)} € et simuler le paiement ?`, () => {
                     const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
-                    quote.stat
+                    quote.status = 'approved_paid';
+                    quote.paidAt = now;
+                    prototype.services[serviceId] = {
+                        ...(prototype.services[serviceId] || {}),
+                        status: 'active',
+                        activatedAt: now,
+                        subEnd: now + ((service.durationDays || 30) * 86400000),
+                        quoteStatus: 'approved_paid',
+                        quotePrice: Number(price),
+                        prototypePaymentStatus: 'paid',
+                        simulation: true
+                    };
+                    window.addAdminPrototypeEvent('quote_paid', serviceId, `Devis accepté et paiement simulé : ${Number(price).toFixed(2)} €`);
+                    window.saveAdminPrototype();
+                    window.showToast(`Prototype : devis accepté, ${service.name} est activé.`);
+                    renderApp();
+                });
+                return;
+            }
+            window.appState.payingServiceId = serviceId;
+            window.appState.payingQuoteId = quoteId;
+            window.appState.payingCustomPrice = price;
+
+            const service = SERVICES_DATA.find(s => s.id === serviceId);
+            const serviceName = service ? service.name : "Service Spécialisé";
+
+            document.getElementById('pay-modal-service-name').innerText = serviceName;
+            document.getElementById('pay-modal-amount').innerText = `${price.toFixed(2)} €`;
+
+            const modal = document.getElementById('payment-modal');
+            if(modal) {
+                modal.classList.remove('hidden');
+                lucide.createIcons({ root: modal });
+            }
+        };
+
+        window.adminAddDays = async (clientId, days) => {
+            try {
+                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                const snap = await getDoc(clientRef);
+                if (snap.exists()) {
+                    const services = { ...snap.data().services };
+                    
+                    // Prolonger tous les services actifs de cet utilisateur de X jours
+                    const virtualTimestamp = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    for(const sId in services) {
+                        if(services[sId].status === 'active') {
+                            const currentEnd = services[sId].subEnd || virtualTimestamp;
+                            services[sId].subEnd = Math.max(virtualTimestamp, currentEnd) + (days * 24 * 60 * 60 * 1000);
+                        }
+                    }
+
+                    await updateDoc(clientRef, { services });
+                    window.showToast("Licences actives de l'agent prolongées !");
+                }
+            } catch(e) {
+                handlePermissionError(e);
+                window.showToast("Erreur modification", "error");
+            }
+        };
+
+        window.adminToggleStatus = async (clientId, currentStatus) => {
+            try {
+                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                const virtualTimestamp = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                const subEnd = nextStatus === 'active' ? virtualTimestamp + (7 * 24 * 60 * 60 * 1000) : null;
+                
+                await updateDoc(clientRef, {
+                    status: nextStatus,
+                    subEnd: subEnd
+                });
+                window.showToast("Statut client mis à jour.");
+            } catch(e) {
+                handlePermissionError(e);
+                window.showToast("Erreur modification", "error");
+            }
+        };
+
+        window.adminAddUsage = async (clientId) => {
+            try {
+                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                const snap = await getDoc(clientRef);
+                if (snap.exists()) {
+                    const currentUsage = snap.data().usageTotal || 0;
+                    await updateDoc(clientRef, {
+                        usageTotal: currentUsage + 10
+                    });
+                    window.showToast("Cycles de calcul client incrémentés.");
+                }
+            } catch(e) {
+                handlePermissionError(e);
+                window.showToast("Erreur incrément", "error");
+            }
+        };
+
+    </script>
+</body>
+</html>
