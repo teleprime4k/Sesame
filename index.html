@@ -251,6 +251,10 @@
                     <span class="text-slate-500 uppercase text-[9px] sm:text-[10px]">Montant de la transaction</span>
                     <span id="pay-modal-amount" class="text-xs sm:text-sm font-bold text-white">0.00 €</span>
                 </div>
+                <div id="pay-modal-offer-row" class="hidden flex justify-between items-center gap-3 bg-slate-950 p-3 rounded-lg border border-purple-500/25">
+                    <span class="text-slate-500 uppercase text-[9px] sm:text-[10px]">Offre sélectionnée</span>
+                    <span id="pay-modal-offer-name" class="text-xs font-bold text-purple-300 text-right">...</span>
+                </div>
                 
                 <div class="mt-6 pt-4 border-t border-slate-800/80 flex flex-col gap-2.5 font-sans">
                     <!-- Bouton de redirection vers Stripe -->
@@ -594,6 +598,8 @@
 
         // Règles métier propres aux abonnements Sésame.
         const TV_PASS_SERVICE_ID = 'cdn-global';
+        const TV_PASS_OFFERS = Object.freeze(['👑 King Prime', '💎 Gold Vibe']);
+        const isValidTvPassOffer = (value) => TV_PASS_OFFERS.includes(String(value || '').trim());
         const CLIENT_CANCELLATION_REQUEST_IDS = new Set(['stockage-cloud', 'security-pack']);
         const ADMIN_RENEWAL_CONFIRMATION_IDS = new Set(['stockage-cloud', 'gestion-crm', 'security-pack']);
         // Ces abonnements sont prélevés hors du parcours client : à expiration,
@@ -655,6 +661,8 @@
             payingServiceId: null,
             payingQuoteId: null,
             payingCustomPrice: null,
+            payingSubscriptionOffer: null,
+            selectedTvPassOffer: '',
 
             // Gestion d'Identifiants Sécurisés
             selectedCredClientId: "",
@@ -1456,9 +1464,55 @@
         // ==========================================
         // 6. ACTION DE SOUSCRIPTION & ROUTAGE STRIPE
         // ==========================================
+        window.selectTvPassOffer = async (value) => {
+            const offer = String(value || '').trim();
+            window.appState.selectedTvPassOffer = isValidTvPassOffer(offer) ? offer : '';
+            if (window.appState.isAdmin) {
+                const prototype = window.getAdminPrototypeClient();
+                prototype.services[TV_PASS_SERVICE_ID] = {
+                    ...(prototype.services[TV_PASS_SERVICE_ID] || {}),
+                    subscriptionOffer: window.appState.selectedTvPassOffer,
+                    simulation: true
+                };
+                window.saveAdminPrototype();
+                renderApp();
+                return;
+            }
+            if (!window.appState.user || !window.appState.profile || !window.appState.selectedTvPassOffer) return;
+            try {
+                const services = { ...(window.appState.profile.services || {}) };
+                services[TV_PASS_SERVICE_ID] = {
+                    ...(services[TV_PASS_SERVICE_ID] || {}),
+                    subscriptionOffer: window.appState.selectedTvPassOffer,
+                    offerSelectedAt: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now()
+                };
+                window.appState.profile.services = services;
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid), { services });
+                window.showToast(`Offre ${window.appState.selectedTvPassOffer} sélectionnée.`);
+            } catch (error) {
+                console.error('Enregistrement de l’offre TV impossible :', error);
+                window.showToast("Impossible d’enregistrer l’offre sélectionnée.", "error");
+            }
+        };
+
+        window.getSelectedTvPassOffer = () => {
+            const fieldValue = document.getElementById('tv-pass-offer-select')?.value;
+            const serviceState = window.appState.isAdmin
+                ? window.getAdminPrototypeClient().services?.[TV_PASS_SERVICE_ID]
+                : window.appState.profile?.services?.[TV_PASS_SERVICE_ID];
+            const candidate = fieldValue || window.appState.selectedTvPassOffer || serviceState?.subscriptionOffer || '';
+            return isValidTvPassOffer(candidate) ? candidate : '';
+        };
+
         window.handleServiceAction = async (sId) => {
             const service = SERVICES_DATA.find(s => s.id === sId);
             if (!service) return;
+
+            const selectedOffer = sId === TV_PASS_SERVICE_ID ? window.getSelectedTvPassOffer() : '';
+            if (sId === TV_PASS_SERVICE_ID && !selectedOffer) {
+                window.showToast("Choisissez d’abord l’offre 👑 King Prime ou 💎 Gold Vibe.", "error");
+                return;
+            }
 
             // Le compte prototype suit le même parcours fonctionnel qu'un client,
             // mais la frontière externe (Stripe / Firebase) reste simulée.
@@ -1467,7 +1521,7 @@
                     window.openQuoteRequestModal(sId);
                     return;
                 }
-                window.simulateAdminPrototypePayment(sId);
+                window.simulateAdminPrototypePayment(sId, selectedOffer);
                 return;
             }
 
@@ -1477,7 +1531,7 @@
             }
 
             // Ouvre la modale explicative Stripe
-            window.openPaymentModal(sId);
+            window.openPaymentModal(sId, selectedOffer);
         };
 
         // --- MODÈLES INTERACTIFS POUR LE SERVICE CRÉATION D'APPLICATION MOBILE ---
@@ -1818,9 +1872,14 @@
         };
 
         // --- GESTION DE LA MODALE DE PAIEMENT STRIPE ---
-        window.openPaymentModal = (sId) => {
+        window.openPaymentModal = (sId, subscriptionOffer = '') => {
             const service = SERVICES_DATA.find(s => s.id === sId);
             if(!service) return;
+
+            if (sId === TV_PASS_SERVICE_ID && !isValidTvPassOffer(subscriptionOffer)) {
+                window.showToast("Choisissez d’abord l’offre 👑 King Prime ou 💎 Gold Vibe.", "error");
+                return;
+            }
 
             // Déterminer s'il y a un prix personnalisé configuré pour ce client
             const customPrice = (window.appState.profile?.customPrices?.[sId] !== undefined)
@@ -1831,9 +1890,16 @@
             window.appState.payingServiceId = sId;
             window.appState.payingQuoteId = null;
             window.appState.payingCustomPrice = finalPrice;
+            window.appState.payingSubscriptionOffer = sId === TV_PASS_SERVICE_ID ? subscriptionOffer : null;
 
             document.getElementById('pay-modal-service-name').innerText = service.name;
             document.getElementById('pay-modal-amount').innerText = `${finalPrice.toFixed(2)} €`;
+            const offerRow = document.getElementById('pay-modal-offer-row');
+            const offerName = document.getElementById('pay-modal-offer-name');
+            if (offerRow && offerName) {
+                offerName.innerText = window.appState.payingSubscriptionOffer || '';
+                offerRow.classList.toggle('hidden', !window.appState.payingSubscriptionOffer);
+            }
 
             const modal = document.getElementById('payment-modal');
             if(modal) {
@@ -1848,6 +1914,7 @@
             window.appState.payingServiceId = null;
             window.appState.payingQuoteId = null;
             window.appState.payingCustomPrice = null;
+            window.appState.payingSubscriptionOffer = null;
         };
 
         // Ouvre Stripe sans jamais activer le service dans le navigateur.
@@ -1856,6 +1923,7 @@
             const sId = window.appState.payingServiceId;
             const qId = window.appState.payingQuoteId;
             const customPrice = window.appState.payingCustomPrice;
+            const subscriptionOffer = window.appState.payingSubscriptionOffer;
             
             // Priorité au lien de paiement personnalisé du profil client, sinon repli sur le lien global
             const customStripeUrl = window.appState.profile?.stripeLinks?.[sId];
@@ -1864,6 +1932,10 @@
             const user = window.appState.user;
             if (!user || !sId || !/^https:\/\//i.test(stripeUrl)) {
                 window.showToast("Lien Stripe invalide ou session expirée.", "error");
+                return;
+            }
+            if (sId === TV_PASS_SERVICE_ID && !isValidTvPassOffer(subscriptionOffer)) {
+                window.showToast("L’offre PASS TV sélectionnée est invalide.", "error");
                 return;
             }
 
@@ -2006,11 +2078,16 @@
 
         window.handleFreeReactivation = async (sId) => {
             const service = SERVICES_DATA.find(s => s.id === sId);
+            const selectedOffer = sId === TV_PASS_SERVICE_ID ? window.getSelectedTvPassOffer() : '';
             const currentState = window.appState.isAdmin
                 ? window.getAdminPrototypeClient().services?.[sId]
                 : window.appState.profile?.services?.[sId];
             if (!service || sId !== TV_PASS_SERVICE_ID || !currentState?.subEnd || currentState.subEnd <= window.getVirtualTimestamp()) {
                 window.showToast("La période est expirée : vous devez vous réabonner.", "error");
+                return;
+            }
+            if (sId === TV_PASS_SERVICE_ID && !isValidTvPassOffer(selectedOffer)) {
+                window.showToast("Choisissez d’abord l’offre 👑 King Prime ou 💎 Gold Vibe.", "error");
                 return;
             }
 
@@ -2019,10 +2096,11 @@
                 prototype.services[sId] = {
                     ...currentState,
                     status: 'active',
+                    subscriptionOffer: selectedOffer,
                     reactivatedAt: window.getVirtualTimestamp(),
                     simulation: true
                 };
-                window.addAdminPrototypeEvent('reactivation', sId, `Réactivation sans paiement de ${service.name}`);
+                window.addAdminPrototypeEvent('reactivation', sId, `Réactivation sans paiement de ${service.name} — ${selectedOffer}`);
                 window.saveAdminPrototype();
                 window.showToast(`Prototype : ${service.name} réactivé sans paiement. La date de fin reste inchangée.`);
                 renderApp();
@@ -2036,6 +2114,7 @@
                 userServices[sId] = {
                     ...currentState,
                     status: 'active',
+                    subscriptionOffer: selectedOffer,
                     subEnd: currentState.subEnd,
                     reactivatedAt: window.getVirtualTimestamp()
                 };
@@ -2044,7 +2123,7 @@
                 await addDoc(txRef, {
                     userId: window.appState.user.uid,
                     serviceId: sId,
-                    offerName: service.name,
+                    offerName: `${service.name} — ${selectedOffer}`,
                     price: 0,
                     date: window.getVirtualTimestamp(),
                     detail: "Réactivation sans paiement pendant la période déjà payée"
@@ -3545,6 +3624,11 @@
                                     const sState = servicesState[service.id] || { status: 'inactive', subEnd: null, freeReactivationUsed: false };
                                     const isActive = sState.status === 'active' && sState.subEnd > virtualDate;
                                     const daysLeft = sState.subEnd ? Math.max(0, Math.ceil((sState.subEnd - virtualDate) / (1000 * 60 * 60 * 24))) : 0;
+                                    const selectedTvOffer = service.id === TV_PASS_SERVICE_ID
+                                        ? (isValidTvPassOffer(sState.subscriptionOffer)
+                                            ? sState.subscriptionOffer
+                                            : (isValidTvPassOffer(window.appState.selectedTvPassOffer) ? window.appState.selectedTvPassOffer : ''))
+                                        : '';
                                     const latestServiceQuote = service.type === 'devis'
                                         ? clientQuotes.find(quote => quote.serviceId === service.id)
                                         : null;
@@ -3625,6 +3709,22 @@
                                         </div>
                                         ${isAdmin ? `<div class="flex items-center gap-1.5 text-[9px] uppercase font-bold font-mono text-purple-300"><i data-lucide="flask-conical" class="w-3 h-3"></i> Mode client prototype · règles réelles · paiement simulé</div>` : ''}
                                         <p class="text-xs text-slate-400 flex-1 font-light leading-relaxed font-sans">${service.description}</p>
+
+                                        ${service.id === TV_PASS_SERVICE_ID ? (isActive ? `
+                                            <div class="rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 font-mono">
+                                                <span class="block text-[9px] uppercase font-bold text-slate-500">Offre utilisée</span>
+                                                <span class="block mt-1 text-xs font-bold text-amber-300">${selectedTvOffer || 'Offre non renseignée'}</span>
+                                            </div>
+                                        ` : `
+                                            <label class="block rounded-lg border border-cyan-500/25 bg-cyan-950/10 p-3 font-mono">
+                                                <span class="block mb-2 text-[9px] uppercase font-bold text-cyan-300">Choisissez votre offre</span>
+                                                <select id="tv-pass-offer-select" onchange="window.selectTvPassOffer(this.value)" class="w-full min-h-[40px] rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-bold text-white outline-none focus:border-cyan-500">
+                                                    <option value="">-- Sélectionner une offre --</option>
+                                                    ${TV_PASS_OFFERS.map(offer => `<option value="${offer}" ${selectedTvOffer === offer ? 'selected' : ''}>${offer}</option>`).join('')}
+                                                </select>
+                                                <span class="block mt-2 text-[9px] text-slate-500">Ce choix sera conservé pour l’abonnement ou la réactivation.</span>
+                                            </label>
+                                        `) : ''}
 
                                         ${service.id === 'custom-app' ? `
                                             <button type="button" onclick="window.openAppModels()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] sm:text-[11px] uppercase font-bold transition-all shadow-[0_0_14px_rgba(139,92,246,.22)] flex items-center justify-center gap-2 min-h-[40px]">
@@ -5305,13 +5405,18 @@
 
         // Simule uniquement l'acceptation Stripe ; la durée et les règles appliquées
         // après cette frontière sont celles du vrai service.
-        window.simulateAdminPrototypePayment = (serviceId) => {
+        window.simulateAdminPrototypePayment = (serviceId, subscriptionOffer = '') => {
             if (!window.appState.isAdmin) return;
             const service = SERVICES_DATA.find(item => item.id === serviceId);
             if (!service) return;
+            if (serviceId === TV_PASS_SERVICE_ID && !isValidTvPassOffer(subscriptionOffer)) {
+                window.showToast("Choisissez d’abord l’offre 👑 King Prime ou 💎 Gold Vibe.", "error");
+                return;
+            }
             const current = window.getAdminPrototypeClient().services[serviceId] || {};
             const price = Number.parseFloat(service.price || 0).toFixed(2);
-            window.showCyberConfirm(`SIMULATION CLIENT — Confirmer un paiement Stripe accepté de ${price} € pour ${service.name} ?`, () => {
+            const offerLabel = serviceId === TV_PASS_SERVICE_ID ? ` — ${subscriptionOffer}` : '';
+            window.showCyberConfirm(`SIMULATION CLIENT — Confirmer un paiement Stripe accepté de ${price} € pour ${service.name}${offerLabel} ?`, () => {
                 const prototype = window.getAdminPrototypeClient();
                 const now = window.getVirtualTimestamp();
                 const base = current.status === 'active' && current.subEnd > now ? current.subEnd : now;
@@ -5323,13 +5428,14 @@
                     subEnd: base + ((service.durationDays || 30) * 86400000),
                     cancellationRequestedAt: null,
                     renewalRequestedAt: null,
+                    ...(serviceId === TV_PASS_SERVICE_ID ? { subscriptionOffer } : {}),
                     prototypePaymentStatus: 'paid',
                     prototypePaymentAmount: service.price,
                     simulation: true
                 };
-                window.addAdminPrototypeEvent('payment', serviceId, `Paiement simulé accepté : ${price} €`);
+                window.addAdminPrototypeEvent('payment', serviceId, `Paiement simulé accepté : ${price} €${offerLabel}`);
                 window.saveAdminPrototype();
-                window.showToast(`Prototype : paiement accepté, ${service.name} est activé pour ${service.durationDays || 30} jours.`);
+                window.showToast(`Prototype : paiement accepté, ${service.name}${offerLabel} est activé pour ${service.durationDays || 30} jours.`);
                 renderApp();
             });
         };
