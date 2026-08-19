@@ -1962,6 +1962,7 @@
                     userId: user.uid,
                     userEmail: user.email,
                     serviceId: sId,
+                    subscriptionOffer: sId === TV_PASS_SERVICE_ID ? subscriptionOffer : null,
                     quoteId: qId || null,
                     expectedAmount: customPrice,
                     serviceName: service?.name || 'Service Sésame',
@@ -1971,6 +1972,22 @@
                     createdAt: Date.now(),
                     activationSource: 'stripe_webhook_only'
                 });
+                if (sId === TV_PASS_SERVICE_ID) {
+                    const currentTvState = window.appState.profile?.services?.[sId] || {};
+                    const isRenewal = currentTvState.status === 'expired' || Boolean(currentTvState.subEnd);
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                        userId: user.uid,
+                        userEmail: user.email,
+                        text: `[${isRenewal ? 'Réabonnement' : 'Nouvel abonnement'} PASS TV] ${window.getClientName(user.email)} a choisi l’offre ${subscriptionOffer}. La demande de paiement Stripe est en attente de confirmation.`,
+                        sender: 'user',
+                        readByAdmin: false,
+                        timestamp: window.getVirtualTimestamp(),
+                        notificationType: isRenewal ? 'tv_offer_renewal' : 'tv_offer_subscription',
+                        serviceId: sId,
+                        subscriptionOffer,
+                        paymentRequestId: pendingDoc.id
+                    });
+                }
                 const checkoutUrl = new URL(stripeUrl);
                 // Le webhook retrouve exactement cette demande Firebase. Cet identifiant
                 // ne contient que les caractères autorisés par Stripe.
@@ -3440,7 +3457,13 @@
                         <span class="p-2 bg-amber-900/70 rounded-lg"><i data-lucide="bell-ring" class="w-5 h-5 text-amber-200"></i></span>
                         <span class="min-w-0">
                             <strong class="block text-white text-xs uppercase font-mono">Simulation prototype · nouvelle demande</strong>
-                            <span class="block text-[10px] text-amber-100 truncate">${unreadPrototypeSupportMessages[0].notificationType === 'subscription_link_request' ? 'Demande de rattachement et réactivation' : 'Demande de désactivation'} · ${window.escapeHTML(SERVICES_DATA.find(service => service.id === unreadPrototypeSupportMessages[0].serviceId)?.name || 'service')} — cliquez pour ouvrir et retirer la notification.</span>
+                            <span class="block text-[10px] text-amber-100 truncate">${unreadPrototypeSupportMessages[0].notificationType === 'subscription_link_request'
+                                ? 'Demande de rattachement et réactivation'
+                                : unreadPrototypeSupportMessages[0].notificationType === 'tv_offer_renewal'
+                                    ? `Réabonnement choisi : ${window.escapeHTML(unreadPrototypeSupportMessages[0].subscriptionOffer || '')}`
+                                    : unreadPrototypeSupportMessages[0].notificationType === 'tv_offer_subscription'
+                                        ? `Nouvel abonnement choisi : ${window.escapeHTML(unreadPrototypeSupportMessages[0].subscriptionOffer || '')}`
+                                        : 'Demande de désactivation'} · ${window.escapeHTML(SERVICES_DATA.find(service => service.id === unreadPrototypeSupportMessages[0].serviceId)?.name || 'service')} — cliquez pour ouvrir et retirer la notification.</span>
                         </span>
                     </span>
                     <span class="text-[9px] uppercase text-cyan-300 font-bold shrink-0">Ouvrir</span>
@@ -3703,9 +3726,9 @@
 
                                     return `
                                     <div class="border ${borderStyle} rounded-xl p-4 sm:p-5 flex flex-col gap-4 transition-all relative overflow-hidden group w-full">
-                                        <div class="flex justify-between items-start gap-2">
-                                            <h4 class="text-xs sm:text-sm font-bold text-white uppercase font-mono truncate max-w-[150px] sm:max-w-none">${service.name}</h4>
-                                            ${stateBadge}
+                                        <div class="flex justify-between items-start gap-2 min-w-0">
+                                            <h4 class="flex-1 min-w-0 text-xs sm:text-sm font-bold text-white uppercase font-mono whitespace-normal break-words leading-snug">${service.name}</h4>
+                                            <span class="shrink-0">${stateBadge}</span>
                                         </div>
                                         ${isAdmin ? `<div class="flex items-center gap-1.5 text-[9px] uppercase font-bold font-mono text-purple-300"><i data-lucide="flask-conical" class="w-3 h-3"></i> Mode client prototype · règles réelles · paiement simulé</div>` : ''}
                                         <p class="text-xs text-slate-400 flex-1 font-light leading-relaxed font-sans">${service.description}</p>
@@ -4159,6 +4182,12 @@
                                             <span class="truncate">DISCUSSION AVEC ${selectedClientName}</span>
                                             <span class="ml-auto shrink-0 normal-case flex items-center gap-1 ${isUserOnline(window.appState.adminSelectedClient) ? 'text-emerald-400' : 'text-slate-500'}"><span class="w-2 h-2 rounded-full ${isUserOnline(window.appState.adminSelectedClient) ? 'bg-emerald-500' : 'bg-slate-600'}"></span>${isUserOnline(window.appState.adminSelectedClient) ? 'Connecté' : 'Déconnecté'}</span>
                                         </div>
+                                        ${(() => {
+                                            const selectedProfile = window.appState.allProfiles.find(p => p.id === window.appState.adminSelectedClient);
+                                            const selectedOffer = selectedProfile?.services?.[TV_PASS_SERVICE_ID]?.subscriptionOffer;
+                                            if (!isValidTvPassOffer(selectedOffer)) return '';
+                                            return `<div class="mb-2 px-3 py-2 rounded-lg bg-amber-950/25 border border-amber-500/30 font-mono flex items-center justify-between gap-2"><span class="text-[9px] uppercase font-bold text-slate-500">Offre PASS TV choisie</span><span class="text-[10px] font-bold text-amber-300">${window.escapeHTML(selectedOffer)}</span></div>`;
+                                        })()}
                                         <div id="admin-chat-box" class="flex-1 overflow-y-auto space-y-3 p-1 font-mono text-[11px] h-[220px]">
                                             ${window.appState.allMessages
                                                 .filter(m => m.userId === window.appState.adminSelectedClient)
@@ -4289,6 +4318,7 @@
                                             <div class="flex items-center justify-between p-2 bg-slate-900 border border-slate-800 rounded-lg gap-2">
                                                 <div class="truncate">
                                                     <span class="text-white block font-bold truncate text-[10px] sm:text-xs">${s.name}</span>
+                                                    ${s.id === TV_PASS_SERVICE_ID && isValidTvPassOffer(sState.subscriptionOffer) ? `<span class="block text-[9px] font-bold text-amber-300 truncate">Offre : ${window.escapeHTML(sState.subscriptionOffer)}</span>` : ''}
                                                     <span class="text-[9px] font-mono ${isActive ? 'text-emerald-400 font-bold' : 'text-slate-500'}">
                                                         ${isActive ? 'Actif' : (sState.status === 'expired' ? 'Expiré' : 'Inactif')}${sState.renewalRequestedAt ? ' · Renouvellement demandé' : ''}${sState.cancellationRequestedAt ? ' · Désactivation demandée' : ''}
                                                     </span>
@@ -5433,6 +5463,22 @@
                     prototypePaymentAmount: service.price,
                     simulation: true
                 };
+                if (serviceId === TV_PASS_SERVICE_ID) {
+                    const isRenewal = current.status === 'expired' || Boolean(current.subEnd);
+                    prototype.supportMessages = prototype.supportMessages || [];
+                    prototype.supportMessages.push({
+                        id: `prototype-tv-offer-${Date.now()}`,
+                        sender: 'client',
+                        text: `[${isRenewal ? 'Réabonnement' : 'Nouvel abonnement'} PASS TV] Client Prototype a choisi l’offre ${subscriptionOffer}. Paiement Stripe simulé accepté.`,
+                        timestamp: now,
+                        notificationType: isRenewal ? 'tv_offer_renewal' : 'tv_offer_subscription',
+                        serviceId,
+                        subscriptionOffer,
+                        readByAdmin: false,
+                        simulation: true
+                    });
+                    prototype.supportMessages = prototype.supportMessages.slice(-100);
+                }
                 window.addAdminPrototypeEvent('payment', serviceId, `Paiement simulé accepté : ${price} €${offerLabel}`);
                 window.saveAdminPrototype();
                 window.showToast(`Prototype : paiement accepté, ${service.name}${offerLabel} est activé pour ${service.durationDays || 30} jours.`);
