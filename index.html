@@ -3350,6 +3350,7 @@
                 { id: 'admin-quotes', icon: 'file-text', label: 'Devis clients' },
                 { id: 'admin-support', icon: 'headphones', label: 'Support client' },
                 { id: 'admin-services', icon: 'badge-check', label: 'Forcer services' },
+                { id: 'admin-referrals', icon: 'gift', label: 'Parrainages' },
                 { id: 'admin-stripe', icon: 'credit-card', label: 'Liens Stripe' },
                 { id: 'admin-pimp-card', icon: 'external-link', label: 'Lien PIMP CARD' },
                 { id: 'admin-manage-link', icon: 'crown', label: 'Manage King Prime' },
@@ -3363,6 +3364,7 @@
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'client-support', icon: 'headphones', label: 'Support' },
                 { id: 'client-payments', icon: 'history', label: 'Paiements' },
+                { id: 'client-referrals', icon: 'gift', label: 'Parrainages' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
                 { id: 'community-section', icon: 'messages-square', label: 'Groupe Sésame' },
                 { action: 'profile', icon: 'user-pen', label: 'Mes informations' }
@@ -3419,7 +3421,7 @@
                 ${!isAdmin ? (() => {
                     const referralPoints = Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)));
                     const remainingReferrals = Math.max(0, 5 - referralPoints);
-                    return `<section class="relative z-20 w-full bg-gradient-to-r from-fuchsia-950/45 via-slate-950/95 to-cyan-950/45 border border-fuchsia-500/35 p-4 rounded-2xl shadow-[0_0_22px_rgba(217,70,239,.12)] overflow-hidden">
+                    return `<section id="client-referrals" class="mobile-anchor relative z-20 w-full bg-gradient-to-r from-fuchsia-950/45 via-slate-950/95 to-cyan-950/45 border border-fuchsia-500/35 p-4 rounded-2xl shadow-[0_0_22px_rgba(217,70,239,.12)] overflow-hidden">
                         <div class="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-fuchsia-500 to-amber-400"></div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div class="flex items-center gap-3 min-w-0"><span class="p-2.5 rounded-xl bg-fuchsia-950 border border-fuchsia-500/30 text-xl shrink-0">🎁</span><span><strong class="block text-white text-xs sm:text-sm uppercase font-black font-mono">Mes points de parrainage</strong><span class="block text-[10px] mt-1 ${remainingReferrals ? 'text-slate-300' : 'text-amber-300 font-bold'}">${remainingReferrals ? `Encore ${remainingReferrals} parrainage${remainingReferrals > 1 ? 's' : ''} pour gagner 1 an d’abonnement gratuit.` : 'Objectif atteint : votre année gratuite est disponible !'}</span></span></div>
@@ -4853,9 +4855,10 @@
             if (!window.matchMedia('(max-width: 767px)').matches) return;
             const routeIds = [
                 'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
-                'news-section', 'community-section', 'admin-console', 'admin-quotes',
-                'admin-prototype', 'admin-support', 'admin-services', 'admin-stripe', 'admin-pimp-card',
-                'admin-pending-profiles', 'admin-clients'
+                'client-referrals', 'news-section', 'community-section', 'admin-console', 'admin-quotes',
+                'admin-prototype', 'admin-support', 'admin-services', 'admin-referrals', 'admin-stripe',
+                'admin-pimp-card', 'admin-manage-link', 'admin-manage-gold-vibe-link',
+                'admin-deletion-history', 'admin-pending-profiles', 'admin-clients'
             ];
             const resolvedId = targetId === 'dashboard-top' ? 'overview-section' : targetId;
             routeIds.forEach(id => {
@@ -4919,6 +4922,10 @@
                 billingRules?.classList.remove('mobile-route-hidden');
                 billingRules?.classList.add('mobile-route-active');
                 billingRules?.classList.toggle('mobile-route-animate', shouldAnimate);
+                const clientReferrals = document.getElementById('client-referrals');
+                clientReferrals?.classList.remove('mobile-route-hidden');
+                clientReferrals?.classList.add('mobile-route-active');
+                clientReferrals?.classList.toggle('mobile-route-animate', shouldAnimate);
             }
             window.appState.mobileActiveRoute = targetId;
             if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
