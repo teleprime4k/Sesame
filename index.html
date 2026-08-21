@@ -1097,7 +1097,10 @@
                             status: window.appState.isAdmin ? 'active' : 'inactive',
                             onboardingRequired: !window.appState.isAdmin,
                             onboardingCompleted: window.appState.isAdmin,
-                            usageTotal: 0,
+                            referralPoints: 0,
+                            referralRewardStatus: 'collecting',
+                            referralRewardServiceId: TV_PASS_SERVICE_ID,
+                            referralRewardServiceName: 'PASS TV CINÉ & SPORT',
                             createdAt: Date.now(),
                             services: {
                                 'stockage-cloud': { status: 'inactive', subEnd: null, freeReactivationUsed: false },
@@ -2622,7 +2625,10 @@
                         status: authRole === 'admin' ? 'active' : 'inactive',
                         onboardingRequired: authRole === 'client',
                         onboardingCompleted: authRole === 'admin',
-                        usageTotal: 0,
+                        referralPoints: 0,
+                        referralRewardStatus: 'collecting',
+                        referralRewardServiceId: TV_PASS_SERVICE_ID,
+                        referralRewardServiceName: 'PASS TV CINÉ & SPORT',
                         createdAt: Date.now(),
                         services: Object.fromEntries(SERVICES_DATA.map(s => [s.id, { status: 'inactive', subEnd: null, freeReactivationUsed: false }]))
                     }, { merge: true });
@@ -2789,6 +2795,35 @@
         };
 
         // --- RECHERCHE ET FILTRE ADMIN ---
+        window.getAdminClientServicesRowHTML = (client) => {
+            const now = window.appState.virtualDate || Date.now();
+            const serviceStates = SERVICES_DATA.map(service => {
+                const state = client?.services?.[service.id] || { status: 'inactive', subEnd: null };
+                const active = state.status === 'active' && Number(state.subEnd || 0) > now;
+                const expired = state.status === 'expired' || Boolean(state.subEnd && Number(state.subEnd) <= now);
+                const days = active ? Math.max(1, Math.ceil((Number(state.subEnd) - now) / 86400000)) : 0;
+                return { service, state, active, expired, days };
+            });
+            const activeCount = serviceStates.filter(item => item.active).length;
+            const followedServices = serviceStates.filter(item => item.active || item.expired || item.state.renewalRequestedAt || item.state.cancellationRequestedAt);
+            const avatarHTML = client?.avatar
+                ? `<img src="${client.avatar}" class="w-6 h-6 rounded-full object-cover border border-cyan-500/30" />`
+                : `<div class="w-6 h-6 rounded-full bg-slate-950 flex items-center justify-center border border-slate-800 text-[9px] font-bold text-slate-400 font-mono">${window.getClientName(client.email).charAt(0)}</div>`;
+            const servicesHTML = followedServices.length ? followedServices.map(({ service, state, active, expired, days }) => {
+                const statusLabel = active ? `${days}j restants` : expired ? 'Expiré' : state.cancellationRequestedAt ? 'Désactivation demandée' : state.renewalRequestedAt ? 'Renouvellement demandé' : 'Inactif';
+                const color = active ? 'border-emerald-500/30 text-emerald-300 bg-emerald-950/30' : expired ? 'border-amber-500/30 text-amber-300 bg-amber-950/30' : 'border-slate-700 text-slate-400 bg-slate-950';
+                const offer = service.id === TV_PASS_SERVICE_ID && isValidTvPassOffer(state.subscriptionOffer) ? ` · ${window.escapeHTML(state.subscriptionOffer)}` : '';
+                return `<span class="inline-flex items-center px-2 py-1 rounded border ${color} text-[8px] font-bold">${window.escapeHTML(service.name)}${offer} · ${statusLabel}</span>`;
+            }).join('') : `<span class="text-[9px] text-slate-600 italic">Aucun service activé ou expiré.</span>`;
+            return `<tr class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors font-mono">
+                <td class="p-3 text-[11px] sm:text-xs text-slate-300 max-w-[180px]"><span class="flex items-center gap-2">${avatarHTML}<span class="truncate" title="${window.escapeHTML(client.email)}">${window.escapeHTML(client.email)}</span></span></td>
+                <td class="p-3"><span class="px-2.5 py-1 rounded text-[9px] font-bold uppercase bg-emerald-950/40 text-emerald-400 border border-emerald-500/20">Vérifié</span></td>
+                <td class="p-3"><strong class="text-lg ${activeCount ? 'text-emerald-300' : 'text-slate-500'}">${activeCount}</strong><small class="block text-[8px] text-slate-500">service${activeCount > 1 ? 's' : ''} actif${activeCount > 1 ? 's' : ''}</small></td>
+                <td class="p-3 min-w-[300px]"><div class="flex flex-wrap gap-1.5">${servicesHTML}</div></td>
+                <td class="p-3"><div class="flex flex-wrap gap-1.5"><button onclick="window.openClientPersonalInfo('${client.id}')" class="px-2 py-1.5 bg-cyan-950/50 border border-cyan-500/30 text-cyan-300 rounded text-[9px] font-bold">Infos</button><button onclick="window.openClientServiceManagement('${client.id}')" class="px-2 py-1.5 bg-emerald-950 border border-emerald-500/35 text-emerald-300 rounded text-[9px] font-bold">Gérer les services</button></div></td>
+            </tr>`;
+        };
+
         window.handleAdminSearch = (queryVal) => {
             window.appState.adminSearchQuery = queryVal;
             const container = document.getElementById('admin-clients-table-body');
@@ -2804,46 +2839,7 @@
                 if(filtered.length === 0) {
                     container.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500 font-mono italic">Aucun client ne correspond à votre recherche.</td></tr>`;
                 } else {
-                    container.innerHTML = filtered.map(client => {
-                        const isActive = client.status === 'active' && client.subEnd > window.appState.virtualDate;
-                        const daysRemaining = client.subEnd ? Math.max(0, Math.ceil((client.subEnd - window.appState.virtualDate) / (1000 * 60 * 60 * 24))) : 0;
-                        
-                        // Utilisation de la photo de profil du client dans la gestion admin si disponible
-                        const avatarHTML = client.avatar 
-                            ? `<img src="${client.avatar}" class="w-6 h-6 rounded-full object-cover border border-purple-500/30" />`
-                            : `<div class="w-6 h-6 rounded-full bg-slate-950 flex items-center justify-center border border-slate-800 text-[10px] font-bold text-slate-400 font-mono">${window.getClientName(client.email).charAt(0)}</div>`;
-
-                        return `
-                        <tr class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors font-mono">
-                          <td class="p-4 text-xs text-slate-300 truncate max-w-[180px] flex items-center gap-2" title="${client.email}">
-                            ${avatarHTML}
-                            <span class="truncate">${client.email}</span>
-                          </td>
-                          <td class="p-4">
-                            <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase ${isActive ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'bg-red-950/40 text-red-400 border border-red-500/20'}">
-                                ${isActive ? 'Actif' : 'Inactif / Expire'}
-                            </span>
-                          </td>
-                          <td class="p-4 text-xs text-slate-400 font-mono">${daysRemaining}j restants</td>
-                          <td class="p-4 text-xs text-cyan-400 font-mono">${client.usageTotal || 0} cycles</td>
-                          <td class="p-4 flex gap-2">
-                            <button onclick="window.openClientPersonalInfo('${client.id}')" title="Consulter les informations personnelles"
-                              class="px-2 py-1 bg-cyan-950/50 hover:bg-cyan-900/50 border border-cyan-500/30 text-cyan-300 rounded text-[10px] font-bold">Infos</button>
-                            <button onclick="window.adminAddDays('${client.id}', 7)" title="Prolonger de 7 jours"
-                              class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 text-cyan-400 rounded text-[11px] transition-all flex items-center gap-1 min-h-[28px]">
-                              +7j
-                            </button>
-                            <button onclick="window.adminAddUsage('${client.id}')" title="Incrémenter +10 requêtes"
-                              class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-purple-500 text-purple-400 rounded text-[11px] transition-all flex items-center gap-1 min-h-[28px]">
-                              +10c
-                            </button>
-                            <button onclick="window.adminToggleStatus('${client.id}', '${client.status}')"
-                              class="px-2 py-1 bg-slate-950 hover:bg-red-950/30 border border-slate-800 hover:border-red-500 text-red-400 rounded text-[11px] transition-all">
-                              ${isActive ? 'Suspendre' : 'Débloquer'}
-                            </button>
-                          </td>
-                        </tr>`;
-                    }).join('');
+                    container.innerHTML = filtered.map(client => window.getAdminClientServicesRowHTML(client)).join('');
                     lucide.createIcons({ root: container });
                 }
             }
@@ -4688,54 +4684,15 @@
                                 <thead>
                                   <tr class="bg-slate-950 border-b border-slate-800">
                                     <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Identifiant Client</th>
-                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Statut Réseau</th>
-                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Énergie Temporelle</th>
-                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Consommation</th>
-                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Actions Console</th>
+                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Compte Firebase</th>
+                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Services actifs</th>
+                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Suivi des abonnements</th>
+                                    <th class="p-3 text-[10px] sm:text-xs font-bold text-slate-400 uppercase font-mono">Actions</th>
                                   </tr>
                                 </thead>
                                 <tbody id="admin-clients-table-body">
                                   ${firebaseClientProfiles.length === 0 ? `<tr><td colspan="5" class="p-4 text-center text-slate-500 font-mono italic">Aucun compte client Firebase vérifié.</td></tr>` : 
-                                    firebaseClientProfiles.map(client => {
-                                        const isActive = client.status === 'active' && client.subEnd > window.appState.virtualDate;
-                                        const daysRemaining = client.subEnd ? Math.max(0, Math.ceil((client.subEnd - window.appState.virtualDate) / (1000 * 60 * 60 * 24))) : 0;
-                                        
-                                        // Utilisation réactive des avatars dans le tableau général
-                                        const avatarHTML = client.avatar 
-                                            ? `<img src="${client.avatar}" class="w-6 h-6 rounded-full object-cover border border-cyan-500/20" />`
-                                            : `<div class="w-6 h-6 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-[8px] text-slate-400 font-mono">${window.getClientName(client.email).charAt(0)}</div>`;
-
-                                        return `
-                                        <tr class="border-b border-slate-800/50 hover:bg-slate-800/20 transition-colors font-mono">
-                                          <td class="p-3 text-[11px] sm:text-xs text-slate-300 truncate max-w-[150px] flex items-center gap-2" title="${client.email}">
-                                            ${avatarHTML}
-                                            <span class="truncate">${client.email}</span>
-                                          </td>
-                                          <td class="p-4">
-                                            <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase ${isActive ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]' : 'bg-red-950/40 text-red-400 border border-red-500/20'}">
-                                                ${isActive ? 'Actif' : 'Inactif'}
-                                            </span>
-                                          </td>
-                                          <td class="p-3 text-[11px] sm:text-xs text-slate-400">${daysRemaining}j restants</td>
-                                          <td class="p-3 text-[11px] sm:text-xs text-cyan-400">${client.usageTotal || 0} cycles</td>
-                                          <td class="p-3 flex gap-1.5">
-                                            <button onclick="window.openClientPersonalInfo('${client.id}')" title="Consulter les informations personnelles"
-                                              class="px-2 py-1 bg-cyan-950/50 hover:bg-cyan-900/50 border border-cyan-500/30 text-cyan-300 rounded text-[9px] font-bold">Infos</button>
-                                            <button onclick="window.adminAddDays('${client.id}', 7)" title="Prolonger de 7 jours"
-                                              class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 text-cyan-400 rounded text-[10px] transition-all flex items-center gap-1 min-h-[28px]">
-                                              +7j
-                                            </button>
-                                            <button onclick="window.adminAddUsage('${client.id}')" title="Incrémenter +10 requêtes"
-                                              class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-purple-500 text-purple-400 rounded text-[10px] transition-all flex items-center gap-1 min-h-[28px]">
-                                              +10c
-                                            </button>
-                                            <button onclick="window.adminToggleStatus('${client.id}', '${client.status}')"
-                                              class="px-2 py-1 bg-slate-950 hover:bg-red-950/30 border border-slate-800 hover:border-red-500 text-red-400 rounded text-[10px] transition-all min-h-[28px]">
-                                              ${isActive ? 'Suspendre' : 'Activer'}
-                                            </button>
-                                          </td>
-                                        </tr>`;
-                                    }).join('')
+                                    firebaseClientProfiles.map(client => window.getAdminClientServicesRowHTML(client)).join('')
                                   }
                                 </tbody>
                             </table>
@@ -5867,6 +5824,16 @@
             input.value = String(Math.max(0, Math.min(5, Number(input.value || 0) + Number(delta || 0))));
         };
 
+        window.openClientServiceManagement = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            window.appState.selectedServiceClientId = clientId;
+            renderApp();
+            setTimeout(() => {
+                if (window.matchMedia('(max-width: 767px)').matches) window.applyMobileRoute('admin-services');
+                else document.getElementById('admin-services')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 30);
+        };
+
         window.adminSaveReferralPoints = async () => {
             if (!window.appState.isAdmin) return;
             const clientId = window.appState.selectedReferralClientId;
@@ -6761,67 +6728,6 @@
             }
         };
 
-        window.adminAddDays = async (clientId, days) => {
-            try {
-                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
-                const snap = await getDoc(clientRef);
-                if (snap.exists()) {
-                    const services = { ...snap.data().services };
-                    
-                    // Prolonger tous les services actifs de cet utilisateur de X jours
-                    const virtualTimestamp = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
-                    for(const sId in services) {
-                        if(services[sId].status === 'active') {
-                            const currentEnd = services[sId].subEnd || virtualTimestamp;
-                            services[sId].subEnd = Math.max(virtualTimestamp, currentEnd) + (days * 24 * 60 * 60 * 1000);
-                        }
-                    }
-
-                    await updateDoc(clientRef, { services });
-                    window.showToast("Licences actives de l'agent prolongées !");
-                }
-            } catch(e) {
-                handlePermissionError(e);
-                window.showToast("Erreur modification", "error");
-            }
-        };
-
-        window.adminToggleStatus = async (clientId, currentStatus) => {
-            try {
-                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
-                const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-                const virtualTimestamp = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
-                const subEnd = nextStatus === 'active' ? virtualTimestamp + (7 * 24 * 60 * 60 * 1000) : null;
-                
-                await updateDoc(clientRef, {
-                    status: nextStatus,
-                    subEnd: subEnd
-                });
-                window.showToast("Statut client mis à jour.");
-            } catch(e) {
-                handlePermissionError(e);
-                window.showToast("Erreur modification", "error");
-            }
-        };
-
-        window.adminAddUsage = async (clientId) => {
-            try {
-                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
-                const snap = await getDoc(clientRef);
-                if (snap.exists()) {
-                    const currentUsage = snap.data().usageTotal || 0;
-                    await updateDoc(clientRef, {
-                        usageTotal: currentUsage + 10
-                    });
-                    window.showToast("Cycles de calcul client incrémentés.");
-                }
-            } catch(e) {
-                handlePermissionError(e);
-                window.showToast("Erreur incrément", "error");
-            }
-        };
-
-    
     </script>
 </body>
 </html>
