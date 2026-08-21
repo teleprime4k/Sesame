@@ -670,6 +670,9 @@
             // Contrôle Direct des Services
             selectedServiceClientId: "",
 
+            // Parrainages et récompenses
+            selectedReferralClientId: "",
+
             // Compte client prototype privé de l'Administrateur (simulation locale sans paiement)
             prototypeClient: (() => {
                 try {
@@ -678,7 +681,7 @@
                 } catch (error) {
                     console.warn('Simulation prototype non restaurée.', error);
                 }
-                return { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [] };
+                return { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [], referralPoints: 0, referralRewardStatus: 'collecting', referralRewardEarnedAt: null, referralRewardGrantedAt: null, referralRewardAcknowledgedAt: null };
             })(),
 
             // Saisie temporaire de besoins de devis
@@ -3431,6 +3434,18 @@
                     <button onclick="window.openSubscriptionCorrection()" class="px-3 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[9px] uppercase font-bold shrink-0">Modifier ma demande</button>
                 </div>` : ''}
 
+                ${!isAdmin && Number(profile?.referralPoints || 0) >= 5 && profile?.referralRewardStatus === 'earned' ? `
+                <div class="relative z-20 w-full bg-gradient-to-r from-fuchsia-950/95 via-purple-950/95 to-amber-950/90 border-2 border-amber-400/70 p-4 rounded-2xl shadow-[0_0_30px_rgba(251,191,36,.32)] flex items-center gap-3 animate-pulse">
+                    <span class="p-2.5 bg-amber-500/20 rounded-xl text-2xl">🎉</span>
+                    <div><strong class="block text-white text-xs sm:text-sm font-black font-mono">Félicitations ! Vous avez gagné 1 an d’abonnement gratuit grâce à vos parrainages !</strong><span class="text-[10px] text-amber-200">Votre récompense attend la validation de l’administrateur.</span></div>
+                </div>` : ''}
+
+                ${!isAdmin && profile?.referralRewardStatus === 'granted' ? `
+                <button type="button" onclick="window.acknowledgeReferralReward(false)" class="relative z-20 w-full text-left bg-gradient-to-r from-emerald-950/95 to-cyan-950/85 border border-emerald-400/70 p-4 rounded-2xl shadow-[0_0_26px_rgba(52,211,153,.24)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <span class="flex items-center gap-3"><span class="p-2 bg-emerald-900/70 rounded-lg text-xl">✅</span><span><strong class="block text-white text-xs sm:text-sm font-black font-mono">Votre année d’abonnement gratuite a bien été ajoutée à votre compte.</strong><span class="block text-[10px] text-emerald-200 mt-1">Cliquez sur ce message pour confirmer que vous l’avez lu.</span></span></span>
+                    <span class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-[9px] uppercase font-bold shrink-0">J’ai lu</span>
+                </button>` : ''}
+
                 ${!isAdmin && !profile?.retentionNoticeAcknowledgedAt ? `
                 <div class="relative z-20 w-full bg-slate-900/95 border border-cyan-500/35 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span class="flex items-start gap-3"><span class="p-2 bg-cyan-950 rounded-lg shrink-0"><i data-lucide="calendar-clock" class="w-5 h-5 text-cyan-300"></i></span><span><strong class="block text-white text-xs uppercase font-mono">Conservation de vos données : 1 an</strong><span class="block text-[10px] text-slate-300 mt-1">Vos conversations, demandes de devis et suivis sont supprimés automatiquement après un an. Vous pouvez aussi les effacer manuellement à tout moment.</span></span></span>
@@ -4021,6 +4036,8 @@
                         <div class="mb-4 p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span class="flex items-center gap-3"><span class="relative p-2 bg-emerald-900/70 rounded-lg"><i data-lucide="messages-square" class="w-5 h-5 text-emerald-200"></i>${prototypeUnreadCommunityCount ? `<b class="absolute -top-2 -right-2 min-w-[20px] h-5 px-1 rounded-full bg-red-500 text-white text-[9px] leading-5 text-center animate-pulse">${prototypeUnreadCommunityCount > 99 ? '99+' : prototypeUnreadCommunityCount}</b>` : ''}</span><span><strong class="block text-white text-[10px] uppercase font-mono">Groupe Sésame · Prototype</strong><small class="text-[9px] ${prototypeCommunityJoined ? 'text-emerald-300' : 'text-slate-500'}">${prototypeCommunityJoined ? prototypeUnreadCommunityCount ? `${prototypeUnreadCommunityCount} nouveau${prototypeUnreadCommunityCount > 1 ? 'x' : ''} message${prototypeUnreadCommunityCount > 1 ? 's' : ''} non lu${prototypeUnreadCommunityCount > 1 ? 's' : ''}` : 'Membre · aucun nouveau message' : 'Le prototype n’a pas encore rejoint le groupe'}</small></span></span><div class="flex gap-2">${prototypeCommunityJoined && prototypeUnreadCommunityCount ? `<button onclick="window.markPrototypeCommunityAsRead()" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[8px] uppercase font-bold">Simuler la consultation</button>` : ''}<button onclick="window.togglePrototypeCommunity(${prototypeCommunityJoined ? 'false' : 'true'})" class="px-3 py-2 rounded-lg ${prototypeCommunityJoined ? 'bg-red-950 text-red-300 border-red-500/30' : 'bg-emerald-700 text-white border-emerald-400/30'} border text-[8px] uppercase font-bold">${prototypeCommunityJoined ? 'Quitter' : 'Rejoindre'}</button></div></div>
                         ${prototypeProfile.subscriptionOnboarding?.status === 'pending_admin' ? `<div class="mb-4 p-3 rounded-xl bg-amber-950/45 border border-amber-500/40 text-amber-100 animate-pulse"><strong class="block text-[10px] uppercase font-mono">⏳ Rattachement et réactivation de l’abonnement en cours...</strong><span class="text-[9px]">${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} · Simulation locale</span></div>` : ''}
                         ${prototypeProfile.subscriptionOnboarding?.status === 'approved' && !prototypeProfile.subscriptionOnboarding.clientAcknowledgedAt ? `<div class="mb-4 p-3 rounded-xl bg-emerald-950/45 border border-emerald-500/40 text-emerald-100 flex items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">✓ ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} est désormais actif</strong><span class="text-[9px]">Validation administrateur simulée.</span></span><button onclick="window.acknowledgePrototypeSubscriptionActivation()" class="px-3 py-2 rounded bg-emerald-600 text-white text-[8px] uppercase font-bold">J’ai lu</button></div>` : ''}
+                        ${Number(prototypeProfile.referralPoints || 0) >= 5 && prototypeProfile.referralRewardStatus === 'earned' ? `<div class="mb-4 p-4 rounded-xl bg-gradient-to-r from-fuchsia-950/70 to-amber-950/60 border-2 border-amber-400/60 text-amber-100 animate-pulse shadow-[0_0_24px_rgba(251,191,36,.24)]"><strong class="block text-[11px] font-black font-mono">🎉 Félicitations ! Vous avez gagné 1 an d’abonnement gratuit grâce à vos parrainages !</strong><span class="text-[9px]">Simulation prototype · en attente de validation administrateur.</span></div>` : ''}
+                        ${prototypeProfile.referralRewardStatus === 'granted' ? `<button type="button" onclick="window.acknowledgeReferralReward(true)" class="mb-4 w-full text-left p-4 rounded-xl bg-gradient-to-r from-emerald-950/70 to-cyan-950/60 border border-emerald-400/60 text-emerald-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span><strong class="block text-[11px] font-black font-mono">✅ Votre année d’abonnement gratuite a bien été ajoutée à votre compte.</strong><span class="text-[9px]">Simulation prototype · cliquez pour confirmer la lecture.</span></span><span class="px-3 py-2 rounded bg-emerald-600 text-white text-[8px] uppercase font-bold">J’ai lu</span></button>` : ''}
                         ${['not_found', 'correction_required'].includes(prototypeProfile.subscriptionOnboarding?.status) ? `<div class="mb-4 p-3 rounded-xl bg-gradient-to-r from-red-950/55 to-amber-950/45 border border-red-500/40 text-red-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span><strong class="block text-[10px] uppercase font-mono">${prototypeProfile.subscriptionOnboarding.status === 'not_found' ? 'Abonnement prototype introuvable' : 'Demande prototype à modifier'}</strong><span class="block text-[9px] mt-1">${prototypeProfile.subscriptionOnboarding.status === 'not_found' ? `Aucun abonnement ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.serviceName || '')} retrouvé.` : `Sélectionnez le bon service.${prototypeProfile.subscriptionOnboarding.suggestedServiceName ? ` Service conseillé : ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.suggestedServiceName)}.` : ''}`}</span>${prototypeProfile.subscriptionOnboarding.adminNote ? `<span class="block text-[9px] text-amber-200 mt-1">Message de l’admin : ${window.escapeHTML(prototypeProfile.subscriptionOnboarding.adminNote)}</span>` : ''}<span class="block text-[8px] text-purple-300 mt-1 uppercase font-bold">Simulation locale uniquement</span></span><button onclick="window.startPrototypeSubscriptionCorrection()" class="px-3 py-2 rounded bg-amber-600 hover:bg-amber-500 text-white text-[8px] uppercase font-bold shrink-0">Modifier la demande</button></div>` : ''}
                         ${(() => {
                             const credentials = prototypeProfile.credentials || {};
@@ -4279,6 +4296,31 @@
                                     Enregistrer
                                 </button>
                             </div>
+                        </div>
+
+                        <!-- PARRAINAGES ET POINTS -->
+                        <div id="admin-referrals" class="mobile-anchor bg-gradient-to-br from-fuchsia-950/20 to-slate-950/70 border border-fuchsia-500/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                            <div><h4 class="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2"><i data-lucide="users-round" class="text-fuchsia-400 w-4 h-4"></i> Parrainages et points</h4><p class="text-[9px] text-slate-500 mt-1">1 parrainage validé = 1 point · 5 points = 1 an d’abonnement gratuit.</p></div>
+                            <select id="referral-client-select" onchange="window.adminChangeReferralClient(this.value)" class="w-full bg-slate-950 border border-fuchsia-900/60 rounded px-2 py-2 text-xs text-white focus:outline-none focus:border-fuchsia-500 min-h-[38px]">
+                                <option value="">-- Choisir un client --</option>
+                                <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedReferralClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
+                                ${firebaseClientProfiles.map(p => `<option value="${p.id}" ${window.appState.selectedReferralClientId === p.id ? 'selected' : ''}>${window.getClientName(p.email)} (${p.email})</option>`).join('')}
+                            </select>
+                            ${(() => {
+                                const referralClient = window.appState.selectedReferralClientId === PROTOTYPE_CLIENT_ID ? prototypeProfile : firebaseClientProfiles.find(p => p.id === window.appState.selectedReferralClientId);
+                                if (!referralClient) return `<p class="py-5 text-center text-[9px] text-slate-600 italic">Sélectionnez un client pour gérer ses parrainages.</p>`;
+                                const points = Math.max(0, Math.min(5, Number(referralClient.referralPoints || 0)));
+                                const status = referralClient.referralRewardStatus || (points >= 5 ? 'earned' : 'collecting');
+                                return `<div class="space-y-3">
+                                    <div class="flex items-center justify-between"><span class="text-[10px] text-slate-400 font-mono">${window.escapeHTML(referralClient.name || window.getClientName(referralClient.email))}</span><strong class="text-2xl text-fuchsia-300 font-black font-mono">${points} / 5</strong></div>
+                                    <div class="h-3 rounded-full bg-slate-900 border border-slate-800 overflow-hidden"><div class="h-full bg-gradient-to-r from-fuchsia-600 to-amber-400 transition-all" style="width:${points * 20}%"></div></div>
+                                    <div class="grid grid-cols-[auto_1fr_auto] gap-2"><button type="button" onclick="window.adminAdjustReferralPoints(-1)" class="px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-lg">−</button><input id="referral-points-input" type="number" min="0" max="5" value="${points}" class="w-full bg-slate-950 border border-fuchsia-800/50 rounded-lg text-center text-white font-bold"/><button type="button" onclick="window.adminAdjustReferralPoints(1)" class="px-4 py-2 rounded-lg bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-200 text-lg">+</button></div>
+                                    <button type="button" onclick="window.adminSaveReferralPoints()" class="w-full py-2 rounded-lg bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-[9px] uppercase font-bold">Enregistrer les points</button>
+                                    ${status === 'earned' ? `<div class="p-3 rounded-lg bg-amber-950/40 border border-amber-500/35 text-amber-200 text-[9px] animate-pulse">Seuil atteint : le client voit la notification de récompense.</div><label class="block text-[8px] text-slate-500 uppercase font-bold">Abonnement récompensé</label><select id="referral-reward-service" class="w-full bg-slate-950 border border-emerald-800/50 rounded-lg px-2 py-2 text-[10px] text-white">${SERVICES_DATA.filter(service => service.type !== 'devis').map(service => `<option value="${service.id}" ${service.id === TV_PASS_SERVICE_ID ? 'selected' : ''}>${window.escapeHTML(service.name)}</option>`).join('')}</select><button type="button" onclick="window.adminGrantReferralReward('${referralClient.id}')" class="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] uppercase font-black">Valider et ajouter 1 an gratuit</button>` : ''}
+                                    ${status === 'granted' ? `<div class="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/35 text-emerald-200 text-[9px]">Année gratuite ajoutée · en attente de confirmation de lecture du client.</div>` : ''}
+                                    ${window.appState.selectedReferralClientId === PROTOTYPE_CLIENT_ID ? `<span class="block text-[8px] text-cyan-400 uppercase font-bold">Simulation locale uniquement</span>` : ''}
+                                </div>`;
+                            })()}
                         </div>
 
                         <!-- 4. CONTRÔLE DIRECT DES SERVICES -->
@@ -5312,7 +5354,7 @@
 
         window.getAdminPrototypeClient = () => {
             if (!window.appState.prototypeClient || !window.appState.prototypeClient.services) {
-                window.appState.prototypeClient = { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [] };
+                window.appState.prototypeClient = { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [], referralPoints: 0, referralRewardStatus: 'collecting', referralRewardEarnedAt: null, referralRewardGrantedAt: null, referralRewardAcknowledgedAt: null };
             }
             window.appState.prototypeClient.id = PROTOTYPE_CLIENT_ID;
             window.appState.prototypeClient.email = 'prototype@sesame.local';
@@ -5322,6 +5364,8 @@
             window.appState.prototypeClient.quotes = window.appState.prototypeClient.quotes || [];
             window.appState.prototypeClient.events = window.appState.prototypeClient.events || [];
             window.appState.prototypeClient.supportMessages = window.appState.prototypeClient.supportMessages || [];
+            window.appState.prototypeClient.referralPoints = Math.max(0, Math.min(5, Number(window.appState.prototypeClient.referralPoints || 0)));
+            window.appState.prototypeClient.referralRewardStatus = window.appState.prototypeClient.referralRewardStatus || (window.appState.prototypeClient.referralPoints >= 5 ? 'earned' : 'collecting');
             return window.appState.prototypeClient;
         };
 
@@ -5753,7 +5797,7 @@
         window.resetAdminPrototype = () => {
             if (!window.appState.isAdmin) return;
             window.showCyberConfirm("Remettre tous les services du compte prototype à zéro ? Aucun vrai compte client ne sera modifié.", () => {
-                window.appState.prototypeClient = { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [] };
+                window.appState.prototypeClient = { id: PROTOTYPE_CLIENT_ID, name: 'Client Prototype', email: 'prototype@sesame.local', createdAt: Date.now(), services: {}, credentials: {}, customPrices: {}, stripeLinks: {}, quotes: [], events: [], referralPoints: 0, referralRewardStatus: 'collecting', referralRewardEarnedAt: null, referralRewardGrantedAt: null, referralRewardAcknowledgedAt: null };
                 window.saveAdminPrototype();
                 window.showToast("Le compte client prototype a été réinitialisé.");
                 renderApp();
@@ -5777,6 +5821,108 @@
         window.adminChangeServiceClient = (clientId) => {
             window.appState.selectedServiceClientId = clientId;
             renderApp();
+        };
+
+        window.adminChangeReferralClient = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            window.appState.selectedReferralClientId = clientId;
+            renderApp();
+        };
+
+        window.adminAdjustReferralPoints = (delta) => {
+            if (!window.appState.isAdmin) return;
+            const input = document.getElementById('referral-points-input');
+            if (!input) return;
+            input.value = String(Math.max(0, Math.min(5, Number(input.value || 0) + Number(delta || 0))));
+        };
+
+        window.adminSaveReferralPoints = async () => {
+            if (!window.appState.isAdmin) return;
+            const clientId = window.appState.selectedReferralClientId;
+            const input = document.getElementById('referral-points-input');
+            const points = Math.max(0, Math.min(5, Number.parseInt(input?.value || '0', 10)));
+            if (!clientId || !Number.isInteger(points)) return window.showToast('Sélectionnez un client et indiquez ses points.', 'error');
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            const target = clientId === PROTOTYPE_CLIENT_ID ? window.getAdminPrototypeClient() : window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+            if (!target) return window.showToast('Profil client introuvable.', 'error');
+            if (target.referralRewardStatus === 'granted') return window.showToast('Le client doit d’abord confirmer la lecture de sa récompense.', 'error');
+            const update = { referralPoints: points, referralRewardStatus: points >= 5 ? 'earned' : 'collecting', referralRewardEarnedAt: points >= 5 ? (target.referralRewardEarnedAt || now) : null };
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                Object.assign(target, update);
+                window.addAdminPrototypeEvent('referral_points', '', `${points} point${points > 1 ? 's' : ''} de parrainage`);
+                window.saveAdminPrototype();
+                window.showToast(`Prototype : ${points} point${points > 1 ? 's' : ''} enregistré${points > 1 ? 's' : ''}.`);
+                renderApp();
+                return;
+            }
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), update);
+                window.showToast(`${points} point${points > 1 ? 's' : ''} enregistré${points > 1 ? 's' : ''} pour ${window.getClientName(target.email)}.`);
+            } catch (error) {
+                console.error(error);
+                window.showToast('Impossible d’enregistrer les points.', 'error');
+            }
+        };
+
+        window.adminGrantReferralReward = (clientId) => {
+            if (!window.appState.isAdmin) return;
+            const prototypeMode = clientId === PROTOTYPE_CLIENT_ID;
+            const target = prototypeMode ? window.getAdminPrototypeClient() : window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+            if (!target || Number(target.referralPoints || 0) < 5 || target.referralRewardStatus !== 'earned') return window.showToast('Cette récompense n’est pas prête à être validée.', 'error');
+            const rewardServiceId = String(document.getElementById('referral-reward-service')?.value || TV_PASS_SERVICE_ID);
+            const rewardService = SERVICES_DATA.find(service => service.id === rewardServiceId && service.type !== 'devis');
+            if (!rewardService) return window.showToast('Choisissez l’abonnement qui recevra l’année gratuite.', 'error');
+            window.showCyberConfirm(`Ajouter gratuitement 1 an de ${rewardService.name} à ${prototypeMode ? 'Client Prototype' : window.getClientName(target.email)} ?`, async () => {
+                const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                const current = target.services?.[rewardServiceId] || {};
+                const base = Math.max(now, Number(current.subEnd || 0));
+                const rewardedService = { ...current, status: 'active', activatedAt: current.activatedAt || now, subEnd: base + (365 * 86400000), referralRewardYear: true, referralRewardGrantedAt: now, simulation: prototypeMode };
+                const update = { referralRewardStatus: 'granted', referralRewardGrantedAt: now, referralRewardServiceId: rewardServiceId, referralRewardServiceName: rewardService.name, [`services.${rewardServiceId}`]: rewardedService, status: 'active' };
+                if (prototypeMode) {
+                    target.services = { ...(target.services || {}), [rewardServiceId]: rewardedService };
+                    target.referralRewardStatus = 'granted';
+                    target.referralRewardGrantedAt = now;
+                    target.referralRewardServiceId = rewardServiceId;
+                    target.referralRewardServiceName = rewardService.name;
+                    window.addAdminPrototypeEvent('referral_reward_granted', rewardServiceId, `1 an gratuit ajouté à ${rewardService.name}`);
+                    window.saveAdminPrototype();
+                    window.showToast('Prototype : l’année gratuite a été ajoutée.');
+                    renderApp();
+                    return;
+                }
+                try {
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), update);
+                    window.showToast(`1 an gratuit ajouté au compte de ${window.getClientName(target.email)}.`);
+                } catch (error) {
+                    console.error(error);
+                    window.showToast('Impossible d’ajouter l’année gratuite.', 'error');
+                }
+            });
+        };
+
+        window.acknowledgeReferralReward = async (prototypeMode = false) => {
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            if (prototypeMode) {
+                if (!window.appState.isAdmin) return;
+                const prototype = window.getAdminPrototypeClient();
+                if (prototype.referralRewardStatus !== 'granted') return;
+                prototype.referralPoints = 0;
+                prototype.referralRewardStatus = 'collecting';
+                prototype.referralRewardAcknowledgedAt = now;
+                window.addAdminPrototypeEvent('referral_reward_read', TV_PASS_SERVICE_ID, 'Récompense lue par le Client prototype · nouveau cycle démarré');
+                window.saveAdminPrototype();
+                window.showToast('Prototype : message lu et définitivement masqué.');
+                renderApp();
+                return;
+            }
+            if (window.appState.isAdmin || !window.appState.user || window.appState.profile?.referralRewardStatus !== 'granted') return;
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid), { referralPoints: 0, referralRewardStatus: 'collecting', referralRewardAcknowledgedAt: now });
+                window.showToast('Message lu. Un nouveau cycle de parrainage commence.');
+            } catch (error) {
+                console.error(error);
+                window.showToast('Impossible de confirmer la lecture.', 'error');
+            }
         };
 
         // L'administrateur sélectionne un client pour lui attribuer des liens Stripe personnalisés
