@@ -3476,52 +3476,63 @@
             let currentMonthCA = 0;
             let filteredCA = 0;
             
-            const vDateObj = new Date(virtualDate);
-            const currentYearNum = vDateObj.getFullYear();
-            const currentMonthNum = vDateObj.getMonth(); // 0-11
+            // La comptabilité utilise toujours le calendrier réel, indépendamment
+            // de l'horloge virtuelle utilisée pour tester les abonnements.
+            const financeDateObj = new Date();
+            const currentYearNum = financeDateObj.getFullYear();
+            const currentMonthNum = financeDateObj.getMonth(); // 0-11
             const MONTH_NAMES_FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
 
             let processedTransactions = [];
+            let chartYear = adminFinanceYearFilter !== "all" ? parseInt(adminFinanceYearFilter) : currentYearNum;
+            let monthlyTotals = Array(12).fill(0);
 
             if (isAdmin && allTransactions) {
+                // Seuls les paiements réellement reçus alimentent le registre.
+                // Les opérations gratuites (désactivation/réactivation à 0 €),
+                // refusées ou sans date valide ne faussent plus les totaux.
+                const receivedTransactions = allTransactions
+                    .map(tx => ({ ...tx, price: Number(tx.price) }))
+                    .filter(tx => Number.isFinite(tx.price)
+                        && tx.price > 0
+                        && Number.isFinite(new Date(tx.date).getTime())
+                        && (tx.status === 'paid' || tx.confirmedByAdmin === true || tx.manualEntry === true));
+
                 // 1. Calcul du CA total (Global)
-                globalCA = allTransactions.reduce((sum, tx) => sum + (tx.price || 0), 0);
+                globalCA = receivedTransactions.reduce((sum, tx) => sum + tx.price, 0);
 
                 // 2. Calcul du CA pour l'année en cours
-                currentYearCA = allTransactions
+                currentYearCA = receivedTransactions
                     .filter(tx => new Date(tx.date).getFullYear() === currentYearNum)
-                    .reduce((sum, tx) => sum + (tx.price || 0), 0);
+                    .reduce((sum, tx) => sum + tx.price, 0);
 
                 // 3. Calcul du CA pour le mois en cours
-                currentMonthCA = allTransactions
+                currentMonthCA = receivedTransactions
                     .filter(tx => {
                         const d = new Date(tx.date);
                         return d.getFullYear() === currentYearNum && d.getMonth() === currentMonthNum;
                     })
-                    .reduce((sum, tx) => sum + (tx.price || 0), 0);
+                    .reduce((sum, tx) => sum + tx.price, 0);
 
                 // 4. Filtrage dynamique appliqué par l'Admin pour la liste des transactions
-                processedTransactions = allTransactions.filter(tx => {
+                processedTransactions = receivedTransactions.filter(tx => {
                     const txDate = new Date(tx.date);
                     const matchesYear = adminFinanceYearFilter === "all" || txDate.getFullYear() === parseInt(adminFinanceYearFilter);
                     const matchesMonth = adminFinanceMonthFilter === "all" || txDate.getMonth() === parseInt(adminFinanceMonthFilter);
                     return matchesYear && matchesMonth;
                 });
 
-                filteredCA = processedTransactions.reduce((sum, tx) => sum + (tx.price || 0), 0);
+                filteredCA = processedTransactions.reduce((sum, tx) => sum + tx.price, 0);
+
+                // Construction du graphique avec exactement les mêmes transactions
+                // que celles reconnues comme paiements reçus dans le registre.
+                receivedTransactions.forEach(tx => {
+                    const d = new Date(tx.date);
+                    if (d.getFullYear() === chartYear) monthlyTotals[d.getMonth()] += tx.price;
+                });
             }
 
             // Construction du graphique d'analyse mensuel pour l'année sélectionnée (ou en cours)
-            let chartYear = adminFinanceYearFilter !== "all" ? parseInt(adminFinanceYearFilter) : currentYearNum;
-            let monthlyTotals = Array(12).fill(0);
-            if (isAdmin && allTransactions) {
-                allTransactions.forEach(tx => {
-                    const d = new Date(tx.date);
-                    if (d.getFullYear() === chartYear) {
-                        monthlyTotals[d.getMonth()] += (tx.price || 0);
-                    }
-                });
-            }
             const maxMonthVal = Math.max(...monthlyTotals, 1); // Éviter division par zéro
 
             // Résoudre la discussion tchat Admin et injecter l'avatar du client actif dans le tchat
@@ -4727,9 +4738,9 @@
                                     <i data-lucide="line-chart" class="text-purple-400 w-4 h-4 shrink-0"></i> Registre Financier
                                 </h4>
                                 <div class="flex flex-wrap gap-1 mt-1">
-                                    <span class="text-[8px] font-bold text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/10" title="Chiffre d'Affaires Global">Global: ${globalCA.toFixed(0)}€</span>
-                                    <span class="text-[8px] font-bold text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/10" title="CA de l'année en cours">${currentYearNum}: ${currentYearCA.toFixed(0)}€</span>
-                                    <span class="text-[8px] font-bold text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/10" title="CA du mois en cours">${MONTH_NAMES_FR[currentMonthNum].substring(0,3)}: ${currentMonthCA.toFixed(0)}€</span>
+                                    <span class="text-[8px] font-bold text-cyan-400 bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/10" title="Chiffre d'Affaires Global">Global: ${globalCA.toFixed(2)} €</span>
+                                    <span class="text-[8px] font-bold text-amber-400 bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/10" title="CA de l'année en cours">${currentYearNum}: ${currentYearCA.toFixed(2)} €</span>
+                                    <span class="text-[8px] font-bold text-emerald-400 bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/10" title="CA du mois en cours">${MONTH_NAMES_FR[currentMonthNum].substring(0,3)}: ${currentMonthCA.toFixed(2)} €</span>
                                 </div>
                             </div>
 
@@ -4809,7 +4820,7 @@
                                                 <p class="text-slate-200 font-bold text-[9px] truncate">${tx.offerName}</p>
                                                 <p class="text-[7.5px] text-slate-500 truncate mt-0.5">${window.getClientName(tx.userEmail || "Client")} (${new Date(tx.date).toLocaleDateString()})</p>
                                             </div>
-                                            <span class="text-[9px] font-bold text-emerald-400 shrink-0 font-mono">+${tx.price.toFixed(1)} €</span>
+                                            <span class="text-[9px] font-bold text-emerald-400 shrink-0 font-mono">+${tx.price.toFixed(2)} €</span>
                                             <button type="button" onclick="event.stopPropagation();window.adminStartFinancialTransactionEdit('${tx.id}')" class="p-1.5 rounded border border-purple-500/25 text-purple-300 hover:bg-purple-950/50 shrink-0" title="Corriger cette transaction"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                                         </div>
                                     `).join('')}
@@ -6444,7 +6455,9 @@
         // volontairement inactif jusqu'au clic distinct sur « Activer ».
         window.recordAdminConfirmedPayment = async (clientId, clientEmail, service, serviceState = {}, clientProfile = {}, detail = 'Paiement confirmé par l’administrateur') => {
             if (!clientId || !service) throw new Error('Transaction incomplète');
-            const timestamp = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            // Une transaction financière doit conserver la date réelle de réception,
+            // même si l'Admin utilise l'horloge virtuelle pour tester les services.
+            const timestamp = Date.now();
             const rawReference = serviceState.paymentRequestId || serviceState.renewalRequestedAt || serviceState.paymentRequestedAt || serviceState.expiredAt || serviceState.subEnd || timestamp;
             const safeReference = String(rawReference).replace(/[^a-zA-Z0-9_-]/g, '_');
             const transactionId = `admin-payment-${clientId}-${service.id}-${safeReference}`;
