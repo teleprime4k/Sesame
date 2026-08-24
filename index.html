@@ -558,6 +558,29 @@
         </div>
     </div>
 
+    <!-- MODAL RÈGLES DU PARRAINAGE -->
+    <div id="referral-rules-modal" onclick="if(event.target===this)window.closeReferralRules()" class="fixed inset-0 z-[120] hidden flex items-center justify-center p-3 sm:p-5 bg-slate-950/92 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="referral-rules-title">
+        <div class="w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl bg-[#0b1220] border border-fuchsia-500/45 shadow-[0_0_40px_rgba(217,70,239,.2)] p-4 sm:p-6">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-800 pb-4 mb-4">
+                <div class="flex items-start gap-3"><span class="p-2.5 rounded-xl bg-fuchsia-950 border border-fuchsia-500/30 text-xl">🎁</span><span><h3 id="referral-rules-title" class="text-sm sm:text-base font-black text-white uppercase font-mono">Comment bénéficier des points de parrainage ?</h3><p class="text-[10px] text-fuchsia-200 mt-1">Suivez ces étapes pour faire valider votre parrainage.</p></span></div>
+                <button type="button" onclick="window.closeReferralRules()" class="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800" aria-label="Fermer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <ol class="space-y-2.5 text-xs text-slate-300 leading-relaxed">
+                <li class="flex gap-3"><b class="w-6 h-6 rounded-full bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-300 flex items-center justify-center shrink-0">1</b><span>Invitez une personne à créer son compte sur <b class="text-white">sesameouvretoi.com</b>.</span></li>
+                <li class="flex gap-3"><b class="w-6 h-6 rounded-full bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-300 flex items-center justify-center shrink-0">2</b><span>La personne parrainée doit souscrire à l’une de nos offres payantes.</span></li>
+                <li class="flex gap-3"><b class="w-6 h-6 rounded-full bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-300 flex items-center justify-center shrink-0">3</b><span>Depuis votre espace client, ouvrez <b class="text-cyan-300">Menu → Support</b>.</span></li>
+                <li class="flex gap-3"><b class="w-6 h-6 rounded-full bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-300 flex items-center justify-center shrink-0">4</b><span>Communiquez au support le <b class="text-white">nom et le prénom de la personne parrainée</b>.</span></li>
+                <li class="flex gap-3"><b class="w-6 h-6 rounded-full bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-300 flex items-center justify-center shrink-0">5</b><span>L’administrateur vérifie son inscription, sa souscription et la réception de son paiement.</span></li>
+                <li class="flex gap-3"><b class="w-6 h-6 rounded-full bg-fuchsia-950 border border-fuchsia-500/40 text-fuchsia-300 flex items-center justify-center shrink-0">6</b><span>Après validation, <b class="text-amber-300">1 point de parrainage</b> est ajouté à votre compte.</span></li>
+            </ol>
+            <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="rounded-xl bg-slate-950 border border-slate-800 p-3"><strong class="text-fuchsia-300 text-xs uppercase font-mono">Conditions</strong><ul class="mt-2 space-y-1 text-[10px] text-slate-400 list-disc pl-4"><li>Le filleul doit être un nouveau client.</li><li>Son offre et son paiement doivent être validés.</li><li>Une personne ne peut être comptée qu’une seule fois.</li><li>Tout faux parrainage peut être refusé.</li></ul></div>
+                <div class="rounded-xl bg-gradient-to-br from-amber-950/45 to-fuchsia-950/35 border border-amber-500/35 p-3 flex flex-col justify-center"><strong class="text-amber-300 text-sm font-black">5 points = 1 an d’abonnement gratuit</strong><span class="text-[10px] text-slate-300 mt-2">À 5 points, une notification vous informe de votre récompense. L’administrateur ajoute ensuite l’année gratuite à l’abonnement concerné.</span></div>
+            </div>
+            <div class="mt-5 flex flex-col sm:flex-row gap-2 justify-end"><button type="button" onclick="window.openReferralSupportFromRules()" class="px-4 py-2.5 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] uppercase font-bold">Contacter le support</button><button type="button" onclick="window.closeReferralRules()" class="px-4 py-2.5 rounded-lg bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-[10px] uppercase font-bold">J’ai compris</button></div>
+        </div>
+    </div>
+
     <!-- MODAL DE CONFIRMATION CUSTOM CYBERPUNK -->
     <div id="confirm-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-sm">
         <div class="bg-[#0f172a] border border-red-500/40 rounded-xl w-full max-w-sm p-5 sm:p-6 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
@@ -774,6 +797,7 @@
 
             // Parrainages et récompenses
             selectedReferralClientId: "",
+            referralRulesPrototypeMode: false,
 
             // Compte client prototype privé de l'Administrateur (simulation locale sans paiement)
             prototypeClient: (() => {
@@ -3654,7 +3678,7 @@
                     return `<section id="client-referrals" class="mobile-anchor relative z-20 w-full bg-gradient-to-r from-fuchsia-950/45 via-slate-950/95 to-cyan-950/45 border border-fuchsia-500/35 p-4 rounded-2xl shadow-[0_0_22px_rgba(217,70,239,.12)] overflow-hidden">
                         <div class="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-fuchsia-500 to-amber-400"></div>
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div class="flex items-center gap-3 min-w-0"><span class="p-2.5 rounded-xl bg-fuchsia-950 border border-fuchsia-500/30 text-xl shrink-0">🎁</span><span><strong class="block text-white text-xs sm:text-sm uppercase font-black font-mono">Mes points de parrainage</strong><span class="block text-[10px] mt-1 ${remainingReferrals ? 'text-slate-300' : 'text-amber-300 font-bold'}">${remainingReferrals ? `Encore ${remainingReferrals} parrainage${remainingReferrals > 1 ? 's' : ''} pour gagner 1 an d’abonnement gratuit.` : 'Objectif atteint : votre année gratuite est disponible !'}</span></span></div>
+                            <div class="flex items-center gap-3 min-w-0"><span class="p-2.5 rounded-xl bg-fuchsia-950 border border-fuchsia-500/30 text-xl shrink-0">🎁</span><span><span class="flex items-center gap-2"><strong class="block text-white text-xs sm:text-sm uppercase font-black font-mono">Mes points de parrainage</strong><button type="button" onclick="window.openReferralRules(false)" class="w-6 h-6 rounded-full bg-fuchsia-950 hover:bg-fuchsia-900 border border-fuchsia-500/40 text-fuchsia-200 flex items-center justify-center shrink-0" title="Comment fonctionne le parrainage ?" aria-label="Afficher les règles du parrainage"><i data-lucide="info" class="w-3.5 h-3.5"></i></button></span><span class="block text-[10px] mt-1 ${remainingReferrals ? 'text-slate-300' : 'text-amber-300 font-bold'}">${remainingReferrals ? `Encore ${remainingReferrals} parrainage${remainingReferrals > 1 ? 's' : ''} pour gagner 1 an d’abonnement gratuit.` : 'Objectif atteint : votre année gratuite est disponible !'}</span></span></div>
                             <strong class="text-2xl text-fuchsia-300 font-black font-mono shrink-0">${referralPoints} / 5</strong>
                         </div>
                         <div class="mt-3 h-3 rounded-full bg-slate-950 border border-slate-800 overflow-hidden" role="progressbar" aria-label="Progression des points de parrainage" aria-valuemin="0" aria-valuemax="5" aria-valuenow="${referralPoints}"><div class="h-full bg-gradient-to-r from-fuchsia-600 via-purple-500 to-amber-400 transition-all duration-500" style="width:${referralPoints * 20}%"></div></div>
@@ -4330,7 +4354,7 @@
                             const referralPoints = Math.max(0, Math.min(5, Number(prototypeProfile.referralPoints || 0)));
                             const remainingReferrals = Math.max(0, 5 - referralPoints);
                             return `<div class="mb-4 p-4 rounded-xl bg-gradient-to-r from-fuchsia-950/45 to-cyan-950/35 border border-fuchsia-500/35 shadow-[0_0_20px_rgba(217,70,239,.12)]">
-                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span class="flex items-center gap-3"><span class="p-2 rounded-lg bg-fuchsia-950 border border-fuchsia-500/30 text-lg">🎁</span><span><strong class="block text-white text-[11px] uppercase font-black font-mono">Mes points de parrainage · Prototype</strong><small class="block text-[9px] mt-1 ${remainingReferrals ? 'text-slate-400' : 'text-amber-300 font-bold'}">${remainingReferrals ? `Encore ${remainingReferrals} parrainage${remainingReferrals > 1 ? 's' : ''} avant l’année gratuite.` : 'Objectif atteint : année gratuite disponible !'}</small></span></span><strong class="text-xl text-fuchsia-300 font-black font-mono">${referralPoints} / 5</strong></div>
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><span class="flex items-center gap-3"><span class="p-2 rounded-lg bg-fuchsia-950 border border-fuchsia-500/30 text-lg">🎁</span><span><span class="flex items-center gap-2"><strong class="block text-white text-[11px] uppercase font-black font-mono">Mes points de parrainage · Prototype</strong><button type="button" onclick="window.openReferralRules(true)" class="w-6 h-6 rounded-full bg-fuchsia-950 hover:bg-fuchsia-900 border border-fuchsia-500/40 text-fuchsia-200 flex items-center justify-center shrink-0" title="Comment fonctionne le parrainage ?" aria-label="Afficher les règles du parrainage en simulation"><i data-lucide="info" class="w-3.5 h-3.5"></i></button></span><small class="block text-[9px] mt-1 ${remainingReferrals ? 'text-slate-400' : 'text-amber-300 font-bold'}">${remainingReferrals ? `Encore ${remainingReferrals} parrainage${remainingReferrals > 1 ? 's' : ''} avant l’année gratuite.` : 'Objectif atteint : année gratuite disponible !'}</small></span></span><strong class="text-xl text-fuchsia-300 font-black font-mono">${referralPoints} / 5</strong></div>
                                 <div class="mt-3 h-2.5 rounded-full bg-slate-950 border border-slate-800 overflow-hidden"><div class="h-full bg-gradient-to-r from-fuchsia-600 to-amber-400 transition-all" style="width:${referralPoints * 20}%"></div></div>
                                 <div class="mt-2 flex justify-between text-[8px] text-slate-500 font-mono uppercase"><span>Simulation locale</span><span>5 points = 1 an gratuit</span></div>
                             </div>`;
@@ -5243,6 +5267,31 @@
             if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
         };
 
+        window.openReferralRules = (prototypeMode = false) => {
+            if (!window.appState.user) return;
+            window.appState.referralRulesPrototypeMode = prototypeMode === true;
+            const modal = document.getElementById('referral-rules-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons({ root: modal });
+        };
+
+        window.closeReferralRules = () => {
+            document.getElementById('referral-rules-modal')?.classList.add('hidden');
+            document.body.style.overflow = '';
+        };
+
+        window.openReferralSupportFromRules = () => {
+            const prototypeMode = window.appState.referralRulesPrototypeMode === true;
+            window.closeReferralRules();
+            if (prototypeMode && window.appState.isAdmin) {
+                document.getElementById('prototype-support-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+            window.mobileGoTo('client-support');
+        };
+
         window.toggleGlobalAnnouncementDetails = () => {
             if (window.appState.isAdmin) return;
             window.appState.expandedGlobalAnnouncement = !window.appState.expandedGlobalAnnouncement;
@@ -5294,7 +5343,8 @@
 
         document.addEventListener('keydown', event => {
             if (event.key !== 'Escape') return;
-            if (document.getElementById('news-image-lightbox')) window.closeNewsImage();
+            if (!document.getElementById('referral-rules-modal')?.classList.contains('hidden')) window.closeReferralRules();
+            else if (document.getElementById('news-image-lightbox')) window.closeNewsImage();
             else if (window.appState.adminSupportExpanded) window.toggleAdminSupportExpanded(false);
         });
 
