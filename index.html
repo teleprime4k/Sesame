@@ -3699,7 +3699,13 @@
                                     let borderStyle = "border-slate-800/80 hover:border-slate-700 bg-slate-950/40";
                                     let stateBadge = `<span class="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold font-mono">Inactif</span>`;
                                     
-                                    if (isActive) {
+                                    if (sState.reactivationRequestStatus === 'rejected') {
+                                        borderStyle = "border-red-500/55 bg-red-950/20 shadow-[0_0_18px_rgba(239,68,68,.12)]";
+                                        stateBadge = `<span class="px-2 py-0.5 rounded bg-red-950/50 border border-red-500/45 text-red-300 text-[9px] uppercase font-bold font-mono">Réactivation refusée</span>`;
+                                    } else if (sState.paymentStage === 'payment_rejected') {
+                                        borderStyle = "border-red-500/55 bg-red-950/20 shadow-[0_0_18px_rgba(239,68,68,.12)]";
+                                        stateBadge = `<span class="px-2 py-0.5 rounded bg-red-950/50 border border-red-500/45 text-red-300 text-[9px] uppercase font-bold font-mono">Paiement non reçu</span>`;
+                                    } else if (isActive) {
                                         borderStyle = "border-emerald-500/30 hover:border-emerald-500/50 bg-[#061e1b]/20 shadow-[0_0_15px_rgba(16,185,129,0.03)]";
                                         stateBadge = `<span class="px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-500/40 text-emerald-400 text-[9px] sm:text-[10px] uppercase font-bold font-mono">Actif (${daysLeft}j)</span>`;
                                     } else if (service.type === 'devis' && latestServiceQuote?.status === 'pending') {
@@ -3724,10 +3730,10 @@
                                         ? `<div class="rounded-xl border border-amber-500/45 bg-amber-950/25 p-3 text-[10px] leading-relaxed text-amber-100 font-sans"><strong class="block mb-1 text-amber-300 font-mono">⏳ Paiement ${isReactivationFlow ? 'de réactivation ' : ''}en attente de confirmation</strong>Vous recevrez une notification dès que votre paiement aura été validé. ${isReactivationFlow ? 'Votre abonnement sera ensuite réactivé par l’administrateur.' : (service.id === TV_PASS_SERVICE_ID ? 'Vos identifiants de connexion vous seront ensuite transmis directement dans votre espace client.' : 'Votre service sera ensuite activé par l’administrateur.')}</div>`
                                         : (!isActive && sState.paymentStage === 'payment_confirmed'
                                             ? `<div class="rounded-xl border border-emerald-500/45 bg-emerald-950/25 p-3 text-[10px] leading-relaxed text-emerald-100 font-sans animate-pulse"><strong class="block mb-1 text-emerald-300 font-mono">✅ Votre paiement a bien été reçu</strong>Nous procédons maintenant à ${isReactivationFlow ? 'la réactivation de votre abonnement' : 'l’activation du service concerné'}. Vous recevrez une notification dès que ${isReactivationFlow ? 'la réactivation' : 'l’activation'} sera terminée.</div>`
-                                            : (!isActive && sState.paymentStage === 'payment_rejected'
+                                            : (sState.paymentStage === 'payment_rejected'
                                                 ? `<div class="rounded-xl border border-red-500/50 bg-red-950/30 p-3 text-[10px] leading-relaxed text-red-100 font-sans"><strong class="block mb-1 text-red-300 font-mono">❌ Paiement non reçu</strong>Nous n’avons pas reçu la confirmation de votre paiement. Confirmez avoir lu cette information pour pouvoir réessayer.<button type="button" onclick="window.clientAcknowledgePaymentRejected('${service.id}')" class="mt-3 w-full rounded-lg border border-red-400/40 bg-red-700/70 px-3 py-2 text-[9px] font-black uppercase text-white hover:bg-red-600">J’ai lu · Réessayer</button></div>`
                                                 : ''));
-                                    const reactivationRefusalMessage = !isActive && sState.reactivationRequestStatus === 'rejected'
+                                    const reactivationRefusalMessage = sState.reactivationRequestStatus === 'rejected'
                                         ? `<div class="rounded-xl border border-red-500/55 bg-red-950/35 p-3 text-[10px] leading-relaxed text-red-100 font-sans"><strong class="block mb-1 text-red-300 font-mono">❌ Demande de réactivation refusée</strong>Contactez le support depuis le Menu pour connaître le motif du refus. Vous devez confirmer avoir lu cette décision avant d’envoyer une nouvelle demande.<button type="button" onclick="window.clientAcknowledgeReactivationRefusal('${service.id}')" class="mt-3 w-full rounded-lg border border-red-400/40 bg-red-700/70 px-3 py-2 text-[9px] font-black uppercase text-white hover:bg-red-600">J’ai lu le refus</button></div>`
                                         : '';
 
@@ -3751,13 +3757,13 @@
                                     }
 
                                     let actionButton = '';
-                                    if (!isActive && sState.reactivationRequestStatus === 'rejected') {
+                                    if (sState.reactivationRequestStatus === 'rejected') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-red-950/35 text-red-300 border border-red-500/35 rounded-lg text-[9px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">Réactivation refusée · Lecture requise</button>`;
                                     } else if (!isActive && sState.paymentStage === 'pending_confirmation') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-amber-950/35 text-amber-300 border border-amber-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">⏳ Paiement en vérification</button>`;
                                     } else if (!isActive && sState.paymentStage === 'payment_confirmed') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-emerald-950/35 text-emerald-300 border border-emerald-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">✓ Activation en cours</button>`;
-                                    } else if (!isActive && sState.paymentStage === 'payment_rejected') {
+                                    } else if (sState.paymentStage === 'payment_rejected') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-red-950/35 text-red-300 border border-red-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">Paiement non reçu · Lecture requise</button>`;
                                     } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'pending') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-amber-950/35 text-amber-300 border border-amber-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">⏳ Demande en cours d'examen</button>`;
