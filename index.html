@@ -1987,6 +1987,7 @@
                     paymentStage: 'pending_confirmation',
                     paymentRequestedAt: Date.now(),
                     paymentRequestId: pendingDoc.id,
+                    paymentPreviousStatus: currentServiceState.status || 'inactive',
                     ...(sId === TV_PASS_SERVICE_ID ? { subscriptionOffer } : {})
                 };
                 window.appState.profile = { ...(window.appState.profile || {}), services };
@@ -2185,22 +2186,23 @@
                     return;
                 }
                 state[field] = window.getVirtualTimestamp();
+                if (!isCancellation) state.reactivationRequestStatus = 'pending';
                 state.simulation = true;
                 prototype.services[sId] = state;
-                if (isCancellation) {
-                    prototype.supportMessages = prototype.supportMessages || [];
-                    prototype.supportMessages.push({
-                        id: `prototype-cancellation-${Date.now()}-${sId}`,
+                prototype.supportMessages = prototype.supportMessages || [];
+                prototype.supportMessages.push({
+                        id: `prototype-${isCancellation ? 'cancellation' : 'reactivation'}-${Date.now()}-${sId}`,
                         sender: 'client',
-                        text: `[Demande de désactivation] Client Prototype souhaite désactiver le service ${service.name}. Merci de traiter cette demande.`,
+                        text: isCancellation
+                            ? `[Demande de désactivation] Client Prototype souhaite désactiver le service ${service.name}. Merci de traiter cette demande.`
+                            : `[Demande de réactivation] Client Prototype souhaite réactiver le service ${service.name}. Merci d’accepter ou de refuser cette demande.`,
                         timestamp: window.getVirtualTimestamp(),
-                        notificationType: 'cancellation_request',
+                        notificationType: isCancellation ? 'cancellation_request' : 'renewal_request',
                         serviceId: sId,
                         readByAdmin: false,
                         simulation: true
-                    });
-                    prototype.supportMessages = prototype.supportMessages.slice(-100);
-                }
+                });
+                prototype.supportMessages = prototype.supportMessages.slice(-100);
                 window.addAdminPrototypeEvent(requestType, sId, isCancellation
                     ? `Demande de désactivation envoyée pour ${service.name}`
                     : `Demande de renouvellement envoyée pour ${service.name}`);
@@ -2217,7 +2219,7 @@
                 window.showToast(isCancellation ? "Votre demande de désactivation est déjà envoyée." : "Votre demande de renouvellement est déjà envoyée.");
                 return;
             }
-            services[sId] = { ...state, [field]: timestamp };
+            services[sId] = { ...state, [field]: timestamp, ...(!isCancellation ? { reactivationRequestStatus: 'pending' } : {}) };
             try {
                 await updateDoc(profileRef, { services });
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
@@ -3722,7 +3724,12 @@
                                         ? `<div class="rounded-xl border border-amber-500/45 bg-amber-950/25 p-3 text-[10px] leading-relaxed text-amber-100 font-sans"><strong class="block mb-1 text-amber-300 font-mono">⏳ Paiement ${isReactivationFlow ? 'de réactivation ' : ''}en attente de confirmation</strong>Vous recevrez une notification dès que votre paiement aura été validé. ${isReactivationFlow ? 'Votre abonnement sera ensuite réactivé par l’administrateur.' : (service.id === TV_PASS_SERVICE_ID ? 'Vos identifiants de connexion vous seront ensuite transmis directement dans votre espace client.' : 'Votre service sera ensuite activé par l’administrateur.')}</div>`
                                         : (!isActive && sState.paymentStage === 'payment_confirmed'
                                             ? `<div class="rounded-xl border border-emerald-500/45 bg-emerald-950/25 p-3 text-[10px] leading-relaxed text-emerald-100 font-sans animate-pulse"><strong class="block mb-1 text-emerald-300 font-mono">✅ Votre paiement a bien été reçu</strong>Nous procédons maintenant à ${isReactivationFlow ? 'la réactivation de votre abonnement' : 'l’activation du service concerné'}. Vous recevrez une notification dès que ${isReactivationFlow ? 'la réactivation' : 'l’activation'} sera terminée.</div>`
-                                            : '');
+                                            : (!isActive && sState.paymentStage === 'payment_rejected'
+                                                ? `<div class="rounded-xl border border-red-500/50 bg-red-950/30 p-3 text-[10px] leading-relaxed text-red-100 font-sans"><strong class="block mb-1 text-red-300 font-mono">❌ Paiement non reçu</strong>Nous n’avons pas reçu la confirmation de votre paiement. Confirmez avoir lu cette information pour pouvoir réessayer.<button type="button" onclick="window.clientAcknowledgePaymentRejected('${service.id}')" class="mt-3 w-full rounded-lg border border-red-400/40 bg-red-700/70 px-3 py-2 text-[9px] font-black uppercase text-white hover:bg-red-600">J’ai lu · Réessayer</button></div>`
+                                                : ''));
+                                    const reactivationRefusalMessage = !isActive && sState.reactivationRequestStatus === 'rejected'
+                                        ? `<div class="rounded-xl border border-red-500/55 bg-red-950/35 p-3 text-[10px] leading-relaxed text-red-100 font-sans"><strong class="block mb-1 text-red-300 font-mono">❌ Demande de réactivation refusée</strong>Contactez le support depuis le Menu pour connaître le motif du refus. Vous devez confirmer avoir lu cette décision avant d’envoyer une nouvelle demande.<button type="button" onclick="window.clientAcknowledgeReactivationRefusal('${service.id}')" class="mt-3 w-full rounded-lg border border-red-400/40 bg-red-700/70 px-3 py-2 text-[9px] font-black uppercase text-white hover:bg-red-600">J’ai lu le refus</button></div>`
+                                        : '';
 
                                     // Vérifier si un prix personnalisé a été attribué par l'Administrateur
                                     const customPrice = (profile && profile.customPrices && profile.customPrices[service.id] !== undefined)
@@ -3744,10 +3751,14 @@
                                     }
 
                                     let actionButton = '';
-                                    if (!isActive && sState.paymentStage === 'pending_confirmation') {
+                                    if (!isActive && sState.reactivationRequestStatus === 'rejected') {
+                                        actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-red-950/35 text-red-300 border border-red-500/35 rounded-lg text-[9px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">Réactivation refusée · Lecture requise</button>`;
+                                    } else if (!isActive && sState.paymentStage === 'pending_confirmation') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-amber-950/35 text-amber-300 border border-amber-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">⏳ Paiement en vérification</button>`;
                                     } else if (!isActive && sState.paymentStage === 'payment_confirmed') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-emerald-950/35 text-emerald-300 border border-emerald-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">✓ Activation en cours</button>`;
+                                    } else if (!isActive && sState.paymentStage === 'payment_rejected') {
+                                        actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-red-950/35 text-red-300 border border-red-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">Paiement non reçu · Lecture requise</button>`;
                                     } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'pending') {
                                         actionButton = `<button type="button" disabled aria-disabled="true" class="w-full py-2 px-2 bg-amber-950/35 text-amber-300 border border-amber-500/35 rounded-lg text-[9px] sm:text-[10px] uppercase font-bold font-mono min-h-[36px] cursor-not-allowed">⏳ Demande en cours d'examen</button>`;
                                     } else if (!isActive && service.type === 'devis' && latestServiceQuote?.status === 'proposed') {
@@ -3783,6 +3794,7 @@
                                         <p class="text-xs text-slate-400 flex-1 font-light leading-relaxed font-sans">${service.description}</p>
 
                                         ${paymentProgressMessage}
+                                        ${reactivationRefusalMessage}
 
                                         ${service.id === TV_PASS_SERVICE_ID ? (isActive ? `
                                             <div class="rounded-lg border border-amber-500/30 bg-amber-950/20 px-3 py-2 font-mono">
@@ -4409,7 +4421,7 @@
                                                     <span class="text-white block font-bold truncate text-[10px] sm:text-xs">${s.name}</span>
                                                     ${s.id === TV_PASS_SERVICE_ID && isValidTvPassOffer(sState.subscriptionOffer) ? `<span class="block text-[9px] font-bold text-amber-300 truncate">Offre : ${window.escapeHTML(sState.subscriptionOffer)}</span>` : ''}
                                                     <span class="text-[9px] font-mono ${isActive ? 'text-emerald-400 font-bold' : 'text-slate-500'}">
-                                                        ${isActive ? 'Actif' : (sState.status === 'expired' ? 'Expiré' : 'Inactif')}${sState.renewalRequestedAt ? ' · Renouvellement demandé' : ''}${sState.cancellationRequestedAt ? ' · Désactivation demandée' : ''}
+                                                        ${isActive ? 'Actif' : (sState.status === 'expired' ? 'Expiré' : 'Inactif')}${sState.paymentStage === 'pending_confirmation' ? ' · Paiement à vérifier' : ''}${sState.paymentStage === 'payment_confirmed' ? ' · Paiement reçu, activation requise' : ''}${sState.paymentStage === 'payment_rejected' ? ' · Paiement non reçu, lecture client requise' : ''}${sState.reactivationRequestStatus === 'rejected' ? ' · Réactivation refusée, lecture client requise' : ''}${sState.renewalRequestedAt && sState.reactivationRequestStatus !== 'rejected' ? ' · Renouvellement demandé' : ''}${sState.cancellationRequestedAt ? ' · Désactivation demandée' : ''}
                                                     </span>
                                                 </div>
                                                 <div class="flex items-center gap-1 shrink-0">
@@ -4419,9 +4431,14 @@
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-cyan-950 text-cyan-400 border border-cyan-500/30">Jours</button>` : ''}
                                                 ${sState.paymentStage === 'pending_confirmation' ? `<button onclick="window.adminMarkPaymentReceived('${sClient.id}', '${s.id}')"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/30">Paiement reçu</button>` : ''}
+                                                ${sState.paymentStage === 'pending_confirmation' ? `<button onclick="window.adminMarkPaymentNotReceived('${sClient.id}', '${s.id}')"
+                                                    class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-red-700 hover:bg-red-600 text-white border border-red-400/30">Non reçu</button>` : ''}
+                                                ${sState.renewalRequestedAt && sState.reactivationRequestStatus === 'pending' ? `<button onclick="window.adminConfirmServiceRenewal('${sClient.id}', '${s.id}')"
+                                                    class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-emerald-700 hover:bg-emerald-600 text-white border border-emerald-400/30">Accepter</button><button onclick="window.adminRejectServiceReactivation('${sClient.id}', '${s.id}')"
+                                                    class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-red-700 hover:bg-red-600 text-white border border-red-400/30">Refuser</button>` : ''}
                                                 ${sState.status === 'expired' && ADMIN_EXPIRY_REACTIVATION_IDS.has(s.id) && !sState.paymentStage ? `<button onclick="window.adminReactivateExpiredService('${sClient.id}', '${s.id}')"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded bg-amber-600 hover:bg-amber-500 text-white border border-amber-400/30">Paiement reçu</button>` : ''}
-                                                ${sState.paymentStage !== 'pending_confirmation' ? `<button onclick="window.adminToggleClientService('${sClient.id}', '${s.id}', ${isActive})"
+                                                ${!['pending_confirmation', 'payment_rejected'].includes(sState.paymentStage) && !(sState.renewalRequestedAt && sState.reactivationRequestStatus === 'pending') && sState.reactivationRequestStatus !== 'rejected' ? `<button onclick="window.adminToggleClientService('${sClient.id}', '${s.id}', ${isActive})"
                                                     class="px-2 py-1 text-[9px] uppercase font-bold rounded transition-all shrink-0 ${
                                                         isActive 
                                                             ? 'bg-red-950/40 hover:bg-red-900/40 text-red-400 border border-red-500/20' 
@@ -5526,6 +5543,7 @@
                     renewalRequestedAt: null,
                     paymentStage: 'pending_confirmation',
                     paymentRequestedAt: now,
+                    paymentPreviousStatus: current.status || 'inactive',
                     ...(serviceId === TV_PASS_SERVICE_ID ? { subscriptionOffer } : {}),
                     prototypePaymentStatus: 'pending',
                     prototypePaymentAmount: service.price,
@@ -5987,6 +6005,78 @@
 
         // Première validation Admin : le paiement est reçu, mais le service reste
         // volontairement inactif jusqu'au clic distinct sur « Activer ».
+        window.adminMarkPaymentNotReceived = async (clientId, serviceId) => {
+            if (!window.appState.isAdmin) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (!service) return;
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                const prototype = window.getAdminPrototypeClient();
+                const current = prototype.services?.[serviceId] || {};
+                if (current.paymentStage !== 'pending_confirmation') return window.showToast("Aucun paiement prototype en attente.", "error");
+                prototype.services[serviceId] = { ...current, paymentStage: 'payment_rejected', paymentRejectedAt: now, simulation: true };
+                prototype.supportMessages = prototype.supportMessages || [];
+                prototype.supportMessages.push({ id: `prototype-payment-rejected-${Date.now()}`, sender: 'admin', text: `❌ Nous n’avons pas reçu la confirmation de votre paiement pour ${service.name}. Après avoir lu cette information sur la carte, vous pourrez réessayer.`, timestamp: now, readByClient: false, notificationType: 'payment_not_received', serviceId, simulation: true });
+                window.addAdminPrototypeEvent('payment_not_received', serviceId, `Paiement non reçu pour ${service.name}`);
+                window.saveAdminPrototype();
+                window.showToast(`Prototype : paiement non reçu pour ${service.name}.`);
+                renderApp();
+                return;
+            }
+            const client = window.appState.allProfiles.find(item => item.id === clientId);
+            if (!client) return;
+            try {
+                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                const snap = await getDoc(clientRef);
+                if (!snap.exists()) throw new Error('Profil introuvable');
+                const services = { ...(snap.data().services || {}) };
+                const current = services[serviceId] || {};
+                if (current.paymentStage !== 'pending_confirmation') return window.showToast("Aucun paiement en attente pour ce service.", "error");
+                services[serviceId] = { ...current, paymentStage: 'payment_rejected', paymentRejectedAt: now };
+                await updateDoc(clientRef, { services });
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                    userId: clientId, userEmail: client.email,
+                    text: `❌ Nous n’avons pas reçu la confirmation de votre paiement pour ${service.name}. Après avoir lu et confirmé cette information sur la carte du service, vous pourrez effectuer une nouvelle tentative.`,
+                    sender: 'admin', senderName: 'Administrateur Sésame', readByAdmin: true, readByClient: false,
+                    timestamp: now, notificationType: 'payment_not_received', serviceId
+                });
+                window.showToast(`Paiement marqué non reçu pour ${service.name}.`);
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible de signaler le paiement non reçu.", "error");
+            }
+        };
+
+        window.clientAcknowledgePaymentRejected = async (serviceId) => {
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (!service) return;
+            if (window.appState.isAdmin) {
+                const prototype = window.getAdminPrototypeClient();
+                const current = prototype.services?.[serviceId] || {};
+                if (current.paymentStage !== 'payment_rejected') return;
+                prototype.services[serviceId] = { ...current, status: current.paymentPreviousStatus || 'inactive', paymentStage: null, paymentRequestId: null, paymentRejectedAcknowledgedAt: Date.now(), simulation: true };
+                window.addAdminPrototypeEvent('payment_rejected_read', serviceId, `Refus de paiement lu pour ${service.name} — nouvelle tentative autorisée`);
+                window.saveAdminPrototype();
+                window.showToast("Prototype : nouvelle tentative de paiement autorisée.");
+                renderApp();
+                return;
+            }
+            if (!window.appState.user) return;
+            try {
+                const services = { ...(window.appState.profile?.services || {}) };
+                const current = services[serviceId] || {};
+                if (current.paymentStage !== 'payment_rejected') return;
+                services[serviceId] = { ...current, status: current.paymentPreviousStatus || 'inactive', paymentStage: null, paymentRequestId: null, paymentRejectedAcknowledgedAt: Date.now() };
+                window.appState.profile = { ...(window.appState.profile || {}), services };
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid), { services });
+                window.showToast("Information lue. Vous pouvez maintenant réessayer le paiement.");
+                renderApp();
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible de confirmer la lecture.", "error");
+            }
+        };
+
         window.adminMarkPaymentReceived = async (clientId, serviceId) => {
             if (!window.appState.isAdmin) return;
             const service = SERVICES_DATA.find(item => item.id === serviceId);
@@ -6042,7 +6132,7 @@
                 const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
                 prototype.services[serviceId] = isActive
                     ? { ...(prototype.services[serviceId] || {}), status: 'inactive', subEnd: null, cancellationRequestedAt: null, paymentStage: null, simulation: true }
-                    : { ...(prototype.services[serviceId] || {}), status: 'active', subEnd: now + ((serviceDef.durationDays || 30) * 86400000), activatedAt: now, renewalRequestedAt: null, cancellationRequestedAt: null, paymentStage: null, activationCompletedAt: now, simulation: true, forcedWithoutCharge: true };
+                    : { ...(prototype.services[serviceId] || {}), status: 'active', subEnd: now + ((serviceDef.durationDays || 30) * 86400000), activatedAt: now, renewalRequestedAt: null, reactivationRequestStatus: null, cancellationRequestedAt: null, paymentStage: null, activationCompletedAt: now, simulation: true, forcedWithoutCharge: true };
                 prototype.supportMessages = prototype.supportMessages || [];
                 prototype.supportMessages.push({ id: `prototype-service-action-${Date.now()}`, sender: 'admin', text: isActive ? `Le service ${serviceDef.name} a été désactivé par l’administrateur.` : `✅ Le service ${serviceDef.name} est maintenant actif pour ${serviceDef.durationDays || 30} jours.`, timestamp: now, readByClient: false, notificationType: isActive ? 'service_deactivated' : 'service_activated', serviceId, simulation: true });
                 window.addAdminPrototypeEvent('forced_service', serviceId, `${serviceDef.name} ${isActive ? 'désactivé' : 'activé sans frais'}`);
@@ -6079,6 +6169,7 @@
                             subEnd: virtualTimestamp + (durationDays * 24 * 60 * 60 * 1000),
                             activatedAt: virtualTimestamp,
                             renewalRequestedAt: null,
+                            reactivationRequestStatus: null,
                             cancellationRequestedAt: null,
                             expiryNotifiedAt: null,
                             paymentStage: null,
@@ -6107,8 +6198,95 @@
             }
         };
 
+        window.adminRejectServiceReactivation = async (clientId, serviceId) => {
+            if (!window.appState.isAdmin) return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (!service) return;
+            const reason = window.prompt("Indiquez le motif du refus. Il sera envoyé uniquement dans la conversation du client :", "Merci de contacter le support pour vérifier votre abonnement.");
+            if (reason === null) return;
+            const cleanReason = String(reason).trim() || "Merci de contacter le support pour connaître le motif du refus.";
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                const prototype = window.getAdminPrototypeClient();
+                const current = prototype.services?.[serviceId] || {};
+                prototype.services[serviceId] = { ...current, reactivationRequestStatus: 'rejected', reactivationRejectedAt: now, reactivationRejectionReason: cleanReason, simulation: true };
+                prototype.supportMessages = prototype.supportMessages || [];
+                prototype.supportMessages.push({ id: `prototype-reactivation-rejected-${Date.now()}`, sender: 'admin', text: `❌ Votre demande de réactivation pour ${service.name} a été refusée. Motif : ${cleanReason}`, timestamp: now, readByClient: false, notificationType: 'reactivation_rejected', serviceId, simulation: true });
+                window.addAdminPrototypeEvent('reactivation_rejected', serviceId, `Réactivation refusée pour ${service.name}`);
+                window.saveAdminPrototype();
+                window.showToast(`Prototype : demande de réactivation refusée.`);
+                renderApp();
+                return;
+            }
+            const client = window.appState.allProfiles.find(item => item.id === clientId);
+            if (!client) return;
+            try {
+                const clientRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId);
+                const snap = await getDoc(clientRef);
+                if (!snap.exists()) throw new Error('Profil introuvable');
+                const services = { ...(snap.data().services || {}) };
+                services[serviceId] = { ...(services[serviceId] || {}), reactivationRequestStatus: 'rejected', reactivationRejectedAt: now, reactivationRejectionReason: cleanReason };
+                await updateDoc(clientRef, { services });
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                    userId: clientId, userEmail: client.email,
+                    text: `❌ Votre demande de réactivation pour ${service.name} a été refusée. Motif : ${cleanReason}`,
+                    sender: 'admin', senderName: 'Administrateur Sésame', readByAdmin: true, readByClient: false,
+                    timestamp: now, notificationType: 'reactivation_rejected', serviceId
+                });
+                window.showToast(`Demande de réactivation refusée pour ${service.name}.`);
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible de refuser la demande de réactivation.", "error");
+            }
+        };
+
+        window.clientAcknowledgeReactivationRefusal = async (serviceId) => {
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (!service) return;
+            const now = Date.now();
+            if (window.appState.isAdmin) {
+                const prototype = window.getAdminPrototypeClient();
+                const current = prototype.services?.[serviceId] || {};
+                if (current.reactivationRequestStatus !== 'rejected') return;
+                prototype.services[serviceId] = { ...current, renewalRequestedAt: null, reactivationRequestStatus: null, reactivationRejectionAcknowledgedAt: now, simulation: true };
+                window.addAdminPrototypeEvent('reactivation_rejection_read', serviceId, `Refus lu pour ${service.name} — nouvelle demande autorisée`);
+                window.saveAdminPrototype();
+                window.showToast("Prototype : refus lu, nouvelle demande autorisée.");
+                renderApp();
+                return;
+            }
+            if (!window.appState.user) return;
+            try {
+                const services = { ...(window.appState.profile?.services || {}) };
+                const current = services[serviceId] || {};
+                if (current.reactivationRequestStatus !== 'rejected') return;
+                services[serviceId] = { ...current, renewalRequestedAt: null, reactivationRequestStatus: null, reactivationRejectionAcknowledgedAt: now };
+                window.appState.profile = { ...(window.appState.profile || {}), services };
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', window.appState.user.uid), { services });
+                window.showToast("Refus confirmé comme lu. Vous pouvez envoyer une nouvelle demande.");
+                renderApp();
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible de confirmer la lecture du refus.", "error");
+            }
+        };
+
         window.adminConfirmServiceRenewal = (clientId, serviceId) => {
             const service = SERVICES_DATA.find(item => item.id === serviceId);
+            if (clientId === PROTOTYPE_CLIENT_ID) {
+                if (!service) return;
+                const prototype = window.getAdminPrototypeClient();
+                const current = prototype.services?.[serviceId] || {};
+                const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                prototype.services[serviceId] = { ...current, status: 'expired', paymentStage: 'payment_confirmed', paymentConfirmedAt: now, reactivationRequestStatus: 'accepted', simulation: true };
+                prototype.supportMessages = prototype.supportMessages || [];
+                prototype.supportMessages.push({ id: `prototype-reactivation-accepted-${Date.now()}`, sender: 'admin', text: `✅ Votre demande de réactivation pour ${service.name} a été acceptée. Le paiement est confirmé et la réactivation est en cours.`, timestamp: now, readByClient: false, notificationType: 'renewal_payment_confirmed', serviceId, simulation: true });
+                window.addAdminPrototypeEvent('reactivation_accepted', serviceId, `Réactivation acceptée pour ${service.name}`);
+                window.saveAdminPrototype();
+                window.showToast("Prototype : demande acceptée, activation requise.");
+                renderApp();
+                return;
+            }
             const client = window.appState.allProfiles.find(item => item.id === clientId);
             if (!service || !client) return;
             window.showCyberConfirm(`Confirmez-vous avoir réellement reçu le paiement de renouvellement de ${window.getClientName(client.email)} pour ${service.name} ?`, async () => {
@@ -6123,6 +6301,7 @@
                         status: 'expired',
                         paymentStage: 'payment_confirmed',
                         paymentConfirmedAt: now,
+                        reactivationRequestStatus: 'accepted',
                         renewalConfirmedByAdmin: true,
                         expiryNotifiedAt: null
                     };
