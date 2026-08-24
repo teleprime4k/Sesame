@@ -1140,8 +1140,55 @@
         // ==========================================
         // 5. INITIALISATION & LISTENERS
         // ==========================================
+        const CLIENT_INACTIVITY_LIMIT_MS = 5 * 60 * 1000;
+        let clientInactivityTimer = null;
+        let clientInactivityMonitoring = false;
+
+        const stopClientInactivityTimer = () => {
+            clientInactivityMonitoring = false;
+            if (clientInactivityTimer) clearTimeout(clientInactivityTimer);
+            clientInactivityTimer = null;
+        };
+
+        const resetClientInactivityTimer = () => {
+            if (!clientInactivityMonitoring || !auth.currentUser || window.appState.isAdmin) return;
+            if (clientInactivityTimer) clearTimeout(clientInactivityTimer);
+            clientInactivityTimer = setTimeout(async () => {
+                if (!auth.currentUser || window.appState.isAdmin) return;
+                stopClientInactivityTimer();
+                window.appState.authSuccessMessage = 'Votre session a été fermée automatiquement après 5 minutes d’inactivité. Veuillez vous reconnecter.';
+                window.appState.email = '';
+                window.appState.password = '';
+                try {
+                    await publishPresence(false);
+                    await signOut(auth);
+                } catch (error) {
+                    console.error('Déconnexion automatique impossible :', error);
+                    window.appState.authError = 'La déconnexion automatique a rencontré une erreur. Veuillez vous déconnecter manuellement.';
+                    renderApp();
+                }
+            }, CLIENT_INACTIVITY_LIMIT_MS);
+        };
+
+        const startClientInactivityTimer = () => {
+            if (!auth.currentUser || window.appState.isAdmin) {
+                stopClientInactivityTimer();
+                return;
+            }
+            clientInactivityMonitoring = true;
+            resetClientInactivityTimer();
+        };
+
+        ['pointerdown', 'keydown', 'input', 'scroll', 'touchstart'].forEach(eventName => {
+            document.addEventListener(eventName, resetClientInactivityTimer, { passive: true, capture: true });
+        });
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) resetClientInactivityTimer();
+        });
+
         renderApp();
         onAuthStateChanged(auth, async (currentUser) => {
+            stopClientInactivityTimer();
             // Sécurité anti-login automatique après inscription
             window.appState.user = currentUser;
             window.appState.firestoreBlocked = false; 
@@ -1159,6 +1206,7 @@
                     return;
                 }
                 window.appState.isAdmin = secureAdminRole;
+                if (!window.appState.isAdmin) startClientInactivityTimer();
 
                 if (window.appState.authRole === 'admin' && !window.appState.isAdmin) {
                     window.appState.authError = "Accès administrateur refusé par la vérification sécurisée Cloudflare.";
@@ -2898,6 +2946,7 @@
 
         // --- DECONNEXION SYSTEME ---
         window.handleLogout = async () => {
+            stopClientInactivityTimer();
             window.appState.email = '';
             window.appState.password = '';
             window.appState.authSuccessMessage = '';
