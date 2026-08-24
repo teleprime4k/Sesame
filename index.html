@@ -803,10 +803,15 @@
             adminFinanceYearFilter: "all",
             adminFinanceMonthFilter: "all",
             editingFinancialTransactionId: '',
+            financialTransactionDraft: null,
             editingNewsId: '',
             editingNewsImage: '',
             newsDraftTitle: '',
             newsDraftContent: '',
+            adminSupportDrafts: {},
+            announcementDraftTitle: null,
+            announcementDraftIntro: null,
+            announcementDraftText: null,
             expandedNewsIds: new Set(),
             expandedGlobalAnnouncement: false
         };
@@ -1089,10 +1094,37 @@
             }
         }
 
+        function captureDirtyFormFields() {
+            if (!window.appState.user) return [];
+            const root = document.getElementById('root');
+            if (!root) return [];
+            return [...root.querySelectorAll('input[id], textarea[id], select[id]')].flatMap(field => {
+                if (field.type === 'file' || field.type === 'button' || field.type === 'submit' || field.type === 'hidden') return [];
+                const isCheckable = field.type === 'checkbox' || field.type === 'radio';
+                const isDirty = isCheckable
+                    ? field.checked !== field.defaultChecked
+                    : field.tagName === 'SELECT'
+                        ? [...field.options].some(option => option.selected !== option.defaultSelected)
+                        : field.value !== field.defaultValue;
+                if (!isDirty) return [];
+                return [{ id: field.id, value: field.value, checked: isCheckable ? field.checked : null }];
+            });
+        }
+
+        function restoreDirtyFormFields(savedFields) {
+            savedFields.forEach(saved => {
+                const field = document.getElementById(saved.id);
+                if (!field) return;
+                if (saved.checked !== null) field.checked = saved.checked;
+                else field.value = saved.value;
+            });
+        }
+
         function renderApp() {
             const root = document.getElementById('root');
             if(!root) return;
             const activeAdminField = captureActiveAdminField();
+            const dirtyFormFields = captureDirtyFormFields();
             
             if (window.appState.loadingAuth) {
                 root.innerHTML = `<div class="min-h-screen flex items-center justify-center text-cyan-500"><i data-lucide="zap" class="animate-pulse w-12 h-12"></i></div>`;
@@ -1112,6 +1144,7 @@
             }
             lucide.createIcons({ root: root });
             initKpiCarousel();
+            restoreDirtyFormFields(dirtyFormFields);
             restoreActiveAdminField(activeAdminField);
 
             // Sur téléphone, une seule rubrique est affichée à la fois.
@@ -4490,7 +4523,7 @@
                                             return `<details class="mt-2 shrink-0 rounded-lg bg-gradient-to-r from-purple-950/45 to-cyan-950/35 border border-purple-500/25 group"><summary class="list-none cursor-pointer px-2.5 py-2 flex items-center justify-between gap-2 select-none"><span class="text-[9px] uppercase font-bold text-purple-300 flex items-center gap-1"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i> Assistant de réponse</span><span class="flex items-center gap-1 text-[8px] text-slate-500"><span class="hidden sm:inline">Afficher les suggestions</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform group-open:rotate-180"></i></span></summary><div class="border-t border-purple-500/20 px-2.5 py-2"><span class="block mb-2 text-[8px] text-slate-500">Suggestions selon le dernier message du client</span><div class="flex flex-wrap gap-1.5 max-h-[84px] overflow-y-auto">${suggestions.map((suggestion, index) => `<button type="button" onclick="window.useAdminReplySuggestion(${index})" class="px-2 py-1.5 rounded bg-slate-950 hover:bg-purple-950 border border-slate-700 hover:border-purple-500/40 text-[8px] text-slate-300 text-left">${window.escapeHTML(suggestion.label)}</button>`).join('')}</div></div></details>`;
                                         })()}
                                         <form onsubmit="window.adminSendSupportMessage(event)" class="mt-2 pt-2 border-t border-slate-800 flex gap-1 font-mono shrink-0">
-                                            <input id="admin-chat-input" type="text" placeholder="Répondre..." autocomplete="off" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" enterkeyhint="send"
+                                            <input id="admin-chat-input" type="text" value="${window.escapeHTML(window.appState.adminSupportDrafts[window.appState.adminSelectedClient] || '')}" oninput="window.updateAdminSupportDraft(this.value)" placeholder="Répondre..." autocomplete="off" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" enterkeyhint="send"
                                                 class="flex-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-[11px] focus:outline-none focus:border-purple-500 text-white min-h-[30px]" />
                                             <button type="button" onclick="window.correctAdminSupportReply()" title="Corriger les fautes courantes" class="bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 px-2 py-1 rounded text-cyan-300 text-[9px] font-bold shrink-0 min-h-[30px] flex items-center gap-1"><i data-lucide="spell-check-2" class="w-4 h-4"></i><span class="hidden sm:inline">Corriger</span></button>
                                             <button type="submit" class="bg-purple-600 hover:bg-purple-500 px-2.5 py-1 rounded text-white text-[11px] font-bold shrink-0 min-h-[30px]">OK</button>
@@ -4660,16 +4693,16 @@
                             <div class="space-y-3 font-mono text-xs flex-1 flex flex-col justify-between">
                                 <div class="space-y-2 flex-1">
                                     <label class="block text-[9px] text-slate-500 uppercase">Titre de l’annonce :
-                                        <input id="announcement-title" maxlength="120" value="${window.escapeHTML(globalAnnouncement?.title || 'Mise à jour de votre espace client')}" placeholder="Titre affiché aux clients"
+                                        <input id="announcement-title" maxlength="120" oninput="window.updateAnnouncementDraft('title', this.value)" value="${window.escapeHTML(window.appState.announcementDraftTitle ?? globalAnnouncement?.title ?? 'Mise à jour de votre espace client')}" placeholder="Titre affiché aux clients"
                                             class="mt-1 w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 font-sans" />
                                     </label>
                                     <label class="block text-[9px] text-slate-500 uppercase">Courte introduction :
-                                        <input id="announcement-intro" maxlength="220" value="${window.escapeHTML(globalAnnouncement?.intro || '')}" placeholder="Une phrase courte pour présenter l’annonce"
+                                        <input id="announcement-intro" maxlength="220" oninput="window.updateAnnouncementDraft('intro', this.value)" value="${window.escapeHTML(window.appState.announcementDraftIntro ?? globalAnnouncement?.intro ?? '')}" placeholder="Une phrase courte pour présenter l’annonce"
                                             class="mt-1 w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 font-sans" />
                                     </label>
                                     <label class="block text-[9px] text-slate-500 uppercase">Message complet :</label>
-                                    <textarea id="announcement-text" placeholder="Rédiger l'annonce importante qui s'affichera chez tous les agents..." rows="3"
-                                        class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 resize-none font-sans leading-relaxed flex-1">${window.escapeHTML(globalAnnouncement?.text || '')}</textarea>
+                                    <textarea id="announcement-text" oninput="window.updateAnnouncementDraft('text', this.value)" placeholder="Rédiger l'annonce importante qui s'affichera chez tous les agents..." rows="3"
+                                        class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 resize-none font-sans leading-relaxed flex-1">${window.escapeHTML(window.appState.announcementDraftText ?? globalAnnouncement?.text ?? '')}</textarea>
                                 </div>
                                 
                                 <div class="flex gap-1.5 mt-2 font-sans w-full">
@@ -4702,7 +4735,8 @@
 
                             ${(() => {
                                 const editingTransaction = allTransactions.find(tx => tx.id === window.appState.editingFinancialTransactionId) || null;
-                                const selectedDate = editingTransaction?.date ? new Date(editingTransaction.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+                                const financialDraft = window.appState.financialTransactionDraft || {};
+                                const selectedDate = financialDraft.date || (editingTransaction?.date ? new Date(editingTransaction.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
                                 return `<details id="admin-finance-editor" ${editingTransaction ? 'open' : ''} class="group bg-slate-950/60 border border-purple-500/20 rounded-lg">
                                     <summary class="cursor-pointer list-none px-3 py-2 flex items-center justify-between gap-2 text-[9px] font-bold uppercase text-purple-300 hover:text-purple-200">
                                         <span class="flex items-center gap-1.5"><i data-lucide="${editingTransaction ? 'pencil' : 'circle-plus'}" class="w-3.5 h-3.5"></i>${editingTransaction ? 'Corriger la transaction' : 'Ajouter une transaction reçue'}</span>
@@ -4710,25 +4744,25 @@
                                     </summary>
                                     <form onsubmit="window.adminSaveFinancialTransaction(event)" class="border-t border-slate-800 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
                                         <label class="text-[8px] text-slate-500 uppercase">Client
-                                            <select id="manual-finance-client" required class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none">
+                                            <select id="manual-finance-client" required onchange="window.updateFinancialTransactionDraft('clientId', this.value)" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none">
                                                 <option value="">Choisir un client</option>
-                                                ${firebaseClientProfiles.map(client => `<option value="${client.id}" ${editingTransaction?.userId === client.id ? 'selected' : ''}>${window.escapeHTML(window.getClientName(client.email))} (${window.escapeHTML(client.email || '')})</option>`).join('')}
+                                                ${firebaseClientProfiles.map(client => `<option value="${client.id}" ${(financialDraft.clientId ?? editingTransaction?.userId) === client.id ? 'selected' : ''}>${window.escapeHTML(window.getClientName(client.email))} (${window.escapeHTML(client.email || '')})</option>`).join('')}
                                             </select>
                                         </label>
                                         <label class="text-[8px] text-slate-500 uppercase">Service
-                                            <select id="manual-finance-service" required onchange="window.adminPrefillFinancialAmount(this.value)" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none">
+                                            <select id="manual-finance-service" required onchange="window.updateFinancialTransactionDraft('serviceId', this.value);window.adminPrefillFinancialAmount(this.value)" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none">
                                                 <option value="">Choisir un service</option>
-                                                ${SERVICES_DATA.map(service => `<option value="${service.id}" ${editingTransaction?.serviceId === service.id ? 'selected' : ''}>${window.escapeHTML(service.name)}</option>`).join('')}
+                                                ${SERVICES_DATA.map(service => `<option value="${service.id}" ${(financialDraft.serviceId ?? editingTransaction?.serviceId) === service.id ? 'selected' : ''}>${window.escapeHTML(service.name)}</option>`).join('')}
                                             </select>
                                         </label>
                                         <label class="text-[8px] text-slate-500 uppercase">Montant reçu (€)
-                                            <input id="manual-finance-amount" required type="number" min="0" step="0.01" value="${editingTransaction ? Number(editingTransaction.price || 0).toFixed(2) : ''}" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
+                                            <input id="manual-finance-amount" required type="number" min="0" step="0.01" oninput="window.updateFinancialTransactionDraft('amount', this.value)" value="${window.escapeHTML(financialDraft.amount ?? (editingTransaction ? Number(editingTransaction.price || 0).toFixed(2) : ''))}" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
                                         </label>
                                         <label class="text-[8px] text-slate-500 uppercase">Date du paiement
-                                            <input id="manual-finance-date" required type="date" value="${selectedDate}" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
+                                            <input id="manual-finance-date" required type="date" oninput="window.updateFinancialTransactionDraft('date', this.value)" value="${selectedDate}" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
                                         </label>
                                         <label class="sm:col-span-2 text-[8px] text-slate-500 uppercase">Note / référence
-                                            <input id="manual-finance-detail" type="text" maxlength="250" value="${window.escapeHTML(editingTransaction?.detail || '')}" placeholder="Ex. Paiement reçu manuellement" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
+                                            <input id="manual-finance-detail" type="text" maxlength="250" oninput="window.updateFinancialTransactionDraft('detail', this.value)" value="${window.escapeHTML(financialDraft.detail ?? editingTransaction?.detail ?? '')}" placeholder="Ex. Paiement reçu manuellement" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
                                         </label>
                                         <div class="sm:col-span-2 flex gap-2 justify-end pt-1">
                                             ${editingTransaction ? `<button type="button" onclick="window.adminCancelFinancialTransactionEdit()" class="px-3 py-2 rounded border border-slate-700 text-slate-400 text-[8px] uppercase font-bold">Annuler</button>` : ''}
@@ -5366,6 +5400,12 @@
             ];
         };
 
+        window.updateAdminSupportDraft = (value) => {
+            const clientId = window.appState.adminSelectedClient;
+            if (!window.appState.isAdmin || !clientId) return;
+            window.appState.adminSupportDrafts[clientId] = String(value ?? '');
+        };
+
         window.useAdminReplySuggestion = (index) => {
             if (!window.appState.isAdmin || !window.appState.adminSelectedClient) return;
             const latestClientMessage = [...window.appState.allMessages]
@@ -5375,6 +5415,7 @@
             const input = document.getElementById('admin-chat-input');
             if (!suggestion || !input) return;
             input.value = suggestion.text;
+            window.updateAdminSupportDraft(input.value);
             input.focus();
             input.setSelectionRange(input.value.length, input.value.length);
         };
@@ -5406,6 +5447,7 @@
             if (corrected === input.value.trim()) window.showToast('Aucune faute courante détectée. Relisez avant l’envoi.');
             else window.showToast('Correction appliquée. Vérifiez le texte avant l’envoi.');
             input.value = corrected;
+            window.updateAdminSupportDraft(corrected);
             input.focus();
         };
 
@@ -5418,7 +5460,6 @@
             const text = input.value.trim();
             if(!text) return;
 
-            input.value = '';
             input.disabled = true;
 
             try {
@@ -5433,6 +5474,8 @@
                     readByClient: false,
                     timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now() 
                 });
+                delete window.appState.adminSupportDrafts[targetUserId];
+                input.value = '';
             } catch(e) {
                 window.showToast("Erreur d'envoi", "error");
             } finally {
@@ -6303,14 +6346,31 @@
 
         window.adminStartFinancialTransactionEdit = (transactionId) => {
             if (!window.appState.isAdmin) return;
+            const transaction = window.appState.allTransactions.find(item => item.id === transactionId);
             window.appState.editingFinancialTransactionId = transactionId || '';
+            window.appState.financialTransactionDraft = transaction ? {
+                clientId: transaction.userId || '',
+                serviceId: transaction.serviceId || '',
+                amount: Number(transaction.price || 0).toFixed(2),
+                date: transaction.date ? new Date(transaction.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+                detail: transaction.detail || ''
+            } : null;
             renderApp();
             setTimeout(() => document.getElementById('admin-finance-editor')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
         };
 
         window.adminCancelFinancialTransactionEdit = () => {
             window.appState.editingFinancialTransactionId = '';
+            window.appState.financialTransactionDraft = null;
             renderApp();
+        };
+
+        window.updateFinancialTransactionDraft = (field, value) => {
+            if (!window.appState.isAdmin) return;
+            window.appState.financialTransactionDraft = {
+                ...(window.appState.financialTransactionDraft || {}),
+                [field]: String(value ?? '')
+            };
         };
 
         window.adminPrefillFinancialAmount = (serviceId) => {
@@ -6320,7 +6380,10 @@
             const clientId = document.getElementById('manual-finance-client')?.value;
             const clientProfile = window.appState.allProfiles.find(item => item.id === clientId);
             const configuredPrice = clientProfile?.customPrices?.[serviceId] ?? service?.price;
-            if (Number.isFinite(Number(configuredPrice))) amountInput.value = Number(configuredPrice).toFixed(2);
+            if (Number.isFinite(Number(configuredPrice))) {
+                amountInput.value = Number(configuredPrice).toFixed(2);
+                window.updateFinancialTransactionDraft('amount', amountInput.value);
+            }
         };
 
         window.adminSaveFinancialTransaction = async (event) => {
@@ -6368,6 +6431,8 @@
                     window.showToast('Transaction ajoutée au registre et à l’historique du client.');
                 }
                 window.appState.editingFinancialTransactionId = '';
+                window.appState.financialTransactionDraft = null;
+                event?.currentTarget?.reset?.();
                 renderApp();
             } catch (error) {
                 console.error(error);
@@ -7209,6 +7274,13 @@
             }
         };
 
+        window.updateAnnouncementDraft = (field, value) => {
+            if (!window.appState.isAdmin) return;
+            if (field === 'title') window.appState.announcementDraftTitle = String(value ?? '');
+            if (field === 'intro') window.appState.announcementDraftIntro = String(value ?? '');
+            if (field === 'text') window.appState.announcementDraftText = String(value ?? '');
+        };
+
         window.adminPublishAnnouncement = async () => {
             const titleInput = document.getElementById('announcement-title');
             const introInput = document.getElementById('announcement-intro');
@@ -7232,6 +7304,9 @@
                     text,
                     timestamp: window.getVirtualTimestamp()
                 });
+                window.appState.announcementDraftTitle = null;
+                window.appState.announcementDraftIntro = null;
+                window.appState.announcementDraftText = null;
                 window.appState.expandedGlobalAnnouncement = false;
                 window.showToast("Notification globale diffusée avec succès à tous les clients !");
             } catch(e) {
@@ -7249,6 +7324,9 @@
                     
                     const textInput = document.getElementById('announcement-text');
                     if(textInput) textInput.value = ""; // Vider également le formulaire de rédaction
+                    window.appState.announcementDraftTitle = null;
+                    window.appState.announcementDraftIntro = null;
+                    window.appState.announcementDraftText = null;
                     
                     window.showToast("La notification globale a été supprimée.");
                 } catch(e) {
