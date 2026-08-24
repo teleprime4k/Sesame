@@ -806,7 +806,9 @@
             editingNewsId: '',
             editingNewsImage: '',
             newsDraftTitle: '',
-            newsDraftContent: ''
+            newsDraftContent: '',
+            expandedNewsIds: new Set(),
+            expandedGlobalAnnouncement: false
         };
 
         let unsubProfile = null;
@@ -3697,8 +3699,16 @@
                             <i data-lucide="megaphone" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                         </div>
                         <div>
-                            <h4 class="text-[10px] sm:text-xs font-bold text-white uppercase tracking-wider font-mono">Notification Réseau sesame</h4>
-                            <p class="text-xs text-amber-100 font-medium mt-0.5 leading-relaxed">${globalAnnouncement.text}</p>
+                            <h4 class="text-[10px] sm:text-xs font-bold text-white uppercase tracking-wider font-mono">${window.escapeHTML(globalAnnouncement.title || 'Notification Réseau Sésame')}</h4>
+                            ${globalAnnouncement.intro ? `<p class="text-[10px] sm:text-xs text-amber-300 font-semibold mt-1 leading-relaxed">${window.escapeHTML(globalAnnouncement.intro)}</p>` : ''}
+                            ${(() => {
+                                const announcementText = String(globalAnnouncement.text || '');
+                                const canExpand = announcementText.length > 220;
+                                const expanded = window.appState.expandedGlobalAnnouncement === true;
+                                const displayedText = canExpand && !expanded ? `${announcementText.slice(0, 220).trim()}…` : announcementText;
+                                return `<p class="text-xs text-amber-100 font-medium mt-0.5 leading-relaxed whitespace-pre-wrap break-words">${window.escapeHTML(displayedText)}</p>
+                                    ${canExpand ? `<button type="button" onclick="window.toggleGlobalAnnouncementDetails()" class="mt-2 text-[9px] font-black uppercase tracking-wider text-amber-300 hover:text-amber-200 underline underline-offset-2">${expanded ? 'Voir moins' : 'Voir plus'}</button>` : ''}`;
+                            })()}
                         </div>
                     </div>
                     <div class="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 shrink-0">
@@ -4146,19 +4156,29 @@
                     </form>` : ''}
 
                     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        ${window.appState.allNews.length ? window.appState.allNews.map(news => `
+                        ${window.appState.allNews.length ? window.appState.allNews.map(news => {
+                            const newsContent = String(news.content || '');
+                            const canExpandNews = newsContent.length > 260;
+                            const newsExpanded = isAdmin || window.appState.expandedNewsIds.has(news.id);
+                            const displayedNewsContent = canExpandNews && !newsExpanded ? `${newsContent.slice(0, 260).trim()}…` : newsContent;
+                            return `
                             <article class="bg-slate-950/70 border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-                                ${news.image ? `<img src="${news.image}" alt="${window.escapeHTML(news.title)}" class="w-full h-44 object-cover" />` : `<div class="h-28 bg-gradient-to-br from-cyan-950 to-purple-950 flex items-center justify-center"><i data-lucide="newspaper" class="w-10 h-10 text-cyan-700"></i></div>`}
+                                ${news.image ? `<button type="button" onclick="window.openNewsImage('${news.id}')" class="relative group w-full overflow-hidden bg-slate-950 cursor-zoom-in" title="Agrandir l’image">
+                                    <img src="${news.image}" alt="${window.escapeHTML(news.title)}" class="w-full h-44 object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                                    <span class="absolute right-2 bottom-2 p-2 rounded-full bg-slate-950/85 border border-white/20 text-white shadow-lg group-hover:bg-cyan-700 transition-colors"><i data-lucide="maximize-2" class="w-4 h-4"></i></span>
+                                </button>` : `<div class="h-28 bg-gradient-to-br from-cyan-950 to-purple-950 flex items-center justify-center"><i data-lucide="newspaper" class="w-10 h-10 text-cyan-700"></i></div>`}
                                 <div class="p-4 flex flex-col flex-1">
                                     <span class="text-[8px] text-cyan-500 uppercase font-mono">${new Date(news.publishedAt).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})}</span>
                                     <h4 class="text-sm font-bold text-white mt-1 mb-2">${window.escapeHTML(news.title)}</h4>
-                                    <p class="text-xs text-slate-400 whitespace-pre-wrap break-words leading-relaxed flex-1">${window.escapeHTML(news.content)}</p>
+                                    <p class="text-xs text-slate-400 whitespace-pre-wrap break-words leading-relaxed flex-1">${window.escapeHTML(displayedNewsContent)}</p>
+                                    ${!isAdmin && canExpandNews ? `<button type="button" onclick="window.toggleNewsDetails('${news.id}')" class="self-start mt-3 text-[9px] font-black uppercase tracking-wider text-cyan-400 hover:text-cyan-300 underline underline-offset-2">${newsExpanded ? 'Voir moins' : 'Voir plus'}</button>` : ''}
                                     ${isAdmin ? `<div class="flex gap-2 mt-4 pt-3 border-t border-slate-800">
                                         <button onclick="window.editNews('${news.id}')" class="flex-1 py-1.5 bg-cyan-950 text-cyan-300 border border-cyan-500/20 rounded text-[9px] uppercase font-bold">Modifier</button>
                                         <button onclick="window.deleteNews('${news.id}')" class="flex-1 py-1.5 bg-red-950 text-red-300 border border-red-500/20 rounded text-[9px] uppercase font-bold">Supprimer</button>
                                     </div>` : ''}
                                 </div>
-                            </article>`).join('') : `<div class="md:col-span-2 xl:col-span-3 py-10 text-center text-xs text-slate-600 italic">Aucune actualité publiée pour le moment.</div>`}
+                            </article>`;
+                        }).join('') : `<div class="md:col-span-2 xl:col-span-3 py-10 text-center text-xs text-slate-600 italic">Aucune actualité publiée pour le moment.</div>`}
                     </div>
                 </section>
 
@@ -4638,10 +4658,18 @@
                                 <i data-lucide="megaphone" class="text-purple-400 w-4 h-4"></i> Diffuser une Info Globale
                             </h4>
                             <div class="space-y-3 font-mono text-xs flex-1 flex flex-col justify-between">
-                                <div class="space-y-1 flex-1">
-                                    <label class="block text-[9px] text-slate-500 uppercase mb-1">Message d'information global :</label>
+                                <div class="space-y-2 flex-1">
+                                    <label class="block text-[9px] text-slate-500 uppercase">Titre de l’annonce :
+                                        <input id="announcement-title" maxlength="120" value="${window.escapeHTML(globalAnnouncement?.title || 'Mise à jour de votre espace client')}" placeholder="Titre affiché aux clients"
+                                            class="mt-1 w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 font-sans" />
+                                    </label>
+                                    <label class="block text-[9px] text-slate-500 uppercase">Courte introduction :
+                                        <input id="announcement-intro" maxlength="220" value="${window.escapeHTML(globalAnnouncement?.intro || '')}" placeholder="Une phrase courte pour présenter l’annonce"
+                                            class="mt-1 w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 font-sans" />
+                                    </label>
+                                    <label class="block text-[9px] text-slate-500 uppercase">Message complet :</label>
                                     <textarea id="announcement-text" placeholder="Rédiger l'annonce importante qui s'affichera chez tous les agents..." rows="3"
-                                        class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 resize-none font-sans leading-relaxed flex-1">${globalAnnouncement?.text || ""}</textarea>
+                                        class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 resize-none font-sans leading-relaxed flex-1">${window.escapeHTML(globalAnnouncement?.text || '')}</textarea>
                                 </div>
                                 
                                 <div class="flex gap-1.5 mt-2 font-sans w-full">
@@ -5163,6 +5191,59 @@
             if (targetId === 'news-section') window.markNewsAsRead();
             if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
         };
+
+        window.toggleGlobalAnnouncementDetails = () => {
+            if (window.appState.isAdmin) return;
+            window.appState.expandedGlobalAnnouncement = !window.appState.expandedGlobalAnnouncement;
+            renderApp();
+        };
+
+        window.toggleNewsDetails = (newsId) => {
+            if (window.appState.isAdmin || !newsId) return;
+            const expandedIds = window.appState.expandedNewsIds;
+            if (expandedIds.has(newsId)) expandedIds.delete(newsId);
+            else expandedIds.add(newsId);
+            renderApp();
+            setTimeout(() => document.getElementById('news-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
+        };
+
+        window.closeNewsImage = () => {
+            document.getElementById('news-image-lightbox')?.remove();
+            document.body.style.overflow = '';
+        };
+
+        window.openNewsImage = (newsId) => {
+            const news = window.appState.allNews.find(item => item.id === newsId);
+            if (!news?.image) return;
+            window.closeNewsImage();
+            const overlay = document.createElement('div');
+            overlay.id = 'news-image-lightbox';
+            overlay.className = 'fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-label', `Image agrandie : ${news.title || 'Actualité'}`);
+            const image = document.createElement('img');
+            image.src = news.image;
+            image.alt = news.title || 'Image de l’actualité';
+            image.className = 'max-w-full max-h-[92vh] w-auto h-auto object-contain rounded-lg shadow-[0_0_40px_rgba(6,182,212,.2)]';
+            const closeButton = document.createElement('button');
+            closeButton.type = 'button';
+            closeButton.className = 'absolute top-3 right-3 sm:top-5 sm:right-5 w-11 h-11 rounded-full bg-slate-950/90 border border-white/30 text-white text-2xl flex items-center justify-center hover:bg-red-700 transition-colors';
+            closeButton.setAttribute('aria-label', 'Fermer l’image agrandie');
+            closeButton.textContent = '×';
+            closeButton.onclick = window.closeNewsImage;
+            overlay.onclick = event => {
+                if (event.target === overlay) window.closeNewsImage();
+            };
+            overlay.append(image, closeButton);
+            document.body.appendChild(overlay);
+            document.body.style.overflow = 'hidden';
+            closeButton.focus();
+        };
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && document.getElementById('news-image-lightbox')) window.closeNewsImage();
+        });
 
         window.markNewsAsRead = async () => {
             if (window.appState.isAdmin || !window.appState.user || !window.appState.allNews.length) return;
@@ -7129,12 +7210,16 @@
         };
 
         window.adminPublishAnnouncement = async () => {
+            const titleInput = document.getElementById('announcement-title');
+            const introInput = document.getElementById('announcement-intro');
             const announceTextarea = document.getElementById('announcement-text');
-            if(!announceTextarea) return;
+            if(!titleInput || !introInput || !announceTextarea) return;
 
+            const title = titleInput.value.trim();
+            const intro = introInput.value.trim();
             const text = announceTextarea.value.trim();
-            if(!text) {
-                window.showToast("Le message de notification ne peut pas être vide.", "error");
+            if(!title || !intro || !text) {
+                window.showToast("Le titre, l’introduction et le message complet sont obligatoires.", "error");
                 return;
             }
 
@@ -7142,9 +7227,12 @@
                 const announceRef = doc(db, 'artifacts', appId, 'public', 'data', 'announcements', 'global');
                 await setDoc(announceRef, {
                     id: (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`),
-                    text: text,
+                    title,
+                    intro,
+                    text,
                     timestamp: window.getVirtualTimestamp()
                 });
+                window.appState.expandedGlobalAnnouncement = false;
                 window.showToast("Notification globale diffusée avec succès à tous les clients !");
             } catch(e) {
                 console.error(e);
