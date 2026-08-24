@@ -3719,7 +3719,7 @@
 
                                     const isReactivationFlow = sState.status === 'expired' || Boolean(sState.renewalRequestedAt) || Boolean(sState.renewedAt) || Boolean(sState.subEnd);
                                     const paymentProgressMessage = !isActive && sState.paymentStage === 'pending_confirmation'
-                                        ? `<div class="rounded-xl border border-amber-500/45 bg-amber-950/25 p-3 text-[10px] leading-relaxed text-amber-100 font-sans"><strong class="block mb-1 text-amber-300 font-mono">⏳ Paiement ${isReactivationFlow ? 'de réactivation ' : ''}en attente de confirmation</strong>Vous recevrez une notification dès que votre paiement aura été validé. ${isReactivationFlow ? 'Votre abonnement sera ensuite réactivé par l’administrateur.' : 'Vos identifiants de connexion vous seront ensuite transmis directement dans votre espace client.'}</div>`
+                                        ? `<div class="rounded-xl border border-amber-500/45 bg-amber-950/25 p-3 text-[10px] leading-relaxed text-amber-100 font-sans"><strong class="block mb-1 text-amber-300 font-mono">⏳ Paiement ${isReactivationFlow ? 'de réactivation ' : ''}en attente de confirmation</strong>Vous recevrez une notification dès que votre paiement aura été validé. ${isReactivationFlow ? 'Votre abonnement sera ensuite réactivé par l’administrateur.' : (service.id === TV_PASS_SERVICE_ID ? 'Vos identifiants de connexion vous seront ensuite transmis directement dans votre espace client.' : 'Votre service sera ensuite activé par l’administrateur.')}</div>`
                                         : (!isActive && sState.paymentStage === 'payment_confirmed'
                                             ? `<div class="rounded-xl border border-emerald-500/45 bg-emerald-950/25 p-3 text-[10px] leading-relaxed text-emerald-100 font-sans animate-pulse"><strong class="block mb-1 text-emerald-300 font-mono">✅ Votre paiement a bien été reçu</strong>Nous procédons maintenant à ${isReactivationFlow ? 'la réactivation de votre abonnement' : 'l’activation du service concerné'}. Vous recevrez une notification dès que ${isReactivationFlow ? 'la réactivation' : 'l’activation'} sera terminée.</div>`
                                             : '');
@@ -6020,7 +6020,9 @@
                 await updateDoc(clientRef, { services });
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
                     userId: clientId, userEmail: client.email,
-                    text: `✅ Votre paiement a bien été reçu pour ${service.name}. Nous procédons maintenant à l’activation du service concerné. Vous recevrez vos identifiants dès que l’activation sera terminée.`,
+                    text: serviceId === TV_PASS_SERVICE_ID
+                        ? `✅ Votre paiement a bien été reçu pour ${service.name}. Nous procédons maintenant à l’activation du service. Vos identifiants de connexion vous seront transmis dans votre espace client dès que l’activation sera terminée.`
+                        : `✅ Votre paiement a bien été reçu pour ${service.name}. Nous procédons maintenant à l’activation du service concerné. Vous recevrez une notification dès que l’activation sera terminée.`,
                     sender: 'admin', senderName: 'Administrateur Sésame', readByAdmin: true, readByClient: false,
                     timestamp: now, notificationType: 'payment_confirmed', serviceId
                 });
