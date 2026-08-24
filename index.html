@@ -809,6 +809,7 @@
             newsDraftTitle: '',
             newsDraftContent: '',
             adminSupportDrafts: {},
+            adminSupportExpanded: false,
             announcementDraftTitle: null,
             announcementDraftIntro: null,
             announcementDraftText: null,
@@ -2982,6 +2983,8 @@
         // --- DECONNEXION SYSTEME ---
         window.handleLogout = async () => {
             stopClientInactivityTimer();
+            window.appState.adminSupportExpanded = false;
+            document.body.style.overflow = '';
             window.appState.email = '';
             window.appState.password = '';
             window.appState.authSuccessMessage = '';
@@ -4449,15 +4452,18 @@
                         </div>
 
                         <!-- 2. Messagerie de Support Client -->
-                        <div id="admin-support" class="mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
-                            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Messagerie de Support Client</h4>
+                        <div id="admin-support" class="mobile-anchor ${window.appState.adminSupportExpanded ? 'fixed inset-2 sm:inset-6 z-[9998] bg-[#070b16]/98 border-purple-500/50 shadow-[0_0_60px_rgba(168,85,247,.28)] p-4 sm:p-6 overflow-hidden' : 'bg-slate-950/60 border-[#1e293b]/70 p-4'} border rounded-xl flex flex-col gap-4 min-w-0 w-full">
+                            <div class="flex items-center justify-between gap-3">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Messagerie de Support Client</h4>
+                                <button type="button" onclick="window.toggleAdminSupportExpanded()" class="px-2.5 py-2 rounded-lg bg-purple-950/60 hover:bg-purple-900 border border-purple-500/30 text-purple-200 text-[9px] uppercase font-bold flex items-center gap-1.5 shrink-0" title="${window.appState.adminSupportExpanded ? 'Réduire la messagerie' : 'Agrandir la messagerie'}"><i data-lucide="${window.appState.adminSupportExpanded ? 'minimize-2' : 'maximize-2'}" class="w-4 h-4"></i><span>${window.appState.adminSupportExpanded ? 'Réduire' : 'Agrandir'}</span></button>
+                            </div>
                             <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-lg px-2.5">
                                 <i data-lucide="search" class="w-4 h-4 text-purple-400"></i>
                                 <input type="search" value="${window.appState.adminChatSearchQuery}" oninput="window.searchAdminConversations(this.value)"
                                     placeholder="Recharger par nom ou adresse e-mail..."
                                     class="w-full bg-transparent py-2 text-[10px] text-white focus:outline-none font-mono" />
                             </div>
-                            <div class="grid grid-cols-3 gap-3 h-[300px]">
+                            <div class="grid grid-cols-3 gap-3 ${window.appState.adminSupportExpanded ? 'flex-1 min-h-0' : 'h-[300px]'}">
                                 <div class="col-span-1 border-r border-slate-800/80 pr-2 space-y-2 overflow-y-auto">
                                     <span class="text-[9px] uppercase font-bold text-slate-500 font-mono block">Canaux</span>
                                     ${[...new Set(window.appState.allMessages.filter(m => m.userId && m.userId !== 'admin').map(m => m.userId))].filter(uId => {
@@ -4505,7 +4511,7 @@
                                             if (!isValidTvPassOffer(selectedOffer)) return '';
                                             return `<div class="mb-2 px-3 py-2 rounded-lg bg-amber-950/25 border border-amber-500/30 font-mono flex items-center justify-between gap-2"><span class="text-[9px] uppercase font-bold text-slate-500">Offre PASS TV choisie</span><span class="text-[10px] font-bold text-amber-300">${window.escapeHTML(selectedOffer)}</span></div>`;
                                         })()}
-                                        <div id="admin-chat-box" class="flex-1 overflow-y-auto space-y-3 p-1 font-mono text-[11px] h-[220px]">
+                                        <div id="admin-chat-box" class="flex-1 overflow-y-auto space-y-3 p-1 font-mono ${window.appState.adminSupportExpanded ? 'min-h-0' : 'h-[220px]'}">
                                             ${window.appState.allMessages
                                                 .filter(m => m.userId === window.appState.adminSelectedClient)
                                                 .sort((a, b) => a.timestamp - b.timestamp)
@@ -5287,7 +5293,9 @@
         };
 
         document.addEventListener('keydown', event => {
-            if (event.key === 'Escape' && document.getElementById('news-image-lightbox')) window.closeNewsImage();
+            if (event.key !== 'Escape') return;
+            if (document.getElementById('news-image-lightbox')) window.closeNewsImage();
+            else if (window.appState.adminSupportExpanded) window.toggleAdminSupportExpanded(false);
         });
 
         window.markNewsAsRead = async () => {
@@ -5342,6 +5350,19 @@
         window.adminSelectChatUser = (userId) => {
             window.appState.adminSelectedClient = userId;
             renderApp();
+        };
+
+        window.toggleAdminSupportExpanded = (forceValue) => {
+            if (!window.appState.isAdmin) return;
+            window.appState.adminSupportExpanded = typeof forceValue === 'boolean'
+                ? forceValue
+                : !window.appState.adminSupportExpanded;
+            document.body.style.overflow = window.appState.adminSupportExpanded ? 'hidden' : '';
+            renderApp();
+            setTimeout(() => {
+                const chatBox = document.getElementById('admin-chat-box');
+                if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+            }, 60);
         };
 
         window.openUnreadSupportNotification = async () => {
