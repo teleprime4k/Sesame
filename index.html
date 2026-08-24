@@ -86,7 +86,96 @@
                 radial-gradient(circle at 15% 12%, rgba(8,145,178,.14), transparent 34%),
                 radial-gradient(circle at 88% 86%, rgba(126,34,206,.13), transparent 36%),
                 #030712;
+            overflow: hidden;
+            isolation: isolate;
         }
+        .auth-3d-scene {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            display: grid;
+            place-items: center;
+            pointer-events: none;
+            perspective: 1100px;
+            overflow: hidden;
+        }
+        .auth-3d-scene::before,
+        .auth-3d-scene::after {
+            content: '';
+            position: absolute;
+            width: min(72vw, 760px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            filter: blur(42px);
+            opacity: .34;
+            animation: authGlowOrbit 13s ease-in-out infinite alternate;
+        }
+        .auth-3d-scene::before { background: radial-gradient(circle, rgba(6,182,212,.28), transparent 66%); transform: translate(-25%, -16%); animation-delay: var(--auth-glow-phase, 0ms); }
+        .auth-3d-scene::after { background: radial-gradient(circle, rgba(168,85,247,.24), transparent 66%); transform: translate(28%, 20%); animation-delay: calc(var(--auth-glow-phase, 0ms) - 6s); }
+        .auth-3d-logo-wrap {
+            position: absolute;
+            width: clamp(240px, 31vw, 470px);
+            aspect-ratio: 1;
+            transform-style: preserve-3d;
+            animation: authLogoFloat 9s ease-in-out infinite;
+            opacity: .32;
+            top: 50%;
+            margin-top: calc(clamp(240px, 31vw, 470px) / -2);
+            will-change: transform;
+            animation-play-state: running !important;
+        }
+        .auth-3d-logo-wrap.is-left { left: clamp(-90px, 1.5vw, 28px); }
+        .auth-3d-logo-wrap.is-right { right: clamp(-90px, 1.5vw, 28px); animation-delay: -4.5s; animation-direction: alternate-reverse; }
+        .auth-3d-logo-wrap.is-right .auth-3d-ring { animation-direction: reverse; }
+        .auth-3d-logo,
+        .auth-3d-logo-shadow {
+            position: absolute;
+            inset: 12%;
+            width: 76%;
+            height: 76%;
+            object-fit: contain;
+            border-radius: 26%;
+        }
+        .auth-3d-logo {
+            transform: translateZ(54px);
+            filter: drop-shadow(0 0 24px rgba(34,211,238,.72)) drop-shadow(0 0 70px rgba(168,85,247,.5));
+        }
+        .auth-3d-logo-shadow {
+            transform: translateZ(-42px) scale(.98);
+            filter: blur(18px) saturate(1.6);
+            opacity: .72;
+        }
+        .auth-3d-ring {
+            position: absolute;
+            inset: 5%;
+            border-radius: 50%;
+            border: 1px solid rgba(34,211,238,.32);
+            box-shadow: 0 0 60px rgba(34,211,238,.14), inset 0 0 50px rgba(168,85,247,.12);
+            transform: rotateX(68deg) translateZ(-12px);
+            animation: authRingSpin 12s linear infinite;
+            will-change: transform;
+            animation-play-state: running !important;
+        }
+        .auth-page:hover .auth-3d-logo-wrap,
+        .auth-page:active .auth-3d-logo-wrap,
+        .auth-page:focus-within .auth-3d-logo-wrap,
+        .auth-page:hover .auth-3d-ring,
+        .auth-page:active .auth-3d-ring,
+        .auth-page:focus-within .auth-3d-ring,
+        .auth-page:hover .auth-3d-scene::before,
+        .auth-page:hover .auth-3d-scene::after,
+        .auth-page:active .auth-3d-scene::before,
+        .auth-page:active .auth-3d-scene::after,
+        .auth-page:focus-within .auth-3d-scene::before,
+        .auth-page:focus-within .auth-3d-scene::after {
+            animation-play-state: running !important;
+        }
+        @keyframes authLogoFloat {
+            0%,100% { transform: rotateX(8deg) rotateY(-16deg) translateY(12px) scale(.96); }
+            50% { transform: rotateX(-7deg) rotateY(17deg) translateY(-18px) scale(1.04); }
+        }
+        @keyframes authRingSpin { to { transform: rotateX(68deg) rotateZ(360deg) translateZ(-12px); } }
+        @keyframes authGlowOrbit { from { margin-left: -8vw; margin-top: -5vh; } to { margin-left: 10vw; margin-top: 7vh; } }
         .auth-panel {
             background: linear-gradient(155deg, rgba(15,23,42,.97), rgba(7,13,25,.98));
             box-shadow: 0 24px 70px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.025) inset;
@@ -102,10 +191,22 @@
         .auth-input-wrap:focus-within { transform: translateY(-1px); }
         .auth-input-wrap { transition: transform .2s ease; }
         .auth-input { min-height: 50px; background: rgba(2,6,23,.82); }
+        @media (min-width: 481px) and (max-width: 900px) {
+            .auth-3d-logo-wrap { width: 220px; margin-top: -110px; opacity: .22; }
+            .auth-3d-logo-wrap.is-left { left: -105px; }
+            .auth-3d-logo-wrap.is-right { right: -105px; }
+        }
         @media (max-width: 480px) {
             .auth-page { justify-content: flex-start; padding: 14px 12px 28px; }
             .auth-panel { padding: 20px 16px !important; border-radius: 20px !important; }
             .auth-role-button { min-height: 68px; padding: 10px !important; }
+            .auth-3d-logo-wrap { width: 230px; margin-top: -115px; opacity: .16; }
+            .auth-3d-logo-wrap.is-left { left: -128px; }
+            .auth-3d-logo-wrap.is-right { right: -128px; }
+            .auth-3d-scene { position: absolute; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .auth-3d-logo-wrap, .auth-3d-ring, .auth-3d-scene::before, .auth-3d-scene::after { animation: none !important; }
         }
 
         /* Navigation et densité optimisées pour téléphones */
@@ -701,6 +802,7 @@
             // Nouveaux filtres analytiques pour le Registre Financier (Mois & Année)
             adminFinanceYearFilter: "all",
             adminFinanceMonthFilter: "all",
+            editingFinancialTransactionId: '',
             editingNewsId: '',
             editingNewsImage: '',
             newsDraftTitle: '',
@@ -1987,6 +2089,7 @@
                     paymentStage: 'pending_confirmation',
                     paymentRequestedAt: Date.now(),
                     paymentRequestId: pendingDoc.id,
+                    paymentExpectedAmount: Number(customPrice ?? service?.price ?? 0),
                     paymentPreviousStatus: currentServiceState.status || 'inactive',
                     ...(sId === TV_PASS_SERVICE_ID ? { subscriptionOffer } : {})
                 };
@@ -2860,9 +2963,29 @@
 
         function getAuthScreenHTML() {
             const { isLoginMode, authLoading, authError, authSuccessMessage, authRole, email, password, showPassword, firstName, lastName } = window.appState;
+            // Le formulaire est reconstruit lors d'un changement Client/Admin.
+            // Des délais négatifs calculés sur l'horloge globale permettent aux
+            // animations de reprendre à la même phase au lieu de repartir à zéro.
+            const authAnimationClock = performance.now();
+            const authLeftDelay = -(authAnimationClock % 9000);
+            const authRightDelay = -((authAnimationClock + 4500) % 9000);
+            const authRingDelay = -(authAnimationClock % 12000);
+            const authGlowDelay = -(authAnimationClock % 13000);
 
             return `
             <div class="auth-page min-h-screen flex flex-col items-center justify-center p-4 font-mono relative">
+              <div class="auth-3d-scene" style="--auth-glow-phase:${authGlowDelay}ms" aria-hidden="true">
+                <div class="auth-3d-logo-wrap is-left" style="animation-delay:${authLeftDelay}ms">
+                  <span class="auth-3d-ring" style="animation-delay:${authRingDelay}ms"></span>
+                  <img class="auth-3d-logo-shadow" src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="" />
+                  <img class="auth-3d-logo" src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="" />
+                </div>
+                <div class="auth-3d-logo-wrap is-right" style="animation-delay:${authRightDelay}ms">
+                  <span class="auth-3d-ring" style="animation-delay:${authRingDelay}ms"></span>
+                  <img class="auth-3d-logo-shadow" src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="" />
+                  <img class="auth-3d-logo" src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="" />
+                </div>
+              </div>
               <div class="auth-panel z-10 w-full max-w-lg p-6 sm:p-8 rounded-[26px] border ${authRole === 'admin' ? 'border-purple-500/25' : 'border-cyan-500/25'} relative overflow-hidden font-sans">
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent ${authRole === 'admin' ? 'via-purple-500' : 'via-cyan-500'} to-transparent"></div>
                 
@@ -4500,6 +4623,44 @@
                                 </div>
                             </div>
 
+                            ${(() => {
+                                const editingTransaction = allTransactions.find(tx => tx.id === window.appState.editingFinancialTransactionId) || null;
+                                const selectedDate = editingTransaction?.date ? new Date(editingTransaction.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+                                return `<details id="admin-finance-editor" ${editingTransaction ? 'open' : ''} class="group bg-slate-950/60 border border-purple-500/20 rounded-lg">
+                                    <summary class="cursor-pointer list-none px-3 py-2 flex items-center justify-between gap-2 text-[9px] font-bold uppercase text-purple-300 hover:text-purple-200">
+                                        <span class="flex items-center gap-1.5"><i data-lucide="${editingTransaction ? 'pencil' : 'circle-plus'}" class="w-3.5 h-3.5"></i>${editingTransaction ? 'Corriger la transaction' : 'Ajouter une transaction reçue'}</span>
+                                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform group-open:rotate-180"></i>
+                                    </summary>
+                                    <form onsubmit="window.adminSaveFinancialTransaction(event)" class="border-t border-slate-800 p-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <label class="text-[8px] text-slate-500 uppercase">Client
+                                            <select id="manual-finance-client" required class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none">
+                                                <option value="">Choisir un client</option>
+                                                ${firebaseClientProfiles.map(client => `<option value="${client.id}" ${editingTransaction?.userId === client.id ? 'selected' : ''}>${window.escapeHTML(window.getClientName(client.email))} (${window.escapeHTML(client.email || '')})</option>`).join('')}
+                                            </select>
+                                        </label>
+                                        <label class="text-[8px] text-slate-500 uppercase">Service
+                                            <select id="manual-finance-service" required onchange="window.adminPrefillFinancialAmount(this.value)" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none">
+                                                <option value="">Choisir un service</option>
+                                                ${SERVICES_DATA.map(service => `<option value="${service.id}" ${editingTransaction?.serviceId === service.id ? 'selected' : ''}>${window.escapeHTML(service.name)}</option>`).join('')}
+                                            </select>
+                                        </label>
+                                        <label class="text-[8px] text-slate-500 uppercase">Montant reçu (€)
+                                            <input id="manual-finance-amount" required type="number" min="0" step="0.01" value="${editingTransaction ? Number(editingTransaction.price || 0).toFixed(2) : ''}" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
+                                        </label>
+                                        <label class="text-[8px] text-slate-500 uppercase">Date du paiement
+                                            <input id="manual-finance-date" required type="date" value="${selectedDate}" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
+                                        </label>
+                                        <label class="sm:col-span-2 text-[8px] text-slate-500 uppercase">Note / référence
+                                            <input id="manual-finance-detail" type="text" maxlength="250" value="${window.escapeHTML(editingTransaction?.detail || '')}" placeholder="Ex. Paiement reçu manuellement" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded px-2 py-2 text-[9px] text-white focus:border-purple-500 focus:outline-none" />
+                                        </label>
+                                        <div class="sm:col-span-2 flex gap-2 justify-end pt-1">
+                                            ${editingTransaction ? `<button type="button" onclick="window.adminCancelFinancialTransactionEdit()" class="px-3 py-2 rounded border border-slate-700 text-slate-400 text-[8px] uppercase font-bold">Annuler</button>` : ''}
+                                            <button type="submit" class="px-3 py-2 rounded bg-purple-700 hover:bg-purple-600 text-white text-[8px] uppercase font-bold">${editingTransaction ? 'Enregistrer la correction' : 'Ajouter au registre'}</button>
+                                        </div>
+                                    </form>
+                                </details>`;
+                            })()}
+
                             <!-- Mini graphique en barres horizontales / colonnes CSS de la répartition mensuelle de l'année sélectionnée -->
                             <div class="space-y-1">
                                 <div class="flex justify-between items-center text-[8px] text-slate-500">
@@ -4538,6 +4699,7 @@
                                                 <p class="text-[7.5px] text-slate-500 truncate mt-0.5">${window.getClientName(tx.userEmail || "Client")} (${new Date(tx.date).toLocaleDateString()})</p>
                                             </div>
                                             <span class="text-[9px] font-bold text-emerald-400 shrink-0 font-mono">+${tx.price.toFixed(1)} €</span>
+                                            <button type="button" onclick="event.stopPropagation();window.adminStartFinancialTransactionEdit('${tx.id}')" class="p-1.5 rounded border border-purple-500/25 text-purple-300 hover:bg-purple-950/50 shrink-0" title="Corriger cette transaction"><i data-lucide="pencil" class="w-3 h-3"></i></button>
                                         </div>
                                     `).join('')}
                             </div>
@@ -6009,8 +6171,109 @@
             renderApp();
         };
 
+        window.adminStartFinancialTransactionEdit = (transactionId) => {
+            if (!window.appState.isAdmin) return;
+            window.appState.editingFinancialTransactionId = transactionId || '';
+            renderApp();
+            setTimeout(() => document.getElementById('admin-finance-editor')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+        };
+
+        window.adminCancelFinancialTransactionEdit = () => {
+            window.appState.editingFinancialTransactionId = '';
+            renderApp();
+        };
+
+        window.adminPrefillFinancialAmount = (serviceId) => {
+            const amountInput = document.getElementById('manual-finance-amount');
+            if (!amountInput || amountInput.value !== '') return;
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            const clientId = document.getElementById('manual-finance-client')?.value;
+            const clientProfile = window.appState.allProfiles.find(item => item.id === clientId);
+            const configuredPrice = clientProfile?.customPrices?.[serviceId] ?? service?.price;
+            if (Number.isFinite(Number(configuredPrice))) amountInput.value = Number(configuredPrice).toFixed(2);
+        };
+
+        window.adminSaveFinancialTransaction = async (event) => {
+            event?.preventDefault();
+            if (!window.appState.isAdmin) return;
+            const clientId = document.getElementById('manual-finance-client')?.value || '';
+            const serviceId = document.getElementById('manual-finance-service')?.value || '';
+            const amount = Number(document.getElementById('manual-finance-amount')?.value);
+            const dateValue = document.getElementById('manual-finance-date')?.value || '';
+            const detail = String(document.getElementById('manual-finance-detail')?.value || '').trim();
+            const clientProfile = window.appState.allProfiles.find(item => item.id === clientId && !isAdminProfile(item) && item.authVerified === true);
+            const service = SERVICES_DATA.find(item => item.id === serviceId);
+            const paymentDate = new Date(`${dateValue}T12:00:00`).getTime();
+            if (!clientProfile || !service || !Number.isFinite(amount) || amount < 0 || !Number.isFinite(paymentDate)) {
+                window.showToast('Veuillez vérifier le client, le service, le montant et la date.', 'error');
+                return;
+            }
+            const serviceState = clientProfile.services?.[serviceId] || {};
+            const subscriptionOffer = serviceId === TV_PASS_SERVICE_ID && isValidTvPassOffer(serviceState.subscriptionOffer)
+                ? serviceState.subscriptionOffer
+                : '';
+            const editingId = window.appState.editingFinancialTransactionId;
+            const existingTransaction = editingId ? window.appState.allTransactions.find(item => item.id === editingId) : null;
+            const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            const payload = {
+                userId: clientId,
+                userEmail: clientProfile.email || '',
+                serviceId,
+                offerName: `${service.name}${subscriptionOffer ? ` — ${subscriptionOffer}` : ''}`,
+                price: amount,
+                date: paymentDate,
+                detail: detail || 'Paiement reçu et enregistré manuellement par l’administrateur',
+                status: 'paid',
+                confirmedByAdmin: true,
+                confirmedBy: window.appState.user?.email || 'Administrateur Sésame',
+                manualEntry: true,
+                updatedAt: now
+            };
+            try {
+                if (existingTransaction) {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', editingId), payload, { merge: true });
+                    window.showToast('Transaction corrigée dans le registre et l’historique du client.');
+                } else {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'transactions'), { ...payload, createdAt: now });
+                    window.showToast('Transaction ajoutée au registre et à l’historique du client.');
+                }
+                window.appState.editingFinancialTransactionId = '';
+                renderApp();
+            } catch (error) {
+                console.error(error);
+                window.showToast('Impossible d’enregistrer cette transaction.', 'error');
+            }
+        };
+
         // Première validation Admin : le paiement est reçu, mais le service reste
         // volontairement inactif jusqu'au clic distinct sur « Activer ».
+        window.recordAdminConfirmedPayment = async (clientId, clientEmail, service, serviceState = {}, clientProfile = {}, detail = 'Paiement confirmé par l’administrateur') => {
+            if (!clientId || !service) throw new Error('Transaction incomplète');
+            const timestamp = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+            const rawReference = serviceState.paymentRequestId || serviceState.renewalRequestedAt || serviceState.paymentRequestedAt || serviceState.expiredAt || serviceState.subEnd || timestamp;
+            const safeReference = String(rawReference).replace(/[^a-zA-Z0-9_-]/g, '_');
+            const transactionId = `admin-payment-${clientId}-${service.id}-${safeReference}`;
+            const configuredPrice = serviceState.paymentExpectedAmount ?? clientProfile?.customPrices?.[service.id] ?? service.price ?? 0;
+            const price = Math.max(0, Number(configuredPrice) || 0);
+            const subscriptionOffer = service.id === TV_PASS_SERVICE_ID && isValidTvPassOffer(serviceState.subscriptionOffer)
+                ? serviceState.subscriptionOffer
+                : '';
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'transactions', transactionId), {
+                userId: clientId,
+                userEmail: clientEmail || clientProfile?.email || '',
+                serviceId: service.id,
+                offerName: `${service.name}${subscriptionOffer ? ` — ${subscriptionOffer}` : ''}`,
+                price,
+                date: timestamp,
+                detail,
+                status: 'paid',
+                confirmedByAdmin: true,
+                confirmedBy: window.appState.user?.email || 'Administrateur Sésame',
+                paymentRequestId: serviceState.paymentRequestId || null
+            }, { merge: true });
+            return transactionId;
+        };
+
         window.adminMarkPaymentNotReceived = async (clientId, serviceId) => {
             if (!window.appState.isAdmin) return;
             const service = SERVICES_DATA.find(item => item.id === serviceId);
@@ -6112,7 +6375,8 @@
                     return;
                 }
                 const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
-                services[serviceId] = { ...current, status: 'inactive', paymentStage: 'payment_confirmed', paymentConfirmedAt: now };
+                const transactionId = await window.recordAdminConfirmedPayment(clientId, client.email, service, current, snap.data(), 'Paiement reçu et validé par l’administrateur');
+                services[serviceId] = { ...current, status: 'inactive', paymentStage: 'payment_confirmed', paymentConfirmedAt: now, confirmedTransactionId: transactionId };
                 await updateDoc(clientRef, { services });
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
                     userId: clientId, userEmail: client.email,
@@ -6302,11 +6566,14 @@
                     if (!snap.exists()) throw new Error('Profil introuvable');
                     const services = { ...(snap.data().services || {}) };
                     const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    const currentState = services[serviceId] || {};
+                    const transactionId = await window.recordAdminConfirmedPayment(clientId, client.email, service, currentState, snap.data(), 'Paiement de renouvellement reçu et validé par l’administrateur');
                     services[serviceId] = {
-                        ...(services[serviceId] || {}),
+                        ...currentState,
                         status: 'expired',
                         paymentStage: 'payment_confirmed',
                         paymentConfirmedAt: now,
+                        confirmedTransactionId: transactionId,
                         reactivationRequestStatus: 'accepted',
                         renewalConfirmedByAdmin: true,
                         expiryNotifiedAt: null
@@ -6376,11 +6643,14 @@
                         return;
                     }
                     const now = window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now();
+                    const currentState = services[serviceId] || {};
+                    const transactionId = await window.recordAdminConfirmedPayment(clientId, client.email, service, currentState, snap.data(), 'Paiement de réactivation reçu et validé par l’administrateur');
                     services[serviceId] = {
-                        ...(services[serviceId] || {}),
+                        ...currentState,
                         status: 'expired',
                         paymentStage: 'payment_confirmed',
                         paymentConfirmedAt: now,
+                        confirmedTransactionId: transactionId,
                         expiryNotifiedAt: null
                     };
                     await updateDoc(clientRef, { services });
