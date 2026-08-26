@@ -262,6 +262,24 @@
         .modern-overview-link svg { width:17px; height:17px; color:#22d3ee; flex:0 0 auto; }
         .modern-overview-main { padding:22px; min-width:0; background:radial-gradient(circle at 90% 0,rgba(8,145,178,.07),transparent 35%),#08111f; }
         .modern-mobile-brand { display:none; }
+        .admin-commandbar { display:grid; grid-template-columns:auto minmax(260px,440px) auto; align-items:center; justify-content:space-between; gap:22px; margin:-22px -22px 22px; padding:18px 22px; min-height:72px; border-bottom:1px solid #20304a; background:#070f1d; }
+        .admin-search { display:flex; align-items:center; gap:10px; min-height:42px; padding:0 13px; border:1px solid #20304a; border-radius:10px; background:#0b1628; }
+        .admin-search svg { width:17px; color:#94a3b8; }
+        .admin-search input { width:100%; color:#e2e8f0; background:transparent; outline:none; font-size:11px; }
+        .admin-profile { display:flex; align-items:center; gap:10px; min-width:max-content; }
+        .admin-profile-icon { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; color:#fff; background:linear-gradient(145deg,#7c3aed,#a855f7); box-shadow:0 0 20px rgba(168,85,247,.3); }
+        .admin-profile strong { display:block; color:#fff; font-size:10px; }
+        .admin-profile small { display:block; color:#94a3b8; font-size:8px; margin-top:2px; }
+        .admin-kpi-head { display:flex; align-items:center; gap:12px; }
+        .admin-kpi-icon { width:46px; height:46px; border-radius:50%; display:grid; place-items:center; flex:0 0 auto; border:1px solid currentColor; background:rgba(2,6,23,.4); }
+        .admin-kpi-icon svg { width:22px; height:22px; }
+        .admin-system-status { margin-top:22px; padding:12px; border:1px solid #20304a; border-radius:12px; background:#0b1728; color:#34d399; font-size:9px; font-weight:900; }
+        .admin-system-status small { display:block; margin-top:3px; color:#6ee7b7; font-weight:500; }
+        .client-kpi-head { display:flex; align-items:center; gap:11px; }
+        .client-kpi-icon { width:42px; height:42px; border-radius:13px; display:grid; place-items:center; flex:0 0 auto; background:#0b2440; border:1px solid #16456e; }
+        .client-kpi-icon svg { width:21px; height:21px; }
+        .client-news-badge { margin-left:auto; min-width:20px; height:20px; padding:0 6px; display:inline-grid; place-items:center; border-radius:999px; background:#7c3aed; color:#fff; font-size:9px; font-weight:950; box-shadow:0 0 14px rgba(124,58,237,.35); }
+        .client-overview .modern-panel,.client-overview .modern-summary-card,.client-overview .modern-consult,.client-overview .modern-subscription { backdrop-filter:none; -webkit-backdrop-filter:none; }
         .modern-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
         .modern-summary-card { min-width:0; padding:14px; border:1px solid #20304a; border-radius:14px; background:linear-gradient(145deg,#0e1b2f,#0a1424); box-shadow:0 9px 25px rgba(0,0,0,.2); }
         .modern-summary-card strong { display:block; color:#fff; font:800 22px/1.1 ui-monospace,monospace; margin-top:7px; }
@@ -390,7 +408,12 @@
             .modern-action-grid { grid-template-columns:1fr; }
             .modern-subscription { grid-template-columns:92px minmax(0,1fr); gap:10px; padding:10px; }
             .modern-subscription-art { min-height:110px; font-size:14px; padding:8px; }
+            .client-kpi-head { align-items:flex-start; gap:8px; }
+            .client-kpi-icon { width:35px; height:35px; border-radius:10px; }
+            .client-kpi-icon svg { width:17px; height:17px; }
             .modern-client-grid,.modern-admin-grid { gap:9px; margin-top:9px; }
+            .admin-commandbar { display:block; margin:0 0 12px; padding:0 0 12px; min-height:0; background:transparent; }
+            .admin-commandbar > h2,.admin-commandbar .admin-search,.admin-commandbar .admin-profile { display:none; }
             .modern-panel { padding:11px; }
             #toast-container { bottom: 88px; left: 12px; right: 12px; max-width: none; }
             .mobile-route-hidden { display: none !important; }
@@ -3799,7 +3822,7 @@
                 </header>
 
                 <!-- TABLEAU DE BORD PRINCIPAL : reproduit les maquettes validées -->
-                <section id="overview-section" class="modern-overview mobile-anchor" aria-label="${isAdmin ? 'Tableau de bord administrateur' : 'Tableau de bord client'}">
+                <section id="overview-section" class="modern-overview mobile-anchor ${isAdmin ? 'admin-overview' : 'client-overview'}" aria-label="${isAdmin ? 'Tableau de bord administrateur' : 'Tableau de bord client'}">
                     <aside class="modern-overview-nav">
                         <div class="modern-brand"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame"><span><strong>Sésame ${isAdmin ? '<em class="not-italic text-purple-400">Admin</em>' : ''}</strong><small>${isAdmin ? 'Console sécurisée' : 'Ouvre-Toi'}</small></span></div>
                         ${isAdmin ? `
@@ -3816,6 +3839,9 @@
                             <p class="px-2 py-2 text-[8px] text-slate-500 uppercase font-black">Contenu</p>
                             <button class="modern-overview-link" onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i>Actualités</button>
                             <button class="modern-overview-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="users-round"></i>Groupe communautaire</button>
+                            <p class="px-2 py-2 text-[8px] text-slate-500 uppercase font-black">Administration</p>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-console')"><i data-lucide="settings"></i>Paramètres</button>
+                            <div class="admin-system-status">● Systèmes opérationnels<small>Tous les services fonctionnent</small></div>
                         ` : `
                             <button class="modern-overview-link" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Accueil</button>
                             <button class="modern-overview-link" onclick="window.mobileGoTo('services-section')"><i data-lucide="tv"></i>Mes services</button>
@@ -3830,22 +3856,23 @@
                     </aside>
                     <div class="modern-overview-main">
                         <div class="modern-mobile-brand"><span class="flex items-center gap-3"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame"><span><strong class="block text-white text-sm">Sésame ${isAdmin ? '<em class="not-italic text-purple-400">Admin</em>' : ''}</strong><small class="text-[9px] text-slate-500">${isAdmin ? 'Administration' : 'Ouvre-Toi'}</small></span></span><button type="button" onclick="window.openMobileShortcuts()" aria-label="Ouvrir le menu"><i data-lucide="menu"></i></button></div>
-                        <div class="mb-4 flex items-start justify-between gap-3">
+                        ${isAdmin ? `<div class="admin-commandbar"><h2 class="text-xl font-black text-white">Vue d’ensemble</h2><label class="admin-search"><i data-lucide="search"></i><input type="search" value="${window.escapeHTML(adminSearchQuery || '')}" oninput="window.handleAdminSearch(this.value)" placeholder="Rechercher un client..."></label><div class="admin-profile"><span class="relative"><span class="admin-profile-icon"><i data-lucide="user-round"></i></span><b class="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-purple-600 text-white text-[8px] leading-4 text-center">${unreadSupportMessages.length + unreadPrototypeSupportMessages.length}</b></span><span><strong>Administrateur</strong><small>Super Admin</small></span><i data-lucide="chevron-down" class="w-4 text-slate-500"></i></div></div>` : ''}
+                        <div class="mb-4 flex items-start justify-between gap-3 ${isAdmin ? 'hidden' : ''}">
                             <span><h2 class="text-xl sm:text-2xl font-black text-white">${isAdmin ? 'Vue d’ensemble' : `Bonjour ${window.escapeHTML(window.getClientName(user.email))} 👋`}</h2>
                             <p class="mt-1 text-[10px] text-slate-400">${isAdmin ? 'Retrouvez les actions urgentes et les principaux outils de la plateforme.' : 'Bienvenue dans votre espace client'}</p></span>
                             <button type="button" onclick="window.handleLogout()" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 text-[9px] text-slate-300 hover:text-red-300"><i data-lucide="log-out" class="w-4"></i>Déconnexion</button>
                         </div>
                         <div class="modern-summary-grid">
                             ${isAdmin ? `
-                                <div class="modern-summary-card"><span>Clients actifs</span><strong class="text-cyan-300">${firebaseClientProfiles.length}</strong><small>Comptes clients vérifiés</small></div>
-                                <div class="modern-summary-card"><span>Demandes à traiter</span><strong class="text-purple-300">${adminDemandCount}</strong><small>${adminPendingPaymentCount} paiement(s) prioritaire(s)</small></div>
-                                <div class="modern-summary-card"><span>Messages non lus</span><strong class="text-cyan-300">${unreadSupportMessages.length + unreadPrototypeSupportMessages.length}</strong><small>Voir les messages</small></div>
-                                <div class="modern-summary-card"><span>Paiements du mois</span><strong class="text-emerald-300">${currentMonthCA.toFixed(2)} €</strong><small>Montants réellement reçus</small></div>
+                                <div class="modern-summary-card"><div class="admin-kpi-head"><span class="admin-kpi-icon text-cyan-400"><i data-lucide="users"></i></span><span><span>Clients actifs</span><strong class="text-white">${firebaseClientProfiles.length}</strong><small class="text-cyan-300">Comptes vérifiés</small></span></div></div>
+                                <div class="modern-summary-card"><div class="admin-kpi-head"><span class="admin-kpi-icon text-purple-400"><i data-lucide="file-text"></i></span><span><span>Demandes à traiter</span><strong class="text-white">${adminDemandCount}</strong><small class="text-amber-300">${adminPendingPaymentCount} prioritaire(s)</small></span></div></div>
+                                <div class="modern-summary-card"><div class="admin-kpi-head"><span class="admin-kpi-icon text-cyan-400"><i data-lucide="message-circle"></i></span><span><span>Messages non lus</span><strong class="text-white">${unreadSupportMessages.length + unreadPrototypeSupportMessages.length}</strong><small class="text-cyan-300">Voir les messages</small></span></div></div>
+                                <div class="modern-summary-card"><div class="admin-kpi-head"><span class="admin-kpi-icon text-emerald-400"><i data-lucide="wallet-cards"></i></span><span><span>Paiements du mois</span><strong class="text-white">${currentMonthCA.toFixed(2)} €</strong><small class="text-emerald-300">Montants reçus</small></span></div></div>
                             ` : `
-                                <div class="modern-summary-card"><span>Services actifs</span><strong class="text-cyan-300">${activeCount}</strong><small>Voir mes services</small></div>
-                                <div class="modern-summary-card"><span>Messages</span><strong class="text-purple-300">${unreadSupportMessages.length}</strong><small>Voir mes messages</small></div>
-                                <div class="modern-summary-card"><span>Paiement en attente</span><strong class="text-amber-300">${clientPendingPaymentCount}</strong><small>Voir les paiements</small></div>
-                                <div class="modern-summary-card"><span>Points de parrainage</span><strong class="text-emerald-300">${Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)))}/5</strong><small>Voir mon parrainage</small></div>
+                                <button class="modern-summary-card text-left" onclick="window.mobileGoTo('services-section')"><div class="client-kpi-head"><span class="client-kpi-icon text-cyan-300"><i data-lucide="monitor"></i></span><span><span>Services actifs</span><strong class="text-white">${activeCount}</strong><small>Voir mes services</small></span></div></button>
+                                <button class="modern-summary-card text-left" onclick="window.mobileGoTo('client-support')"><div class="client-kpi-head"><span class="client-kpi-icon text-purple-300"><i data-lucide="message-circle"></i></span><span><span>Messages</span><strong class="text-white">${unreadSupportMessages.length}</strong><small>Voir mes messages</small></span></div></button>
+                                <button class="modern-summary-card text-left" onclick="window.mobileGoTo('client-payments')"><div class="client-kpi-head"><span class="client-kpi-icon text-amber-300"><i data-lucide="credit-card"></i></span><span><span>Paiement en attente</span><strong class="text-white">${clientPendingPaymentCount}</strong><small>Voir les paiements</small></span></div></button>
+                                <button class="modern-summary-card text-left" onclick="window.mobileGoTo('client-referrals')"><div class="client-kpi-head"><span class="client-kpi-icon text-emerald-300"><i data-lucide="gift"></i></span><span><span>Points de parrainage</span><strong class="text-white">${Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)))}/5</strong><small>Voir mon parrainage</small></span></div></button>
                             `}
                         </div>
                         ${isAdmin ? `
@@ -3877,10 +3904,10 @@
                                         <div class="min-w-0"><h3 class="text-sm font-black text-white">${window.escapeHTML(featuredService.name)}</h3><span class="inline-flex mt-2 px-2 py-1 rounded-full ${featuredDays ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'} text-[9px] font-bold">${featuredDays ? '✓ Actif' : 'Inactif'}</span><p class="mt-3 text-[10px] text-slate-300">${featuredDays} jours restants</p><div class="modern-progress"><span style="width:${featuredProgress}%"></span></div><p class="text-[8px] text-slate-500">${featuredDays} / 365 jours</p><button onclick="window.mobileGoTo('services-section')" class="mt-3 w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 text-white text-[9px] font-black">Voir mon service ›</button></div>
                                     </div>
                                     ${clientPendingPaymentCount ? `<div class="mt-3 rounded-xl border border-amber-500/45 bg-amber-950/35 px-4 py-3 text-amber-300 text-[10px] font-bold">ⓘ Paiement en cours de validation</div>` : ''}
-                                    <div class="modern-action-grid"><button class="modern-action" onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i><span>Contacter le support</span></button><button class="modern-action" onclick="window.mobileGoTo('services-section')"><i data-lucide="refresh-cw"></i><span>Renouveler</span></button></div>
+                                    <div class="modern-action-grid"><button class="modern-action" onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i><span>Contacter le support</span></button><button class="modern-action" onclick="window.mobileGoTo('services-section')"><i data-lucide="refresh-cw"></i><span>Renouveler</span></button><button class="modern-action" onclick="window.mobileGoTo('client-payments')"><i data-lucide="credit-card"></i><span>Voir mes paiements</span></button></div>
                                 </div>
                                 <div class="modern-panel"><div class="modern-panel-title">À consulter</div><div class="modern-consult-list">
-                                    <button class="modern-consult" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i><span><b>Actualités Sésame ${unreadNewsCount ? `(${unreadNewsCount})` : ''}</b><small>Découvrez les dernières informations</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i><span class="min-w-0"><b>Actualités Sésame</b><small>Découvrez les dernières informations</small></span>${unreadNewsCount ? `<span class="client-news-badge">${unreadNewsCount > 99 ? '99+' : unreadNewsCount}</span>` : ''}</button>
                                     <button class="modern-consult" onclick="window.mobileGoTo('client-support')"><i data-lucide="message-circle"></i><span><b>Support ${unreadSupportMessages.length ? `(${unreadSupportMessages.length})` : ''}</b><small>Réponse à votre demande d’assistance</small></span></button>
                                     <button class="modern-consult" onclick="window.mobileGoTo('client-credentials')"><i data-lucide="key-round"></i><span><b>Identifiants disponibles</b><small>${hasCredentials ? 'Voir vos identifiants confidentiels' : 'Aucun nouvel identifiant'}</small></span></button>
                                     <button class="modern-consult" onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i><span><b>Groupe communautaire ${unreadPeerMessages.length ? `(${unreadPeerMessages.length})` : ''}</b><small>Messages de la communauté</small></span></button>
