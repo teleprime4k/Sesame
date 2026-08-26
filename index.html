@@ -3769,8 +3769,8 @@
             const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
 
             const mobilePrimaryShortcuts = isAdmin ? [
-                { id: 'admin-console', icon: 'shield-check', label: 'Outils admin' },
-                { id: 'services-section', icon: 'layout-grid', label: 'Services' },
+                { id: 'admin-pending-profiles', icon: 'file-text', label: 'Demandes' },
+                { id: 'admin-prototype', icon: 'flask-conical', label: 'Prototype' },
                 { id: 'admin-support', icon: 'messages-square', label: 'Support' },
             ] : [
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
@@ -3779,8 +3779,6 @@
             ];
             const mobileAllShortcuts = isAdmin ? [
                 { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
-                { id: 'services-section', icon: 'layout-grid', label: 'Services' },
-                { id: 'admin-console', icon: 'shield-check', label: 'Outils administrateur' },
                 { id: 'admin-prototype', icon: 'flask-conical', label: 'Prototype' },
                 { id: 'admin-quotes', icon: 'file-text', label: 'Devis clients' },
                 { id: 'admin-support', icon: 'headphones', label: 'Support client' },
@@ -3878,12 +3876,12 @@
                             </div>
                             <div class="admin-grid">
                                 <div class="grid gap-5">
-                                    <section class="admin-panel"><div class="admin-panel-title"><span>▣ &nbsp; À TRAITER AUJOURD’HUI</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-console')">Tout voir</button></div>
+                                    <section class="admin-panel"><div class="admin-panel-title"><span>▣ &nbsp; À TRAITER AUJOURD’HUI</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-pending-profiles')">Tout voir</button></div>
                                         <div class="admin-task"><span class="admin-task-icon text-amber-400"><i data-lucide="credit-card"></i></span><span><b class="block text-white text-sm">${adminPendingPaymentCount} paiement${adminPendingPaymentCount !== 1 ? 's' : ''} à confirmer</b><small class="text-slate-400">Vérifiez et confirmez les paiements en attente.</small></span><span class="admin-priority text-amber-400">Priorité élevée</span><button class="admin-open border-amber-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
                                         <div class="admin-task"><span class="admin-task-icon text-purple-400"><i data-lucide="refresh-cw"></i></span><span><b class="block text-white text-sm">${pendingSubscriptionAttachments.length} demande${pendingSubscriptionAttachments.length !== 1 ? 's' : ''} de réactivation</b><small class="text-slate-400">Traitez les demandes en attente.</small></span><span class="admin-priority text-purple-400">Priorité moyenne</span><button class="admin-open border-purple-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
                                         <div class="admin-task"><span class="admin-task-icon text-blue-400"><i data-lucide="link"></i></span><span><b class="block text-white text-sm">${adminPendingQuotes.length} demande${adminPendingQuotes.length !== 1 ? 's' : ''} ou devis</b><small class="text-slate-400">Consultez les demandes reçues.</small></span><span class="admin-priority text-blue-400">Priorité normale</span><button class="admin-open" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
                                     </section>
-                                    <section class="admin-panel"><div class="admin-panel-title"><span>ϟ &nbsp; ACTIVITÉ RÉCENTE</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-console')">Tout voir</button></div><div class="admin-activity">
+                                    <section class="admin-panel"><div class="admin-panel-title"><span>ϟ &nbsp; ACTIVITÉ RÉCENTE</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-finance')">Tout voir</button></div><div class="admin-activity">
                                         <div class="admin-activity-row"><span class="text-slate-500">Maintenant</span><span class="text-cyan-400">●</span><span><b class="block text-white">Données synchronisées</b><small class="text-slate-400">La console affiche les informations Firebase actuelles</small></span><span class="text-cyan-400">Système</span></div>
                                         <div class="admin-activity-row"><span class="text-slate-500">Ce mois</span><span class="text-emerald-400">●</span><span><b class="block text-white">Paiements reçus</b><small class="text-slate-400">Total mensuel : ${currentMonthCA.toFixed(2)} €</small></span><span class="text-emerald-400">Paiements</span></div>
                                         <div class="admin-activity-row"><span class="text-slate-500">À traiter</span><span class="text-purple-400">●</span><span><b class="block text-white">Demandes administratives</b><small class="text-slate-400">${adminDemandCount} opération${adminDemandCount !== 1 ? 's' : ''} en attente</small></span><span class="text-purple-400">Demandes</span></div>
