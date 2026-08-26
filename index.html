@@ -897,6 +897,7 @@
             onboardingDraft: null,
             subscriptionCorrectionOpen: false,
             prototypeOnboardingOpen: false,
+            adminNotificationPanelOpen: false,
 
             // Personnalisation des liens Stripe par client
             selectedStripeClientId: "",
@@ -3670,6 +3671,17 @@
             const communityMembers = window.appState.allCommunityMembers;
             const unreadPeerMessages = communityJoined ? communityMessages.filter(m =>
                 m.senderId !== user.uid && !(m.readBy || []).includes(user.uid)) : [];
+            const adminBellItems = isAdmin ? [
+                { id: 'support', label: 'Messages clients non lus', count: unreadSupportMessages.length, icon: 'message-circle', color: 'text-cyan-300', target: 'admin-support' },
+                { id: 'prototype', label: 'Messages du client prototype', count: unreadPrototypeSupportMessages.length, icon: 'flask-conical', color: 'text-purple-300', target: 'admin-prototype' },
+                { id: 'attachments', label: 'Rattachements et réactivations', count: pendingSubscriptionAttachments.length, icon: 'link', color: 'text-purple-300', target: 'admin-pending-profiles' },
+                { id: 'quotes', label: 'Demandes de devis', count: adminPendingQuotes.length, icon: 'file-text', color: 'text-blue-300', target: 'admin-pending-profiles' },
+                { id: 'profiles', label: 'Profils clients à vérifier', count: unverifiedClientProfiles.length, icon: 'user-check', color: 'text-amber-300', target: 'admin-pending-profiles' },
+                { id: 'payments', label: 'Paiements à confirmer', count: adminPendingPaymentCount, icon: 'credit-card', color: 'text-amber-300', target: 'admin-pending-profiles' },
+                { id: 'services', label: 'Renouvellements et désactivations', count: adminServiceRequestCount, icon: 'refresh-cw', color: 'text-emerald-300', target: 'admin-pending-profiles' },
+                { id: 'community', label: 'Messages clients dans la communauté', count: unreadPeerMessages.length, icon: 'messages-square', color: 'text-emerald-300', target: 'community-section' }
+            ].filter(item => item.count > 0) : [];
+            const adminBellCount = adminBellItems.reduce((total, item) => total + item.count, 0);
             const lastNewsReadAt = Number(profile?.newsLastReadAt || 0);
             const unreadNewsCount = isAdmin ? 0 : window.appState.allNews.filter(news => Number(news.publishedAt || 0) > lastNewsReadAt).length;
             const prototypeLastNewsReadAt = Number(prototypeProfile.newsLastReadAt || 0);
@@ -3781,7 +3793,7 @@
                         <div class="admin-system"><strong>● &nbsp;Systèmes opérationnels</strong><br><span class="text-[9px] text-emerald-400/80">Tous les services fonctionnent</span></div>
                     </aside>
                     <main class="admin-main">
-                        <header class="admin-topbar"><h1>Vue d’ensemble</h1><button class="admin-search" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="search" class="w-5 h-5"></i><span>Rechercher un client…</span></button><div class="admin-user"><i data-lucide="bell" class="w-5 h-5"></i><span class="admin-avatar"><i data-lucide="user" class="w-6 h-6"></i></span><small><b class="block">Administrateur</b><span class="text-slate-400">Super Admin</span></small><button type="button" onclick="window.handleLogout()" title="Déconnexion" aria-label="Déconnexion" class="w-10 h-10 rounded-xl border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-950/30 grid place-items-center"><i data-lucide="log-out" class="w-5 h-5"></i></button></div></header>
+                        <header class="admin-topbar"><h1>Vue d’ensemble</h1><button class="admin-search" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="search" class="w-5 h-5"></i><span>Rechercher un client…</span></button><div class="admin-user relative"><button type="button" onclick="window.toggleAdminNotificationPanel()" title="Afficher les notifications" aria-label="Notifications administrateur : ${adminBellCount} en attente" class="relative w-10 h-10 rounded-xl border ${adminBellCount ? 'border-red-500/50 bg-red-950/25 text-red-300' : 'border-slate-700 text-slate-400'} hover:border-cyan-500/50 hover:text-cyan-300 grid place-items-center"><i data-lucide="bell" class="w-5 h-5 ${adminBellCount ? 'animate-pulse' : ''}"></i>${adminBellCount ? `<span class="absolute -top-2 -right-2 min-w-[21px] h-[21px] px-1 rounded-full bg-red-600 border-2 border-[#07111f] text-white text-[9px] leading-[17px] font-black text-center">${adminBellCount > 99 ? '99+' : adminBellCount}</span>` : ''}</button>${window.appState.adminNotificationPanelOpen ? `<div class="absolute right-0 top-[calc(100%+12px)] z-[100] w-[min(92vw,390px)] overflow-hidden rounded-2xl border border-slate-700 bg-[#081220] shadow-[0_22px_60px_rgba(0,0,0,.65)]"><div class="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3"><div><strong class="block text-xs text-white">Notifications administrateur</strong><span class="text-[9px] text-slate-400">${adminBellCount ? `${adminBellCount} élément${adminBellCount > 1 ? 's' : ''} à consulter` : 'Aucune notification en attente'}</span></div><button type="button" onclick="window.toggleAdminNotificationPanel(false)" class="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Fermer"><i data-lucide="x" class="h-4 w-4"></i></button></div><div class="max-h-[420px] overflow-y-auto p-2">${adminBellItems.length ? adminBellItems.map(item => `<button type="button" onclick="window.openAdminBellNotification('${item.id}','${item.target}')" class="mb-1 flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left hover:border-slate-700 hover:bg-slate-900"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-950 ${item.color}"><i data-lucide="${item.icon}" class="h-4 w-4"></i></span><span class="min-w-0 flex-1"><strong class="block truncate text-[10px] text-white">${item.label}</strong><small class="text-[9px] text-slate-500">Cliquez pour ouvrir et traiter</small></span><b class="min-w-[24px] rounded-full bg-red-600 px-1.5 py-1 text-center text-[9px] text-white">${item.count}</b></button>`).join('') : `<div class="px-4 py-8 text-center"><i data-lucide="bell-check" class="mx-auto mb-2 h-7 w-7 text-emerald-400"></i><strong class="block text-[10px] text-emerald-300">Tout est à jour</strong><span class="mt-1 block text-[9px] text-slate-500">Les nouvelles demandes et les nouveaux messages apparaîtront ici automatiquement.</span></div>`}</div></div>` : ''}<span class="admin-avatar"><i data-lucide="user" class="w-6 h-6"></i></span><small><b class="block">Administrateur</b><span class="text-slate-400">Super Admin</span></small><button type="button" onclick="window.handleLogout()" title="Déconnexion" aria-label="Déconnexion" class="w-10 h-10 rounded-xl border border-slate-700 text-slate-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-950/30 grid place-items-center"><i data-lucide="log-out" class="w-5 h-5"></i></button></div></header>
                         <div class="admin-content">
                             <div class="admin-kpis">
                                 <button class="admin-kpi text-cyan-400 text-left" onclick="window.mobileGoTo('admin-clients')"><span class="admin-kpi-icon"><i data-lucide="users"></i></span><span class="text-slate-300 text-xs">Clients actifs<strong>${firebaseClientProfiles.length}</strong><small class="text-cyan-400">Voir les clients</small></span></button>
@@ -5663,6 +5675,30 @@
                 const chatBox = document.getElementById('admin-chat-box');
                 if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
             }, 60);
+        };
+
+        window.toggleAdminNotificationPanel = (forceValue) => {
+            if (!window.appState.isAdmin) return;
+            window.appState.adminNotificationPanelOpen = typeof forceValue === 'boolean'
+                ? forceValue
+                : !window.appState.adminNotificationPanelOpen;
+            renderApp();
+        };
+
+        window.openAdminBellNotification = async (notificationId, targetId) => {
+            if (!window.appState.isAdmin) return;
+            window.appState.adminNotificationPanelOpen = false;
+            if (notificationId === 'support') {
+                await window.openUnreadSupportNotification();
+                return;
+            }
+            if (notificationId === 'prototype') {
+                window.mobileGoTo('admin-prototype');
+                window.openPrototypeSupportNotification();
+                return;
+            }
+            window.mobileGoTo(targetId || 'admin-pending-profiles');
+            if (notificationId === 'community') window.openUnreadPeerNotification?.();
         };
 
         window.openUnreadSupportNotification = async () => {
