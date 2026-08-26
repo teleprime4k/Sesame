@@ -209,6 +209,74 @@
             .auth-3d-logo-wrap, .auth-3d-ring, .auth-3d-scene::before, .auth-3d-scene::after { animation: none !important; }
         }
 
+        /* Nouvelle page d'accueil administrateur — isolée de l'espace client */
+        .admin-home { display: none; }
+        .admin-dashboard-home-mode { max-width: none !important; padding: 0 !important; gap: 0 !important; overflow: visible !important; }
+        .admin-dashboard-home-mode > #dashboard-header,
+        .admin-dashboard-home-mode > :not(.admin-home):not(.mobile-nav-shell):not(.mobile-shortcuts-sheet) { display: none; }
+        .admin-dashboard-home-mode .admin-home { display: grid; grid-template-columns: 278px minmax(0,1fr); min-height: 100vh; width: 100%; background: #030817; position: relative; z-index: 20; }
+        .admin-sidebar { background: linear-gradient(180deg,#050b1c,#030817); border-right: 1px solid #1d2a3f; padding: 24px 20px; display: flex; flex-direction: column; gap: 22px; }
+        .admin-brand { display:flex; align-items:center; gap:12px; padding-bottom:20px; border-bottom:1px solid #1d2a3f; color:#fff; font-size:20px; font-weight:800; }
+        .admin-brand img { width:44px; height:44px; border-radius:12px; object-fit:cover; }
+        .admin-brand b { color:#a855f7; }
+        .admin-nav-group { display:flex; flex-direction:column; gap:7px; }
+        .admin-nav-title { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:.12em; margin:0 10px 4px; }
+        .admin-nav-link { display:flex; align-items:center; gap:12px; min-height:45px; padding:0 13px; border-radius:9px; color:#d8e1ee; font-size:13px; text-align:left; transition:.18s; }
+        .admin-nav-link:hover,.admin-nav-link.active { color:#fff; background:#102139; box-shadow:inset 3px 0 #22d3ee; }
+        .admin-nav-link svg { width:18px; height:18px; color:#dbeafe; }
+        .admin-system { margin-top:auto; padding:13px; border:1px solid #1c3048; border-radius:10px; background:#0b1628; color:#4ade80; font-size:11px; }
+        .admin-main { min-width:0; }
+        .admin-topbar { min-height:86px; padding:18px 34px; border-bottom:1px solid #1d2a3f; display:grid; grid-template-columns:1fr minmax(280px,445px) 1fr; align-items:center; gap:24px; }
+        .admin-topbar h1 { font-size:27px; font-weight:800; color:#fff; }
+        .admin-search { height:46px; border:1px solid #1e2c43; background:#0b1527; border-radius:9px; display:flex; align-items:center; gap:10px; padding:0 14px; color:#7f8da3; }
+        .admin-user { justify-self:end; display:flex; align-items:center; gap:12px; color:#fff; }
+        .admin-avatar { width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#a855f7); display:grid; place-items:center; }
+        .admin-content { padding:24px 32px 38px; display:grid; gap:20px; }
+        .admin-kpis { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:18px; }
+        .admin-kpi,.admin-panel { background:#0b1628; border:1px solid #1c2b41; border-radius:11px; }
+        .admin-kpi { min-height:120px; padding:20px; display:flex; align-items:center; gap:17px; }
+        .admin-kpi-icon { width:58px; height:58px; border:1px solid currentColor; border-radius:50%; display:grid; place-items:center; flex:none; }
+        .admin-kpi strong { display:block; color:#fff; font-size:27px; line-height:1.15; margin-top:4px; }
+        .admin-grid { display:grid; grid-template-columns:minmax(0,2.2fr) minmax(290px,1fr); gap:20px; }
+        .admin-panel { padding:20px 24px; }
+        .admin-panel-title { display:flex; align-items:center; justify-content:space-between; color:#fff; font-weight:800; font-size:14px; padding-bottom:14px; border-bottom:1px solid #1d2a3f; }
+        .admin-task { display:grid; grid-template-columns:48px 1fr auto auto; align-items:center; gap:15px; min-height:76px; border-bottom:1px solid #1d2a3f; }
+        .admin-task:last-child { border-bottom:0; }
+        .admin-task-icon { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; border:1px solid currentColor; }
+        .admin-open { border:1px solid #287fc3; padding:8px 25px; border-radius:7px; color:#fff; font-size:12px; font-weight:700; }
+        .admin-priority { padding:5px 12px; border-radius:999px; font-size:10px; border:1px solid currentColor; }
+        .admin-actions { display:grid; gap:14px; margin-top:14px; }
+        .admin-action { min-height:76px; border:1px solid #24344c; border-radius:9px; display:flex; align-items:center; gap:17px; padding:0 20px; color:#fff; text-align:left; }
+        .admin-action svg { color:#22d3ee; width:26px; height:26px; }
+        .admin-activity { display:grid; gap:0; margin-top:8px; }
+        .admin-activity-row { display:grid; grid-template-columns:88px 22px 1fr auto; align-items:center; min-height:44px; border-bottom:1px solid #1d2a3f; font-size:11px; }
+        .admin-detail-mode .admin-home { display:none !important; }
+        .admin-detail-mode > #dashboard-header { display:flex !important; margin:16px; }
+        .admin-detail-mode > .admin-detail-active { display:flex !important; margin:0 16px 16px; }
+        @media (max-width: 767px) {
+            .admin-dashboard-home-mode .admin-home { display:block; padding-bottom:78px; }
+            .admin-sidebar { display:none; }
+            .admin-topbar { min-height:auto; padding:16px; grid-template-columns:1fr auto; position:sticky; top:0; z-index:30; background:#050b1c; }
+            .admin-topbar h1 { font-size:21px; }
+            .admin-search { display:none; }
+            .admin-user small { display:none; }
+            .admin-content { padding:14px; gap:14px; }
+            .admin-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+            .admin-kpi { min-height:104px; padding:13px; gap:10px; align-items:flex-start; flex-direction:column; }
+            .admin-kpi-icon { width:37px; height:37px; }
+            .admin-kpi-icon svg { width:19px; height:19px; }
+            .admin-kpi strong { font-size:20px; }
+            .admin-grid { grid-template-columns:1fr; gap:14px; }
+            .admin-panel { padding:15px; }
+            .admin-task { grid-template-columns:38px 1fr auto; gap:10px; min-height:70px; }
+            .admin-task .admin-priority { display:none; }
+            .admin-open { padding:7px 12px; }
+            .admin-activity-row { grid-template-columns:64px 14px 1fr; }
+            .admin-activity-row > :last-child { display:none; }
+            .admin-detail-mode > #dashboard-header { margin:10px; }
+            .admin-detail-mode > .admin-detail-active { margin:0 10px 10px; }
+        }
+
         /* Navigation et densité optimisées pour téléphones */
         .mobile-anchor { scroll-margin-top: 88px; }
         .mobile-nav-shell { display: none; }
@@ -3566,6 +3634,9 @@
             const unreadPrototypeSupportMessages = isAdmin
                 ? (prototypeProfile.supportMessages || []).filter(message => message.sender === 'client' && message.readByAdmin === false)
                 : [];
+            const adminPendingPaymentCount = isAdmin ? [prototypeProfile, ...firebaseClientProfiles].reduce((total, client) => total + SERVICES_DATA.filter(service => client?.services?.[service.id]?.paymentStage === 'pending_confirmation').length, 0) : 0;
+            const adminDemandCount = adminPendingQuotes.length + pendingSubscriptionAttachments.length;
+            const adminUnreadCount = unreadSupportMessages.length + unreadPrototypeSupportMessages.length;
             const communityJoined = isAdmin || profile?.communityChatJoined === true;
             const communityMessages = window.appState.allClientMessages.filter(m => m.groupId === 'sesame-community');
             const communityMembers = window.appState.allCommunityMembers;
@@ -3620,7 +3691,7 @@
             ];
 
             return `
-            <div id="dashboard-top" class="mobile-anchor relative min-h-screen bg-[#030712] text-slate-100 p-3 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto z-10 font-sans w-full overflow-hidden">
+            <div id="dashboard-top" class="mobile-anchor relative min-h-screen bg-[#030712] text-slate-100 p-3 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto z-10 font-sans w-full overflow-hidden ${isAdmin ? 'admin-dashboard-home-mode' : ''}">
                 <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-950/10 via-[#030712] to-[#030712] z-0"></div>
 
                 <!-- EN-TÊTE PRINCIPAL (Totalement responsive) -->
@@ -3666,6 +3737,51 @@
                         </button>
                     </div>
                 </header>
+
+                ${isAdmin ? `
+                <section id="admin-home" class="admin-home" aria-label="Vue d’ensemble administrateur">
+                    <aside class="admin-sidebar">
+                        <div class="admin-brand"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame" onerror="this.src='https://sesameouvretoi.com/favicon.ico'"><span>Sésame <b>Admin</b></span></div>
+                        <nav class="admin-nav-group"><span class="admin-nav-title">Général</span><button class="admin-nav-link active" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Vue d’ensemble</button></nav>
+                        <nav class="admin-nav-group"><span class="admin-nav-title">Gestion</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i>Clients</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="file-text"></i>Demandes</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-support')"><i data-lucide="headphones"></i>Support</button></nav>
+                        <nav class="admin-nav-group"><span class="admin-nav-title">Services</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i>Services</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="credit-card"></i>Paiements</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-referrals')"><i data-lucide="users-round"></i>Parrainages</button></nav>
+                        <nav class="admin-nav-group"><span class="admin-nav-title">Contenu</span><button class="admin-nav-link" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i>Actualités</button><button class="admin-nav-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="message-square"></i>Communauté</button></nav>
+                        <nav class="admin-nav-group"><span class="admin-nav-title">Administration</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-console')"><i data-lucide="settings"></i>Paramètres</button></nav>
+                        <div class="admin-system"><strong>● &nbsp;Systèmes opérationnels</strong><br><span class="text-[9px] text-emerald-400/80">Tous les services fonctionnent</span></div>
+                    </aside>
+                    <main class="admin-main">
+                        <header class="admin-topbar"><h1>Vue d’ensemble</h1><button class="admin-search" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="search" class="w-5 h-5"></i><span>Rechercher un client…</span></button><div class="admin-user"><i data-lucide="bell" class="w-5 h-5"></i><span class="admin-avatar"><i data-lucide="user" class="w-6 h-6"></i></span><small><b class="block">Administrateur</b><span class="text-slate-400">Super Admin</span></small></div></header>
+                        <div class="admin-content">
+                            <div class="admin-kpis">
+                                <button class="admin-kpi text-cyan-400 text-left" onclick="window.mobileGoTo('admin-clients')"><span class="admin-kpi-icon"><i data-lucide="users"></i></span><span class="text-slate-300 text-xs">Clients actifs<strong>${firebaseClientProfiles.length}</strong><small class="text-cyan-400">Voir les clients</small></span></button>
+                                <button class="admin-kpi text-purple-400 text-left" onclick="window.mobileGoTo('admin-pending-profiles')"><span class="admin-kpi-icon"><i data-lucide="file-text"></i></span><span class="text-slate-300 text-xs">Demandes à traiter<strong>${adminDemandCount}</strong><small class="text-amber-400">${adminDemandCount ? 'À vérifier' : 'Aucune attente'}</small></span></button>
+                                <button class="admin-kpi text-cyan-400 text-left" onclick="window.mobileGoTo('admin-support')"><span class="admin-kpi-icon"><i data-lucide="message-circle"></i></span><span class="text-slate-300 text-xs">Messages non lus<strong>${adminUnreadCount}</strong><small class="text-cyan-400">Voir les messages</small></span></button>
+                                <button class="admin-kpi text-emerald-400 text-left" onclick="window.mobileGoTo('admin-finance')"><span class="admin-kpi-icon"><i data-lucide="wallet-cards"></i></span><span class="text-slate-300 text-xs">Paiements du mois<strong>${currentMonthCA.toFixed(2)} €</strong><small class="text-emerald-400">Montant réellement reçu</small></span></button>
+                            </div>
+                            <div class="admin-grid">
+                                <div class="grid gap-5">
+                                    <section class="admin-panel"><div class="admin-panel-title"><span>▣ &nbsp; À TRAITER AUJOURD’HUI</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-console')">Tout voir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-amber-400"><i data-lucide="credit-card"></i></span><span><b class="block text-white text-sm">${adminPendingPaymentCount} paiement${adminPendingPaymentCount !== 1 ? 's' : ''} à confirmer</b><small class="text-slate-400">Vérifiez et confirmez les paiements en attente.</small></span><span class="admin-priority text-amber-400">Priorité élevée</span><button class="admin-open border-amber-500" onclick="window.mobileGoTo('admin-services')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-purple-400"><i data-lucide="refresh-cw"></i></span><span><b class="block text-white text-sm">${pendingSubscriptionAttachments.length} demande${pendingSubscriptionAttachments.length !== 1 ? 's' : ''} de réactivation</b><small class="text-slate-400">Traitez les demandes en attente.</small></span><span class="admin-priority text-purple-400">Priorité moyenne</span><button class="admin-open border-purple-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-blue-400"><i data-lucide="link"></i></span><span><b class="block text-white text-sm">${adminPendingQuotes.length} demande${adminPendingQuotes.length !== 1 ? 's' : ''} ou devis</b><small class="text-slate-400">Consultez les demandes reçues.</small></span><span class="admin-priority text-blue-400">Priorité normale</span><button class="admin-open" onclick="window.mobileGoTo('admin-quotes')">Ouvrir</button></div>
+                                    </section>
+                                    <section class="admin-panel"><div class="admin-panel-title"><span>ϟ &nbsp; ACTIVITÉ RÉCENTE</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-console')">Tout voir</button></div><div class="admin-activity">
+                                        <div class="admin-activity-row"><span class="text-slate-500">Maintenant</span><span class="text-cyan-400">●</span><span><b class="block text-white">Données synchronisées</b><small class="text-slate-400">La console affiche les informations Firebase actuelles</small></span><span class="text-cyan-400">Système</span></div>
+                                        <div class="admin-activity-row"><span class="text-slate-500">Ce mois</span><span class="text-emerald-400">●</span><span><b class="block text-white">Paiements reçus</b><small class="text-slate-400">Total mensuel : ${currentMonthCA.toFixed(2)} €</small></span><span class="text-emerald-400">Paiements</span></div>
+                                        <div class="admin-activity-row"><span class="text-slate-500">À traiter</span><span class="text-purple-400">●</span><span><b class="block text-white">Demandes administratives</b><small class="text-slate-400">${adminDemandCount} opération${adminDemandCount !== 1 ? 's' : ''} en attente</small></span><span class="text-purple-400">Demandes</span></div>
+                                    </div></section>
+                                </div>
+                                <section class="admin-panel"><div class="admin-panel-title"><span>ϟ &nbsp; ACTIONS RAPIDES</span></div><div class="admin-actions">
+                                    <button class="admin-action" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="search"></i><span>Rechercher un client</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
+                                    <button class="admin-action" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i><span>Forcer un service</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
+                                    <button class="admin-action" onclick="window.mobileGoTo('admin-services')"><i data-lucide="key-round"></i><span>Transmettre des identifiants</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
+                                    <button class="admin-action" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="badge-euro"></i><span>Ajouter une transaction</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
+                                    <button class="admin-action" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i><span>Publier une actualité</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
+                                </div></section>
+                            </div>
+                        </div>
+                    </main>
+                </section>` : ''}
 
                 ${!isAdmin ? (() => {
                     const referralPoints = Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)));
@@ -4757,7 +4873,7 @@
                         </div>
 
                         <!-- 6. REGISTRE FINANCIER AMÉLIORÉ (Avec statistiques par Mois et par Année & Mini Graphique CSS - Repositionné ici !) -->
-                        <div class="bg-[#0c1221] border border-purple-900/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full relative overflow-hidden">
+                        <div id="admin-finance" class="mobile-anchor bg-[#0c1221] border border-purple-900/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full relative overflow-hidden">
                             <div class="border-b border-slate-800 pb-2 flex flex-col gap-1">
                                 <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 truncate">
                                     <i data-lucide="line-chart" class="text-purple-400 w-4 h-4 shrink-0"></i> Registre Financier
@@ -5170,13 +5286,13 @@
         window.applyMobileRoute = (targetId, shouldScroll = true, shouldAnimate = true) => {
             if (!window.matchMedia('(max-width: 767px)').matches) return;
             const routeIds = [
-                'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
+                'admin-home', 'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
                 'client-referrals', 'news-section', 'community-section', 'admin-console', 'admin-quotes',
                 'admin-prototype', 'admin-support', 'admin-services', 'admin-referrals', 'admin-stripe',
                 'admin-pimp-card', 'admin-manage-link', 'admin-manage-gold-vibe-link',
-                'admin-deletion-history', 'admin-pending-profiles', 'admin-clients'
+                'admin-deletion-history', 'admin-pending-profiles', 'admin-clients', 'admin-finance'
             ];
-            const resolvedId = targetId === 'dashboard-top' ? 'overview-section' : targetId;
+            const resolvedId = targetId === 'dashboard-top' ? (window.appState.isAdmin ? 'admin-home' : 'overview-section') : targetId;
             routeIds.forEach(id => {
                 const element = document.getElementById(id);
                 element?.classList.add('mobile-route-hidden');
@@ -5233,7 +5349,7 @@
             target.classList.remove('mobile-route-hidden');
             target.classList.add('mobile-route-active');
             target.classList.toggle('mobile-route-animate', shouldAnimate);
-            if (targetId === 'dashboard-top') {
+            if (targetId === 'dashboard-top' && !window.appState.isAdmin) {
                 const billingRules = document.getElementById('billing-rules');
                 billingRules?.classList.remove('mobile-route-hidden');
                 billingRules?.classList.add('mobile-route-active');
@@ -5253,6 +5369,24 @@
                 window.applyMobileRoute(targetId);
                 if (targetId === 'news-section') window.markNewsAsRead();
                 if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
+                return;
+            }
+            const dashboard = document.getElementById('dashboard-top');
+            if (window.appState.isAdmin && dashboard) {
+                dashboard.querySelectorAll(':scope > .admin-detail-active').forEach(element => element.classList.remove('admin-detail-active'));
+                if (targetId === 'dashboard-top') {
+                    dashboard.classList.remove('admin-detail-mode');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                const adminTarget = document.getElementById(targetId);
+                if (!adminTarget) return;
+                let branch = adminTarget;
+                while (branch.parentElement && branch.parentElement !== dashboard) branch = branch.parentElement;
+                branch.classList.add('admin-detail-active');
+                dashboard.classList.add('admin-detail-mode');
+                requestAnimationFrame(() => adminTarget.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                if (targetId === 'news-section') window.markNewsAsRead();
                 return;
             }
             const target = document.getElementById(targetId);
