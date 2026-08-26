@@ -255,7 +255,9 @@
         .admin-workspace-head h2 { color:#fff; font-size:20px; font-weight:800; }
         .admin-workspace-back { display:flex; align-items:center; gap:8px; padding:9px 14px; color:#67e8f9; border:1px solid rgba(34,211,238,.35); border-radius:8px; background:#071525; font-size:12px; font-weight:700; }
         .admin-workspace-body { width:100%; min-width:0; }
-        .admin-workspace-body > * { display:flex !important; width:100% !important; max-width:none !important; margin:0 !important; }
+        .admin-workspace-body > * { width:100% !important; max-width:none !important; margin:0 !important; }
+        .admin-workspace-search { flex:1; max-width:440px; height:40px; padding:0 13px; border-radius:8px; border:1px solid #263750; background:#07111f; color:#fff; font-size:12px; outline:none; }
+        .admin-workspace-search:focus { border-color:#22d3ee; box-shadow:0 0 0 3px rgba(34,211,238,.08); }
         @media (max-width: 767px) {
             .admin-dashboard-home-mode .admin-home { display:block; padding-bottom:78px; }
             .admin-sidebar { display:none; }
@@ -1250,6 +1252,13 @@
             // Un setTimeout créait une image intermédiaire où toutes les cartes
             // devenaient visibles pendant les synchronisations Firebase.
             window.applyMobileRoute?.(window.appState.mobileActiveRoute || 'dashboard-top', false, false);
+
+            // Les mises à jour Firebase reconstruisent le tableau de bord.
+            // Rouvrir immédiatement l'outil Admin actif évite qu'il disparaisse
+            // après une action, un filtre, une validation ou un enregistrement.
+            if (window.appState.isAdmin && window.appState.adminActiveTool) {
+                requestAnimationFrame(() => window.mobileGoTo?.(window.appState.adminActiveTool, false));
+            }
 
             // Auto-scroll des tchats après le rendu
             setTimeout(() => {
@@ -3124,10 +3133,14 @@
             const container = document.getElementById('admin-clients-table-body');
             if(container) {
                 const { allProfiles } = window.appState;
+                const normalizedQuery = String(queryVal || '').trim().toLocaleLowerCase('fr');
                 const filtered = allProfiles.filter(client =>
                     !isAdminProfile(client) && client.authVerified === true && (
-                        client.email.toLowerCase().includes(queryVal.toLowerCase()) ||
-                        window.getClientName(client.email).toLowerCase().includes(queryVal.toLowerCase())
+                        String(client.email || '').toLocaleLowerCase('fr').includes(normalizedQuery) ||
+                        String(client.firstName || '').toLocaleLowerCase('fr').includes(normalizedQuery) ||
+                        String(client.lastName || '').toLocaleLowerCase('fr').includes(normalizedQuery) ||
+                        `${client.firstName || ''} ${client.lastName || ''}`.trim().toLocaleLowerCase('fr').includes(normalizedQuery) ||
+                        window.getClientName(client.email).toLocaleLowerCase('fr').includes(normalizedQuery)
                     )
                 );
                 
@@ -3786,7 +3799,7 @@
                             </div>
                         </div>
                         <section id="admin-workspace" class="admin-workspace hidden" aria-live="polite">
-                            <div class="admin-workspace-head"><button class="admin-workspace-back" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="arrow-left" class="w-4 h-4"></i>Vue d’ensemble</button><h2 id="admin-workspace-title">Outil administrateur</h2></div>
+                            <div class="admin-workspace-head"><button class="admin-workspace-back" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="arrow-left" class="w-4 h-4"></i>Vue d’ensemble</button><h2 id="admin-workspace-title">Outil administrateur</h2><input id="admin-workspace-search" class="admin-workspace-search hidden" type="search" placeholder="Rechercher un client par nom ou e-mail…" oninput="window.handleAdminSearch(this.value)" /></div>
                             <div id="admin-workspace-body" class="admin-workspace-body"></div>
                         </section>
                     </main>
@@ -5381,6 +5394,7 @@
                 const workspace = document.getElementById('admin-workspace');
                 const workspaceBody = document.getElementById('admin-workspace-body');
                 const workspaceTitle = document.getElementById('admin-workspace-title');
+                const workspaceSearch = document.getElementById('admin-workspace-search');
                 if (!adminHome || !overview || !workspace || !workspaceBody) return;
 
                 // Remet l'outil précédemment ouvert exactement à sa place d'origine.
@@ -5392,9 +5406,11 @@
                 window.adminWorkspacePlacement = null;
 
                 if (targetId === 'dashboard-top' || targetId === 'admin-home') {
+                    window.appState.adminActiveTool = null;
                     workspaceBody.replaceChildren();
                     workspace.classList.add('hidden');
                     overview.classList.remove('hidden');
+                    workspaceSearch?.classList.add('hidden');
                     adminHome.querySelectorAll('.admin-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('onclick')?.includes("'dashboard-top'")));
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
@@ -5402,6 +5418,7 @@
 
                 const adminTarget = document.getElementById(targetId);
                 if (!adminTarget) return;
+                window.appState.adminActiveTool = targetId;
                 const placeholder = document.createComment(`emplacement-${targetId}`);
                 adminTarget.parentNode.insertBefore(placeholder, adminTarget);
                 workspaceBody.replaceChildren(adminTarget);
@@ -5417,6 +5434,13 @@
                     'admin-manage-link': 'Manage King Prime', 'admin-manage-gold-vibe-link': 'Manage Gold Vibe'
                 };
                 if (workspaceTitle) workspaceTitle.textContent = titles[targetId] || 'Outil administrateur';
+                if (workspaceSearch) {
+                    workspaceSearch.classList.toggle('hidden', targetId !== 'admin-clients');
+                    if (targetId === 'admin-clients') {
+                        workspaceSearch.value = window.appState.adminSearchQuery || '';
+                        requestAnimationFrame(() => workspaceSearch.focus());
+                    }
+                }
                 overview.classList.add('hidden');
                 workspace.classList.remove('hidden');
                 adminHome.querySelectorAll('.admin-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('onclick')?.includes(`'${targetId}'`)));
