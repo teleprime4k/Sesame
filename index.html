@@ -215,7 +215,7 @@
         .admin-dashboard-home-mode > #dashboard-header,
         .admin-dashboard-home-mode > :not(.admin-home):not(.mobile-nav-shell):not(.mobile-shortcuts-sheet) { display: none; }
         .admin-dashboard-home-mode .admin-home { display: grid; grid-template-columns: 278px minmax(0,1fr); min-height: 100vh; width: 100%; background: #030817; position: relative; z-index: 20; }
-        .admin-sidebar { background: linear-gradient(180deg,#050b1c,#030817); border-right: 1px solid #1d2a3f; padding: 24px 20px; display: flex; flex-direction: column; gap: 22px; }
+        .admin-sidebar { background: linear-gradient(180deg,#050b1c,#030817); border-right: 1px solid #1d2a3f; padding: 24px 20px; display: flex; flex-direction: column; gap: 22px; position:sticky; top:0; height:100vh; overflow-y:auto; }
         .admin-brand { display:flex; align-items:center; gap:12px; padding-bottom:20px; border-bottom:1px solid #1d2a3f; color:#fff; font-size:20px; font-weight:800; }
         .admin-brand img { width:44px; height:44px; border-radius:12px; object-fit:cover; }
         .admin-brand b { color:#a855f7; }
@@ -223,6 +223,8 @@
         .admin-nav-title { color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:.12em; margin:0 10px 4px; }
         .admin-nav-link { display:flex; align-items:center; gap:12px; min-height:45px; padding:0 13px; border-radius:9px; color:#d8e1ee; font-size:13px; text-align:left; transition:.18s; }
         .admin-nav-link:hover,.admin-nav-link.active { color:#fff; background:#102139; box-shadow:inset 3px 0 #22d3ee; }
+        .admin-nav-link.admin-logout { color:#fca5a5; }
+        .admin-nav-link.admin-logout:hover { background:#2a1018; box-shadow:inset 3px 0 #ef4444; color:#fff; }
         .admin-nav-link svg { width:18px; height:18px; color:#dbeafe; }
         .admin-system { margin-top:auto; padding:13px; border:1px solid #1c3048; border-radius:10px; background:#0b1628; color:#4ade80; font-size:11px; }
         .admin-main { min-width:0; }
@@ -3674,7 +3676,7 @@
             const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
 
             const mobilePrimaryShortcuts = isAdmin ? [
-                { id: 'admin-console', icon: 'shield-check', label: 'Console' },
+                { id: 'admin-console', icon: 'shield-check', label: 'Outils admin' },
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'admin-support', icon: 'messages-square', label: 'Support' },
             ] : [
@@ -3685,7 +3687,7 @@
             const mobileAllShortcuts = isAdmin ? [
                 { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
-                { id: 'admin-console', icon: 'shield-check', label: 'Console' },
+                { id: 'admin-console', icon: 'shield-check', label: 'Outils administrateur' },
                 { id: 'admin-prototype', icon: 'flask-conical', label: 'Prototype' },
                 { id: 'admin-quotes', icon: 'file-text', label: 'Devis clients' },
                 { id: 'admin-support', icon: 'headphones', label: 'Support client' },
@@ -3701,7 +3703,8 @@
                 { id: 'admin-pending-profiles', icon: 'user-round-check', label: 'Profils à vérifier' },
                 { id: 'admin-clients', icon: 'users-round', label: 'Comptes clients' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
-                { id: 'community-section', icon: 'messages-square', label: 'Groupe Sésame' }
+                { id: 'community-section', icon: 'messages-square', label: 'Groupe Sésame' },
+                { action: 'logout', icon: 'log-out', label: 'Déconnexion' }
             ] : [
                 { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
@@ -3769,7 +3772,7 @@
                         <nav class="admin-nav-group"><span class="admin-nav-title">Gestion</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i>Clients</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="file-text"></i>Demandes</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-support')"><i data-lucide="headphones"></i>Support</button></nav>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Services</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i>Services</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="credit-card"></i>Paiements</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-referrals')"><i data-lucide="users-round"></i>Parrainages</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-credentials')"><i data-lucide="key-round"></i>Transmettre les identifiants</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-announcement')"><i data-lucide="megaphone"></i>Diffuser une info globale</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-pricing')"><i data-lucide="tags"></i>Ajuster les tarifs clients</button></nav>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Contenu</span><button class="admin-nav-link" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i>Actualités</button><button class="admin-nav-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="message-square"></i>Communauté</button></nav>
-                        <nav class="admin-nav-group"><span class="admin-nav-title">Administration</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-console')"><i data-lucide="settings"></i>Paramètres</button></nav>
+                        <nav class="admin-nav-group"><span class="admin-nav-title">Administration</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-console')"><i data-lucide="settings"></i>Outils administrateur</button><button class="admin-nav-link admin-logout" onclick="window.handleLogout()"><i data-lucide="log-out"></i>Déconnexion</button></nav>
                         <div class="admin-system"><strong>● &nbsp;Systèmes opérationnels</strong><br><span class="text-[9px] text-emerald-400/80">Tous les services fonctionnent</span></div>
                     </aside>
                     <main class="admin-main">
@@ -4454,7 +4457,7 @@
                         </div>
                         <div>
                             <h3 class="text-sm sm:text-base font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
-                                <i data-lucide="shield-check" class="w-4 h-4 text-purple-400"></i> Console Administrateur Globale
+                                <i data-lucide="shield-check" class="w-4 h-4 text-purple-400"></i> Outils administrateur
                             </h3>
                             <p class="text-xs text-slate-400 font-light">Cette section est strictement réservée au compte administrateur. Évaluez les devis, gérez Stripe et répondez aux messages de support de la plateforme.</p>
                         </div>
@@ -5219,7 +5222,7 @@
                             <button type="button" onclick="window.closeMobileShortcuts()" class="w-10 h-10 rounded-xl bg-slate-900 text-slate-400 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
                         </div>
                         <div class="mobile-shortcut-grid grid grid-cols-3 gap-2">
-                            ${mobileAllShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; return `<button type="button" onclick="${item.action === 'profile' ? 'window.closeMobileShortcuts();window.openMyPersonalInformation()' : `window.mobileGoTo('${item.id}')`}" class="relative p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex flex-col items-center justify-center gap-2 text-center text-[10px] font-bold active:border-cyan-500 active:text-cyan-300">${badgeCount ? `<span class="absolute top-1.5 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] leading-[18px] font-black animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}" class="w-5 h-5 text-cyan-400"></i><span>${item.label}</span></button>`; }).join('')}
+                            ${mobileAllShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; const action = item.action === 'profile' ? 'window.closeMobileShortcuts();window.openMyPersonalInformation()' : item.action === 'logout' ? 'window.closeMobileShortcuts();window.handleLogout()' : `window.mobileGoTo('${item.id}')`; return `<button type="button" onclick="${action}" class="relative p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex flex-col items-center justify-center gap-2 text-center text-[10px] font-bold active:border-cyan-500 active:text-cyan-300">${badgeCount ? `<span class="absolute top-1.5 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] leading-[18px] font-black animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}" class="w-5 h-5 ${item.action === 'logout' ? 'text-red-400' : 'text-cyan-400'}"></i><span>${item.label}</span></button>`; }).join('')}
                         </div>
                     </div>
                 </div>
@@ -5442,7 +5445,7 @@
                     'admin-pricing': 'Ajuster les tarifs clients',
                     'admin-referrals': 'Points de parrainage', 'news-section': 'Actualités Sésame',
                     'community-section': 'Communauté Sésame', 'services-section': 'Catalogue des services',
-                    'admin-console': 'Paramètres et outils administrateur', 'admin-prototype': 'Compte client prototype',
+                    'admin-console': 'Outils administrateur', 'admin-prototype': 'Compte client prototype',
                     'admin-stripe': 'Liens Stripe personnalisés', 'admin-pimp-card': 'Lien PIMP CARD',
                     'admin-manage-link': 'Manage King Prime', 'admin-manage-gold-vibe-link': 'Manage Gold Vibe'
                 };
