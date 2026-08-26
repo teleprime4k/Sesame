@@ -262,6 +262,7 @@
         .admin-workspace-body > .service-tools-relocated { display:flex !important; }
         #admin-console .standalone-admin-tool { display:none !important; }
         .admin-workspace-body > .standalone-admin-tool { display:flex !important; }
+        #admin-console .request-center-tool { display:none !important; }
         .admin-workspace-search { flex:1; max-width:440px; height:40px; padding:0 13px; border-radius:8px; border:1px solid #263750; background:#07111f; color:#fff; font-size:12px; outline:none; }
         .admin-workspace-search:focus { border-color:#22d3ee; box-shadow:0 0 0 3px rgba(34,211,238,.08); }
         @media (max-width: 767px) {
@@ -3659,7 +3660,11 @@
                 ? (prototypeProfile.supportMessages || []).filter(message => message.sender === 'client' && message.readByAdmin === false)
                 : [];
             const adminPendingPaymentCount = isAdmin ? [prototypeProfile, ...firebaseClientProfiles].reduce((total, client) => total + SERVICES_DATA.filter(service => client?.services?.[service.id]?.paymentStage === 'pending_confirmation').length, 0) : 0;
-            const adminDemandCount = adminPendingQuotes.length + pendingSubscriptionAttachments.length;
+            const adminServiceRequestCount = isAdmin ? [prototypeProfile, ...firebaseClientProfiles].reduce((total, client) => total + SERVICES_DATA.filter(service => {
+                const state = client?.services?.[service.id] || {};
+                return (state.renewalRequestedAt && state.reactivationRequestStatus === 'pending') || Boolean(state.cancellationRequestedAt);
+            }).length, 0) : 0;
+            const adminDemandCount = adminPendingQuotes.length + pendingSubscriptionAttachments.length + unverifiedClientProfiles.length + adminPendingPaymentCount + adminServiceRequestCount;
             const adminUnreadCount = unreadSupportMessages.length + unreadPrototypeSupportMessages.length;
             const communityJoined = isAdmin || profile?.communityChatJoined === true;
             const communityMessages = window.appState.allClientMessages.filter(m => m.groupId === 'sesame-community');
@@ -3788,9 +3793,9 @@
                             <div class="admin-grid">
                                 <div class="grid gap-5">
                                     <section class="admin-panel"><div class="admin-panel-title"><span>▣ &nbsp; À TRAITER AUJOURD’HUI</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-console')">Tout voir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-amber-400"><i data-lucide="credit-card"></i></span><span><b class="block text-white text-sm">${adminPendingPaymentCount} paiement${adminPendingPaymentCount !== 1 ? 's' : ''} à confirmer</b><small class="text-slate-400">Vérifiez et confirmez les paiements en attente.</small></span><span class="admin-priority text-amber-400">Priorité élevée</span><button class="admin-open border-amber-500" onclick="window.mobileGoTo('admin-services')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-amber-400"><i data-lucide="credit-card"></i></span><span><b class="block text-white text-sm">${adminPendingPaymentCount} paiement${adminPendingPaymentCount !== 1 ? 's' : ''} à confirmer</b><small class="text-slate-400">Vérifiez et confirmez les paiements en attente.</small></span><span class="admin-priority text-amber-400">Priorité élevée</span><button class="admin-open border-amber-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
                                         <div class="admin-task"><span class="admin-task-icon text-purple-400"><i data-lucide="refresh-cw"></i></span><span><b class="block text-white text-sm">${pendingSubscriptionAttachments.length} demande${pendingSubscriptionAttachments.length !== 1 ? 's' : ''} de réactivation</b><small class="text-slate-400">Traitez les demandes en attente.</small></span><span class="admin-priority text-purple-400">Priorité moyenne</span><button class="admin-open border-purple-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-blue-400"><i data-lucide="link"></i></span><span><b class="block text-white text-sm">${adminPendingQuotes.length} demande${adminPendingQuotes.length !== 1 ? 's' : ''} ou devis</b><small class="text-slate-400">Consultez les demandes reçues.</small></span><span class="admin-priority text-blue-400">Priorité normale</span><button class="admin-open" onclick="window.mobileGoTo('admin-quotes')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-blue-400"><i data-lucide="link"></i></span><span><b class="block text-white text-sm">${adminPendingQuotes.length} demande${adminPendingQuotes.length !== 1 ? 's' : ''} ou devis</b><small class="text-slate-400">Consultez les demandes reçues.</small></span><span class="admin-priority text-blue-400">Priorité normale</span><button class="admin-open" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
                                     </section>
                                     <section class="admin-panel"><div class="admin-panel-title"><span>ϟ &nbsp; ACTIVITÉ RÉCENTE</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-console')">Tout voir</button></div><div class="admin-activity">
                                         <div class="admin-activity-row"><span class="text-slate-500">Maintenant</span><span class="text-cyan-400">●</span><span><b class="block text-white">Données synchronisées</b><small class="text-slate-400">La console affiche les informations Firebase actuelles</small></span><span class="text-cyan-400">Système</span></div>
@@ -4464,7 +4469,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-slate-950/70 border ${pendingSubscriptionAttachments.length ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-4">
+                    <div id="admin-attachments" class="request-center-tool bg-slate-950/70 border ${pendingSubscriptionAttachments.length ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-4">
                         <div class="flex items-center justify-between gap-3 mb-3"><div><h4 class="text-xs font-bold text-white uppercase font-mono flex items-center gap-2"><i data-lucide="link-2" class="w-4 h-4 text-amber-400"></i> Rattachements d’abonnements</h4><p class="text-[9px] text-slate-500 mt-1">Demandes envoyées lors de la première connexion des nouveaux clients.</p></div><span class="px-2 py-1 rounded-full ${pendingSubscriptionAttachments.length ? 'bg-amber-950 text-amber-300 border border-amber-500/30 animate-pulse' : 'bg-slate-900 text-slate-500 border border-slate-800'} text-[8px] uppercase font-bold">${pendingSubscriptionAttachments.length} en attente</span></div>
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
                             ${pendingSubscriptionAttachments.length ? pendingSubscriptionAttachments.map(client => {
@@ -4581,7 +4586,7 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 w-full">
                         
                         <!-- 1. Demandes de Devis Client -->
-                        <div id="admin-quotes" class="mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-quotes" class="request-center-tool mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono">Demandes de Devis Client</h4>
                             <div class="space-y-3 max-h-[300px] overflow-y-auto pr-1">
                                 ${adminPendingQuotes.length === 0 
@@ -4797,7 +4802,7 @@
                         </div>
 
                         <!-- 4. CONTRÔLE DIRECT DES SERVICES -->
-                        <div id="admin-services" class="mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-services" class="request-center-tool mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <i data-lucide="toggle-left" class="text-purple-400 w-4 h-4"></i> Forcer Services (Sans frais)
                             </h4>
@@ -5147,7 +5152,7 @@
                     </div>
 
                     <!-- VALIDATION MANUELLE DES PROFILS NON VÉRIFIÉS -->
-                    <div id="admin-pending-profiles" class="mobile-anchor bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 sm:p-5 mt-4 w-full">
+                    <div id="admin-pending-profiles" class="request-center-tool mobile-anchor bg-amber-950/20 border border-amber-500/30 rounded-xl p-4 sm:p-5 mt-4 w-full">
                         <div class="flex items-center justify-between gap-3 mb-3">
                             <div>
                                 <h4 class="text-xs font-bold text-amber-300 uppercase font-mono flex items-center gap-2"><i data-lucide="user-round-check" class="w-4 h-4"></i> Profils en attente de vérification</h4>
@@ -5427,7 +5432,9 @@
                     return;
                 }
 
-                const requestedTargetIds = [targetId];
+                const requestedTargetIds = targetId === 'admin-pending-profiles'
+                    ? ['admin-attachments', 'admin-quotes', 'admin-services', 'admin-pending-profiles']
+                    : [targetId];
                 const adminTargets = requestedTargetIds.map(id => document.getElementById(id)).filter(Boolean);
                 if (!adminTargets.length) return;
                 window.appState.adminActiveTool = targetId;
@@ -5439,7 +5446,7 @@
                 workspaceBody.replaceChildren(...adminTargets);
                 window.adminWorkspacePlacements = placements;
                 const titles = {
-                    'admin-clients': 'Gestion des comptes clients', 'admin-pending-profiles': 'Demandes à traiter',
+                    'admin-clients': 'Gestion des comptes clients', 'admin-pending-profiles': 'Centre des demandes à traiter',
                     'admin-quotes': 'Demandes de devis', 'admin-support': 'Messagerie de support client',
                     'admin-services': 'Gestion des services', 'admin-finance': 'Registre financier',
                     'admin-credentials': 'Transmettre des identifiants', 'admin-announcement': 'Diffuser une information globale',
