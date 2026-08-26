@@ -213,6 +213,22 @@
         .mobile-anchor { scroll-margin-top: 88px; }
         .mobile-nav-shell { display: none; }
         .mobile-shortcuts-sheet { display: none; }
+        .modern-overview { position:relative; z-index:20; display:grid; grid-template-columns:230px minmax(0,1fr); gap:18px; }
+        .modern-overview-nav,.modern-overview-main { background:#0b1322; border:1px solid rgba(51,65,85,.72); border-radius:18px; box-shadow:0 12px 34px rgba(0,0,0,.28); }
+        .modern-overview-nav { padding:14px; }
+        .modern-overview-link { width:100%; min-height:42px; padding:9px 11px; margin-bottom:5px; display:flex; align-items:center; gap:10px; border-radius:11px; color:#cbd5e1; font-size:11px; font-weight:700; text-align:left; border:1px solid transparent; transition:.18s ease; }
+        .modern-overview-link:hover { color:#fff; border-color:rgba(34,211,238,.35); background:rgba(8,145,178,.12); }
+        .modern-overview-link svg { width:17px; height:17px; color:#22d3ee; flex:0 0 auto; }
+        .modern-overview-main { padding:18px; min-width:0; }
+        .modern-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+        .modern-summary-card { min-width:0; padding:13px; border:1px solid rgba(51,65,85,.72); border-radius:14px; background:#0e1a2d; }
+        .modern-summary-card strong { display:block; color:#fff; font:800 20px/1.1 ui-monospace,monospace; margin-top:6px; }
+        .modern-summary-card span { color:#94a3b8; font-size:9px; font-weight:800; text-transform:uppercase; }
+        .modern-action-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:12px; }
+        .modern-action { min-height:54px; padding:12px; border-radius:13px; border:1px solid rgba(51,65,85,.72); background:#08111f; color:#e2e8f0; display:flex; align-items:center; gap:10px; text-align:left; font-size:10px; font-weight:800; }
+        .modern-action:hover { border-color:rgba(168,85,247,.55); background:#111a31; }
+        .modern-action svg { width:19px; height:19px; color:#a78bfa; flex:0 0 auto; }
+        @media (max-width:1023px) { .modern-overview{grid-template-columns:1fr}.modern-overview-nav{display:none}.modern-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
         .kpi-auto-carousel {
             display: flex !important;
             overflow-x: auto;
@@ -290,6 +306,11 @@
             .mobile-shortcuts-sheet:not(.hidden) { display: flex; }
             .mobile-shortcuts-sheet { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
             .mobile-shortcut-grid button { min-height: 82px; }
+            .modern-overview-main { padding:12px; border-radius:14px; }
+            .modern-summary-grid { gap:8px; }
+            .modern-summary-card { padding:11px; min-height:82px; }
+            .modern-summary-card strong { font-size:18px; }
+            .modern-action-grid { grid-template-columns:1fr; }
             #toast-container { bottom: 88px; left: 12px; right: 12px; max-width: none; }
             .mobile-route-hidden { display: none !important; }
             .mobile-route-active.mobile-route-animate { animation: mobileRouteIn .18s ease-out; }
@@ -838,7 +859,8 @@
             announcementDraftIntro: null,
             announcementDraftText: null,
             expandedNewsIds: new Set(),
-            expandedGlobalAnnouncement: false
+            expandedGlobalAnnouncement: false,
+            showClientCredentials: false
         };
 
         let unsubProfile = null;
@@ -1157,6 +1179,11 @@
                 root.innerHTML = getPermissionDiagnosticScreenHTML();
             } else if (!window.appState.user) {
                 root.innerHTML = getAuthScreenHTML();
+            } else if (!window.appState.profile) {
+                // Attendre le profil réel avant d'afficher les annonces et les
+                // cartes personnalisées. Un profil encore nul ne doit jamais
+                // être interprété comme un nouveau client.
+                root.innerHTML = `<div class="min-h-screen flex flex-col items-center justify-center gap-3 text-cyan-400"><i data-lucide="shield-check" class="animate-pulse w-12 h-12"></i><span class="text-xs uppercase font-mono tracking-wider">Vérification de votre espace…</span></div>`;
             } else if (!window.appState.isAdmin && window.appState.profile &&
                 (!window.appState.profile.firstName?.trim() || !window.appState.profile.lastName?.trim())) {
                 root.innerHTML = getRequiredProfileCompletionHTML();
@@ -1249,10 +1276,22 @@
         renderApp();
         onAuthStateChanged(auth, async (currentUser) => {
             stopClientInactivityTimer();
+            // Tant que le rôle sécurisé n'est pas confirmé, ne jamais afficher
+            // provisoirement le tableau de bord client. Cela évite le flash des
+            // cartes Parrainage, Conservation des données et des annonces lors
+            // de la connexion d'un administrateur, notamment sur mobile.
+            if (currentUser) {
+                window.appState.loadingAuth = true;
+                window.appState.profile = null;
+                window.appState.isAdmin = false;
+            }
+
             // Sécurité anti-login automatique après inscription
             window.appState.user = currentUser;
             window.appState.firestoreBlocked = false; 
             window.appState.authLoading = false; 
+
+            if (currentUser) renderApp();
 
             if (currentUser) {
                 const secureAdminRole = await resolveAdminRole(currentUser);
@@ -3587,9 +3626,9 @@
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'admin-support', icon: 'messages-square', label: 'Support' },
             ] : [
-                { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
-                { id: 'community-section', icon: 'users', label: 'Groupe' }
+                { id: 'community-section', icon: 'users', label: 'Groupe' },
+                { id: 'client-support', icon: 'headphones', label: 'Support' }
             ];
             const mobileAllShortcuts = isAdmin ? [
                 { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
@@ -3666,6 +3705,63 @@
                         </button>
                     </div>
                 </header>
+
+                <!-- TABLEAU DE BORD SYNTHÉTIQUE VALIDÉ : CLIENT ET ADMIN -->
+                <section class="modern-overview" aria-label="${isAdmin ? 'Tableau de bord administrateur' : 'Tableau de bord client'}">
+                    <aside class="modern-overview-nav">
+                        <p class="px-2 pb-3 text-[9px] font-black uppercase tracking-[.18em] ${isAdmin ? 'text-purple-300' : 'text-cyan-300'}">${isAdmin ? 'Console administrateur' : 'Espace client'}</p>
+                        ${isAdmin ? `
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Accueil</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="user-round-check"></i>À traiter</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i>Clients</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-support')"><i data-lucide="messages-square"></i>Messagerie support</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-quotes')"><i data-lucide="file-text"></i>Devis</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="wallet-cards"></i>Registre financier</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i>Actualités</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="users-round"></i>Groupe communautaire</button>
+                        ` : `
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Accueil</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('services-section')"><i data-lucide="tv"></i>Mes services</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('client-payments')"><i data-lucide="credit-card"></i>Paiements</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('client-support')"><i data-lucide="messages-square"></i>Messages ${unreadSupportMessages.length ? `<b class="ml-auto rounded-full bg-cyan-600 px-2 py-0.5 text-white">${unreadSupportMessages.length}</b>` : ''}</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i>Actualités ${unreadNewsCount ? `<b class="ml-auto rounded-full bg-purple-600 px-2 py-0.5 text-white">${unreadNewsCount}</b>` : ''}</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i>Groupe ${unreadPeerMessages.length ? `<b class="ml-auto rounded-full bg-purple-600 px-2 py-0.5 text-white">${unreadPeerMessages.length}</b>` : ''}</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('client-credentials')"><i data-lucide="lock-keyhole"></i>Mes identifiants</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('client-referrals')"><i data-lucide="gift"></i>Parrainage</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i>Support</button>
+                        `}
+                    </aside>
+                    <div class="modern-overview-main">
+                        <div class="mb-4">
+                            <h2 class="text-xl sm:text-2xl font-black text-white">${isAdmin ? 'Bonjour Administrateur 👋' : `Bonjour ${window.escapeHTML(window.getClientName(user.email))} 👋`}</h2>
+                            <p class="mt-1 text-[10px] text-slate-400">${isAdmin ? 'Retrouvez les actions urgentes et les principaux outils de la plateforme.' : 'Bienvenue dans votre espace client. Retrouvez ici l’essentiel de votre compte.'}</p>
+                        </div>
+                        <div class="modern-summary-grid">
+                            ${isAdmin ? `
+                                <div class="modern-summary-card"><span>Clients vérifiés</span><strong class="text-cyan-300">${firebaseClientProfiles.length}</strong></div>
+                                <div class="modern-summary-card"><span>Messages à lire</span><strong class="text-purple-300">${unreadSupportMessages.length + unreadPrototypeSupportMessages.length}</strong></div>
+                                <div class="modern-summary-card"><span>Demandes de devis</span><strong class="text-amber-300">${window.appState.allQuotes.filter(q => q.status === 'pending').length}</strong></div>
+                                <div class="modern-summary-card"><span>CA du mois</span><strong class="text-emerald-300">${currentMonthCA.toFixed(2)} €</strong></div>
+                            ` : `
+                                <div class="modern-summary-card"><span>Services actifs</span><strong class="text-cyan-300">${activeCount}</strong></div>
+                                <div class="modern-summary-card"><span>Messages</span><strong class="text-purple-300">${unreadSupportMessages.length}</strong></div>
+                                <div class="modern-summary-card"><span>Actualités</span><strong class="text-amber-300">${unreadNewsCount}</strong></div>
+                                <div class="modern-summary-card"><span>Points de parrainage</span><strong class="text-emerald-300">${Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)))}/5</strong></div>
+                            `}
+                        </div>
+                        <div class="modern-action-grid">
+                            ${isAdmin ? `
+                                <button class="modern-action" onclick="window.mobileGoTo('admin-support')"><i data-lucide="messages-square"></i><span>Répondre aux messages</span></button>
+                                <button class="modern-action" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="circle-alert"></i><span>Voir les demandes urgentes</span></button>
+                                <button class="modern-action" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="chart-no-axes-combined"></i><span>Ouvrir le registre financier</span></button>
+                            ` : `
+                                <button class="modern-action" onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i><span>Contacter le support</span></button>
+                                <button class="modern-action" onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i><span>Voir les actualités</span></button>
+                                <button class="modern-action" onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i><span>Ouvrir le groupe communautaire</span></button>
+                            `}
+                        </div>
+                    </div>
+                </section>
 
                 ${!isAdmin ? (() => {
                     const referralPoints = Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)));
@@ -3789,7 +3885,7 @@
 
                 <!-- BANNIÈRE D'IDENTIFIANTS SÉCURISÉS DU CLIENT -->
                 ${hasCredentials ? `
-                <div class="relative bg-gradient-to-r from-cyan-950/30 to-purple-950/30 border border-cyan-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.15)] flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 overflow-hidden z-10 animate-fadeIn w-full">
+                <div id="client-credentials" class="mobile-anchor relative bg-gradient-to-r from-cyan-950/30 to-purple-950/30 border border-cyan-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.15)] flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 overflow-hidden z-10 animate-fadeIn w-full">
                     <div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
                     <div class="flex items-center gap-3">
                         <div class="p-2 bg-cyan-950 rounded-lg text-cyan-400 border border-cyan-500/20 shrink-0">
@@ -3821,8 +3917,9 @@
                         <div class="flex items-center justify-between gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1.5 min-w-0">
                             <div class="truncate">
                                 <span class="text-slate-500 text-[8px] block uppercase">Mot de passe</span>
-                                <span class="text-white truncate font-bold block">${profile.credentials.password}</span>
+                                <span class="text-white truncate font-bold block">${window.appState.showClientCredentials ? window.escapeHTML(profile.credentials.password) : '••••••••••••'}</span>
                             </div>
+                            <button type="button" onclick="window.toggleClientCredentials()" class="p-1 hover:bg-slate-900 rounded text-purple-400 hover:text-purple-300 shrink-0 min-h-[30px] min-w-[30px] flex items-center justify-center" title="${window.appState.showClientCredentials ? 'Masquer' : 'Afficher'} le mot de passe"><i data-lucide="${window.appState.showClientCredentials ? 'eye-off' : 'eye'}" class="w-4.5 h-4.5"></i></button>
                             <button onclick="window.copyToClipboard('${profile.credentials.password.replace(/'/g, "\\'")}')" class="p-1 hover:bg-slate-900 rounded text-cyan-400 hover:text-cyan-300 shrink-0 min-h-[30px] min-w-[30px] flex items-center justify-center" title="Copier le mot de passe">
                                 <i data-lucide="copy" class="w-4.5 h-4.5"></i>
                             </button>
@@ -3839,6 +3936,7 @@
                             </button>
                         </div>` : ''}
                     </div>
+                    <p class="w-full md:w-auto text-[9px] text-purple-200 md:max-w-[250px]"><i data-lucide="shield-alert" class="inline w-3 h-3 mr-1"></i>Ne partagez jamais vos identifiants. Sésame ne vous demandera jamais votre mot de passe par message.</p>
                 </div>
                 ` : ''}
 
@@ -3975,9 +4073,9 @@
 
                                     const isReactivationFlow = sState.status === 'expired' || Boolean(sState.renewalRequestedAt) || Boolean(sState.renewedAt) || Boolean(sState.subEnd);
                                     const paymentProgressMessage = !isActive && sState.paymentStage === 'pending_confirmation'
-                                        ? `<div class="rounded-xl border border-amber-500/45 bg-amber-950/25 p-3 text-[10px] leading-relaxed text-amber-100 font-sans"><strong class="block mb-1 text-amber-300 font-mono">⏳ Paiement ${isReactivationFlow ? 'de réactivation ' : ''}en attente de confirmation</strong>Vous recevrez une notification dès que votre paiement aura été validé. ${isReactivationFlow ? 'Votre abonnement sera ensuite réactivé par l’administrateur.' : (service.id === TV_PASS_SERVICE_ID ? 'Vos identifiants de connexion vous seront ensuite transmis directement dans votre espace client.' : 'Votre service sera ensuite activé par l’administrateur.')}</div>`
+                                        ? `<div class="rounded-xl border border-amber-500/45 bg-amber-950/25 p-3 text-[10px] leading-relaxed text-amber-100 font-sans"><strong class="block mb-1 text-amber-300 font-mono">⏳ Votre paiement est en attente de confirmation.</strong>Vous recevrez un message dès que votre paiement aura été validé. Vos identifiants de connexion vous seront ensuite transmis dans votre espace client.</div>`
                                         : (!isActive && sState.paymentStage === 'payment_confirmed'
-                                            ? `<div class="rounded-xl border border-emerald-500/45 bg-emerald-950/25 p-3 text-[10px] leading-relaxed text-emerald-100 font-sans animate-pulse"><strong class="block mb-1 text-emerald-300 font-mono">✅ Votre paiement a bien été reçu</strong>Nous procédons maintenant à ${isReactivationFlow ? 'la réactivation de votre abonnement' : 'l’activation du service concerné'}. Vous recevrez une notification dès que ${isReactivationFlow ? 'la réactivation' : 'l’activation'} sera terminée.</div>`
+                                            ? `<div class="rounded-xl border border-emerald-500/45 bg-emerald-950/25 p-3 text-[10px] leading-relaxed text-emerald-100 font-sans animate-pulse"><strong class="block mb-1 text-emerald-300 font-mono">✅ Bonjour, votre paiement a bien été reçu.</strong>Nous procédons maintenant à l’activation de votre service concerné. Vous recevrez vos identifiants de connexion dès que l’activation sera terminée.</div>`
                                             : (sState.paymentStage === 'payment_rejected'
                                                 ? `<div class="rounded-xl border border-red-500/50 bg-red-950/30 p-3 text-[10px] leading-relaxed text-red-100 font-sans"><strong class="block mb-1 text-red-300 font-mono">❌ Paiement non reçu</strong>Nous n’avons pas reçu la confirmation de votre paiement. Confirmez avoir lu cette information pour pouvoir réessayer.<button type="button" onclick="window.clientAcknowledgePaymentRejected('${service.id}')" class="mt-3 w-full rounded-lg border border-red-400/40 bg-red-700/70 px-3 py-2 text-[9px] font-black uppercase text-white hover:bg-red-600">J’ai lu · Réessayer</button></div>`
                                                 : ''));
@@ -4068,7 +4166,7 @@
 
                                         ${service.id === 'custom-app' ? `
                                             <button type="button" onclick="window.openAppModels()" class="w-full py-2.5 px-3 rounded-lg bg-gradient-to-r from-violet-600/90 to-indigo-600/90 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] sm:text-[11px] uppercase font-bold transition-all shadow-[0_0_14px_rgba(139,92,246,.22)] flex items-center justify-center gap-2 min-h-[40px]">
-                                                <i data-lucide="smartphone" class="w-4 h-4"></i> Voir nos modèles
+                                                <i data-lucide="smartphone" class="w-4 h-4"></i> Voir nos applications
                                             </button>
                                         ` : ''}
                                         
@@ -4757,7 +4855,7 @@
                         </div>
 
                         <!-- 6. REGISTRE FINANCIER AMÉLIORÉ (Avec statistiques par Mois et par Année & Mini Graphique CSS - Repositionné ici !) -->
-                        <div class="bg-[#0c1221] border border-purple-900/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full relative overflow-hidden">
+                        <div id="admin-finance" class="mobile-anchor bg-[#0c1221] border border-purple-900/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full relative overflow-hidden">
                             <div class="border-b border-slate-800 pb-2 flex flex-col gap-1">
                                 <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 truncate">
                                     <i data-lucide="line-chart" class="text-purple-400 w-4 h-4 shrink-0"></i> Registre Financier
@@ -5291,6 +5389,13 @@
             if (window.appState.isAdmin) return;
             window.appState.expandedGlobalAnnouncement = !window.appState.expandedGlobalAnnouncement;
             renderApp();
+        };
+
+        window.toggleClientCredentials = () => {
+            if (window.appState.isAdmin) return;
+            window.appState.showClientCredentials = !window.appState.showClientCredentials;
+            renderApp();
+            setTimeout(() => document.getElementById('client-credentials')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 30);
         };
 
         window.toggleNewsDetails = (newsId) => {
