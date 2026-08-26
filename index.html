@@ -4015,7 +4015,7 @@
                 ` : ''}
 
                 <!-- SECTION DES KPI FINANCIERS -->
-                <section id="overview-section" aria-label="Indicateurs du tableau de bord" class="mobile-anchor mobile-kpi-strip kpi-auto-carousel relative z-10 w-full">
+                <section id="overview-section" aria-label="Indicateurs du tableau de bord" class="${isAdmin ? 'hidden' : ''} mobile-anchor mobile-kpi-strip kpi-auto-carousel relative z-10 w-full">
                     <div class="bg-[#0b1322] border border-[#1e293b]/70 p-3.5 sm:p-4 rounded-xl flex flex-col justify-center shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
                         <span class="text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider font-mono">Actifs</span>
                         <p class="text-lg sm:text-xl font-bold text-white font-mono mt-1">${activeCount}</p>
