@@ -180,6 +180,43 @@
             background: linear-gradient(155deg, rgba(15,23,42,.97), rgba(7,13,25,.98));
             box-shadow: 0 24px 70px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.025) inset;
         }
+        .auth-panel::before,
+        .auth-panel::after {
+            content:'';
+            position:absolute;
+            z-index:0;
+            left:-28%;
+            width:156%;
+            height:36%;
+            bottom:18%;
+            pointer-events:none;
+            border-radius:46% 54% 48% 52%;
+            transform-origin:50% 52%;
+            will-change:transform;
+        }
+        .auth-panel::before {
+            background:linear-gradient(90deg,rgba(6,182,212,.03),rgba(14,165,233,.22),rgba(37,99,235,.15),rgba(126,34,206,.13),rgba(6,182,212,.03));
+            border-top:2px solid rgba(34,211,238,.42);
+            filter:blur(.2px) drop-shadow(0 0 15px rgba(14,165,233,.24));
+            animation:authSeaWave 9s ease-in-out infinite;
+        }
+        .auth-panel::after {
+            bottom:12%;
+            opacity:.65;
+            background:linear-gradient(90deg,transparent,rgba(14,165,233,.12),rgba(99,102,241,.18),rgba(168,85,247,.10),transparent);
+            border-top:1px solid rgba(96,165,250,.32);
+            filter:blur(1px);
+            animation:authSeaWaveBack 12s ease-in-out infinite reverse;
+        }
+        .auth-panel > * { position:relative; z-index:1; }
+        @keyframes authSeaWave {
+            0%,100% { transform:translate3d(-5%,18px,0) rotate(-2deg) scaleY(.72); }
+            50% { transform:translate3d(5%,-8px,0) rotate(2deg) scaleY(1.04); }
+        }
+        @keyframes authSeaWaveBack {
+            0%,100% { transform:translate3d(6%,10px,0) rotate(1.5deg) scaleY(.82); }
+            50% { transform:translate3d(-6%,-13px,0) rotate(-1.5deg) scaleY(1.08); }
+        }
         .auth-role-button {
             min-height: 76px;
             border: 1px solid #1e293b;
@@ -213,22 +250,46 @@
         .mobile-anchor { scroll-margin-top: 88px; }
         .mobile-nav-shell { display: none; }
         .mobile-shortcuts-sheet { display: none; }
-        .modern-overview { position:relative; z-index:20; display:grid; grid-template-columns:230px minmax(0,1fr); gap:18px; }
-        .modern-overview-nav,.modern-overview-main { background:#0b1322; border:1px solid rgba(51,65,85,.72); border-radius:18px; box-shadow:0 12px 34px rgba(0,0,0,.28); }
-        .modern-overview-nav { padding:14px; }
+        .modern-overview { position:relative; z-index:20; display:grid; grid-template-columns:220px minmax(0,1fr); gap:0; border:1px solid #1b2a42; border-radius:18px; overflow:hidden; background:#08111f; box-shadow:0 18px 48px rgba(0,0,0,.34); }
+        .modern-overview-nav,.modern-overview-main { background:#0b1526; }
+        .modern-overview-nav { padding:18px 14px; border-right:1px solid #17243a; }
+        .modern-brand { display:flex; align-items:center; gap:10px; padding:2px 8px 18px; margin-bottom:12px; border-bottom:1px solid #1d293d; }
+        .modern-brand img { width:40px; height:40px; border-radius:12px; box-shadow:0 0 18px rgba(34,211,238,.16); }
+        .modern-brand strong { color:#fff; font-size:14px; line-height:1.05; }
+        .modern-brand small { display:block; color:#94a3b8; font-size:9px; margin-top:4px; }
         .modern-overview-link { width:100%; min-height:42px; padding:9px 11px; margin-bottom:5px; display:flex; align-items:center; gap:10px; border-radius:11px; color:#cbd5e1; font-size:11px; font-weight:700; text-align:left; border:1px solid transparent; transition:.18s ease; }
-        .modern-overview-link:hover { color:#fff; border-color:rgba(34,211,238,.35); background:rgba(8,145,178,.12); }
+        .modern-overview-link:first-of-type,.modern-overview-link:hover { color:#fff; border-color:rgba(34,211,238,.35); background:linear-gradient(90deg,rgba(8,145,178,.18),rgba(30,64,175,.09)); }
         .modern-overview-link svg { width:17px; height:17px; color:#22d3ee; flex:0 0 auto; }
-        .modern-overview-main { padding:18px; min-width:0; }
+        .modern-overview-main { padding:22px; min-width:0; background:radial-gradient(circle at 90% 0,rgba(8,145,178,.07),transparent 35%),#08111f; }
         .modern-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
-        .modern-summary-card { min-width:0; padding:13px; border:1px solid rgba(51,65,85,.72); border-radius:14px; background:#0e1a2d; }
-        .modern-summary-card strong { display:block; color:#fff; font:800 20px/1.1 ui-monospace,monospace; margin-top:6px; }
+        .modern-summary-card { min-width:0; padding:14px; border:1px solid #20304a; border-radius:14px; background:linear-gradient(145deg,#0e1b2f,#0a1424); box-shadow:0 9px 25px rgba(0,0,0,.2); }
+        .modern-summary-card strong { display:block; color:#fff; font:800 22px/1.1 ui-monospace,monospace; margin-top:7px; }
         .modern-summary-card span { color:#94a3b8; font-size:9px; font-weight:800; text-transform:uppercase; }
+        .modern-summary-card small { display:block; color:#64748b; font-size:8px; margin-top:8px; }
+        .modern-client-grid,.modern-admin-grid { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(260px,.9fr); gap:14px; margin-top:14px; }
+        .modern-panel { border:1px solid #20304a; border-radius:15px; background:linear-gradient(145deg,#0d192b,#091322); padding:15px; min-width:0; }
+        .modern-panel-title { color:#fff; font-size:13px; font-weight:900; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .modern-subscription { display:grid; grid-template-columns:128px minmax(0,1fr); gap:16px; padding:14px; border:1px solid #20304a; border-radius:13px; background:#07101d; }
+        .modern-subscription-art { min-height:132px; border-radius:12px; display:grid; place-items:center; padding:12px; text-align:center; color:#fff; font-weight:950; font-size:18px; line-height:1.04; background:radial-gradient(circle at 70% 80%,rgba(168,85,247,.3),transparent 33%),linear-gradient(145deg,#14110f,#071321); border:1px solid #182942; }
+        .modern-progress { height:8px; overflow:hidden; background:#142238; border-radius:99px; margin:10px 0 6px; }
+        .modern-progress > span { display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#10b981,#22c55e); }
+        .modern-consult-list { display:grid; gap:8px; }
+        .modern-consult { width:100%; display:flex; align-items:center; gap:10px; text-align:left; padding:10px; border:1px solid #20304a; border-radius:12px; background:#0a1526; color:#e2e8f0; }
+        .modern-consult svg { width:18px; color:#a78bfa; flex:0 0 auto; }
+        .modern-consult b { display:block; font-size:10px; }
+        .modern-consult small { display:block; font-size:8px; color:#94a3b8; margin-top:2px; }
+        .modern-task { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid #1d2a40; }
+        .modern-task:last-child { border-bottom:0; }
+        .modern-task b { display:block; color:#fff; font-size:11px; }
+        .modern-task small { display:block; color:#94a3b8; font-size:9px; margin-top:3px; }
+        .modern-task button { min-width:78px; padding:7px 10px; border:1px solid #334155; border-radius:9px; color:#fff; font-size:9px; font-weight:800; }
+        .modern-activity { display:flex; gap:10px; padding:8px 0; color:#cbd5e1; font-size:9px; border-bottom:1px solid #17243a; }
+        .modern-activity:last-child { border:0; }
         .modern-action-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:12px; }
         .modern-action { min-height:54px; padding:12px; border-radius:13px; border:1px solid rgba(51,65,85,.72); background:#08111f; color:#e2e8f0; display:flex; align-items:center; gap:10px; text-align:left; font-size:10px; font-weight:800; }
         .modern-action:hover { border-color:rgba(168,85,247,.55); background:#111a31; }
         .modern-action svg { width:19px; height:19px; color:#a78bfa; flex:0 0 auto; }
-        @media (max-width:1023px) { .modern-overview{grid-template-columns:1fr}.modern-overview-nav{display:none}.modern-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+        @media (max-width:1023px) { .modern-overview{grid-template-columns:1fr}.modern-overview-nav{display:none}.modern-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.modern-client-grid,.modern-admin-grid{grid-template-columns:1fr} }
         .kpi-auto-carousel {
             display: flex !important;
             overflow-x: auto;
@@ -311,6 +372,10 @@
             .modern-summary-card { padding:11px; min-height:82px; }
             .modern-summary-card strong { font-size:18px; }
             .modern-action-grid { grid-template-columns:1fr; }
+            .modern-subscription { grid-template-columns:92px minmax(0,1fr); gap:10px; padding:10px; }
+            .modern-subscription-art { min-height:110px; font-size:14px; padding:8px; }
+            .modern-client-grid,.modern-admin-grid { gap:9px; margin-top:9px; }
+            .modern-panel { padding:11px; }
             #toast-container { bottom: 88px; left: 12px; right: 12px; max-width: none; }
             .mobile-route-hidden { display: none !important; }
             .mobile-route-active.mobile-route-animate { animation: mobileRouteIn .18s ease-out; }
@@ -324,6 +389,7 @@
         @media (prefers-reduced-motion: reduce) {
             .kpi-auto-carousel > * { transition: none; }
             .auth-input-wrap { transition: none; }
+            .auth-panel::before,.auth-panel::after { animation:none !important; }
         }
     </style>
 </head>
@@ -3617,6 +3683,16 @@
             const prototypeCommunityJoined = prototypeProfile.communityChatJoined === true;
             const prototypeCommunityLastReadAt = Number(prototypeProfile.communityLastReadAt || 0);
             const prototypeUnreadCommunityCount = prototypeCommunityJoined ? communityMessages.filter(message => Number(message.timestamp || 0) > prototypeCommunityLastReadAt).length : 0;
+            const clientPendingPaymentCount = SERVICES_DATA.filter(service => servicesState[service.id]?.paymentStage === 'pending_confirmation').length;
+            const adminPendingPaymentCount = [prototypeProfile, ...firebaseClientProfiles].reduce((total, client) => total + SERVICES_DATA.filter(service => client?.services?.[service.id]?.paymentStage === 'pending_confirmation').length, 0);
+            const featuredService = SERVICES_DATA.find(service => {
+                const state = servicesState[service.id] || {};
+                return state.status === 'active' && Number(state.subEnd || 0) > virtualDate;
+            }) || SERVICES_DATA[0];
+            const featuredState = servicesState[featuredService.id] || {};
+            const featuredDays = Math.max(0, Math.ceil((Number(featuredState.subEnd || virtualDate) - virtualDate) / 86400000));
+            const featuredProgress = Math.max(0, Math.min(100, Math.round((featuredDays / 365) * 100)));
+            const adminDemandCount = adminPendingQuotes.length + pendingSubscriptionAttachments.length;
 
             // Identification du fuseau horaire
             const localTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Paris';
@@ -3706,17 +3782,22 @@
                     </div>
                 </header>
 
-                <!-- TABLEAU DE BORD SYNTHÉTIQUE VALIDÉ : CLIENT ET ADMIN -->
+                <!-- TABLEAU DE BORD PRINCIPAL : reproduit les maquettes validées -->
                 <section class="modern-overview" aria-label="${isAdmin ? 'Tableau de bord administrateur' : 'Tableau de bord client'}">
                     <aside class="modern-overview-nav">
-                        <p class="px-2 pb-3 text-[9px] font-black uppercase tracking-[.18em] ${isAdmin ? 'text-purple-300' : 'text-cyan-300'}">${isAdmin ? 'Console administrateur' : 'Espace client'}</p>
+                        <div class="modern-brand"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame"><span><strong>Sésame ${isAdmin ? '<em class="not-italic text-purple-400">Admin</em>' : ''}</strong><small>${isAdmin ? 'Console sécurisée' : 'Ouvre-Toi'}</small></span></div>
                         ${isAdmin ? `
-                            <button class="modern-overview-link" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Accueil</button>
-                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="user-round-check"></i>À traiter</button>
+                            <p class="px-2 py-2 text-[8px] text-slate-500 uppercase font-black">Général</p>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Vue d’ensemble</button>
+                            <p class="px-2 py-2 text-[8px] text-slate-500 uppercase font-black">Gestion</p>
                             <button class="modern-overview-link" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i>Clients</button>
-                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-support')"><i data-lucide="messages-square"></i>Messagerie support</button>
-                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-quotes')"><i data-lucide="file-text"></i>Devis</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="file-text"></i>Demandes</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-support')"><i data-lucide="headphones"></i>Support</button>
+                            <p class="px-2 py-2 text-[8px] text-slate-500 uppercase font-black">Services</p>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i>Services</button>
                             <button class="modern-overview-link" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="wallet-cards"></i>Registre financier</button>
+                            <button class="modern-overview-link" onclick="window.mobileGoTo('admin-referrals')"><i data-lucide="users-round"></i>Parrainages</button>
+                            <p class="px-2 py-2 text-[8px] text-slate-500 uppercase font-black">Contenu</p>
                             <button class="modern-overview-link" onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i>Actualités</button>
                             <button class="modern-overview-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="users-round"></i>Groupe communautaire</button>
                         ` : `
@@ -3733,33 +3814,61 @@
                     </aside>
                     <div class="modern-overview-main">
                         <div class="mb-4">
-                            <h2 class="text-xl sm:text-2xl font-black text-white">${isAdmin ? 'Bonjour Administrateur 👋' : `Bonjour ${window.escapeHTML(window.getClientName(user.email))} 👋`}</h2>
-                            <p class="mt-1 text-[10px] text-slate-400">${isAdmin ? 'Retrouvez les actions urgentes et les principaux outils de la plateforme.' : 'Bienvenue dans votre espace client. Retrouvez ici l’essentiel de votre compte.'}</p>
+                            <h2 class="text-xl sm:text-2xl font-black text-white">${isAdmin ? 'Vue d’ensemble' : `Bonjour ${window.escapeHTML(window.getClientName(user.email))} 👋`}</h2>
+                            <p class="mt-1 text-[10px] text-slate-400">${isAdmin ? 'Retrouvez les actions urgentes et les principaux outils de la plateforme.' : 'Bienvenue dans votre espace client'}</p>
                         </div>
                         <div class="modern-summary-grid">
                             ${isAdmin ? `
-                                <div class="modern-summary-card"><span>Clients vérifiés</span><strong class="text-cyan-300">${firebaseClientProfiles.length}</strong></div>
-                                <div class="modern-summary-card"><span>Messages à lire</span><strong class="text-purple-300">${unreadSupportMessages.length + unreadPrototypeSupportMessages.length}</strong></div>
-                                <div class="modern-summary-card"><span>Demandes de devis</span><strong class="text-amber-300">${window.appState.allQuotes.filter(q => q.status === 'pending').length}</strong></div>
-                                <div class="modern-summary-card"><span>CA du mois</span><strong class="text-emerald-300">${currentMonthCA.toFixed(2)} €</strong></div>
+                                <div class="modern-summary-card"><span>Clients actifs</span><strong class="text-cyan-300">${firebaseClientProfiles.length}</strong><small>Comptes clients vérifiés</small></div>
+                                <div class="modern-summary-card"><span>Demandes à traiter</span><strong class="text-purple-300">${adminDemandCount}</strong><small>${adminPendingPaymentCount} paiement(s) prioritaire(s)</small></div>
+                                <div class="modern-summary-card"><span>Messages non lus</span><strong class="text-cyan-300">${unreadSupportMessages.length + unreadPrototypeSupportMessages.length}</strong><small>Voir les messages</small></div>
+                                <div class="modern-summary-card"><span>Paiements du mois</span><strong class="text-emerald-300">${currentMonthCA.toFixed(2)} €</strong><small>Montants réellement reçus</small></div>
                             ` : `
-                                <div class="modern-summary-card"><span>Services actifs</span><strong class="text-cyan-300">${activeCount}</strong></div>
-                                <div class="modern-summary-card"><span>Messages</span><strong class="text-purple-300">${unreadSupportMessages.length}</strong></div>
-                                <div class="modern-summary-card"><span>Actualités</span><strong class="text-amber-300">${unreadNewsCount}</strong></div>
-                                <div class="modern-summary-card"><span>Points de parrainage</span><strong class="text-emerald-300">${Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)))}/5</strong></div>
+                                <div class="modern-summary-card"><span>Services actifs</span><strong class="text-cyan-300">${activeCount}</strong><small>Voir mes services</small></div>
+                                <div class="modern-summary-card"><span>Messages</span><strong class="text-purple-300">${unreadSupportMessages.length}</strong><small>Voir mes messages</small></div>
+                                <div class="modern-summary-card"><span>Paiement en attente</span><strong class="text-amber-300">${clientPendingPaymentCount}</strong><small>Voir les paiements</small></div>
+                                <div class="modern-summary-card"><span>Points de parrainage</span><strong class="text-emerald-300">${Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)))}/5</strong><small>Voir mon parrainage</small></div>
                             `}
                         </div>
-                        <div class="modern-action-grid">
-                            ${isAdmin ? `
-                                <button class="modern-action" onclick="window.mobileGoTo('admin-support')"><i data-lucide="messages-square"></i><span>Répondre aux messages</span></button>
-                                <button class="modern-action" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="circle-alert"></i><span>Voir les demandes urgentes</span></button>
-                                <button class="modern-action" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="chart-no-axes-combined"></i><span>Ouvrir le registre financier</span></button>
-                            ` : `
-                                <button class="modern-action" onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i><span>Contacter le support</span></button>
-                                <button class="modern-action" onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i><span>Voir les actualités</span></button>
-                                <button class="modern-action" onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i><span>Ouvrir le groupe communautaire</span></button>
-                            `}
-                        </div>
+                        ${isAdmin ? `
+                            <div class="modern-admin-grid">
+                                <div class="space-y-3">
+                                    <div class="modern-panel"><div class="modern-panel-title"><span>À TRAITER AUJOURD’HUI</span><button onclick="window.mobileGoTo('admin-pending-profiles')" class="text-cyan-300 text-[9px]">Tout voir</button></div>
+                                        <div class="modern-task"><span><b>${adminPendingPaymentCount} paiement(s) à confirmer</b><small>Vérifiez les paiements en attente.</small></span><button onclick="window.mobileGoTo('admin-services')">Ouvrir</button></div>
+                                        <div class="modern-task"><span><b>${pendingSubscriptionAttachments.length} rattachement(s) d’abonnement</b><small>Rattachez les abonnements aux comptes clients.</small></span><button onclick="window.mobileGoTo('admin-services')">Ouvrir</button></div>
+                                        <div class="modern-task"><span><b>${adminPendingQuotes.length} demande(s) de devis</b><small>Examinez les nouvelles demandes.</small></span><button onclick="window.mobileGoTo('admin-quotes')">Ouvrir</button></div>
+                                    </div>
+                                    <div class="modern-panel"><div class="modern-panel-title">ACTIVITÉ RÉCENTE</div>
+                                        <div class="modern-activity"><i data-lucide="credit-card" class="w-4 text-emerald-400"></i><span><b class="text-white">Paiements enregistrés</b><br>${processedTransactions.length} transaction(s) dans la sélection actuelle</span></div>
+                                        <div class="modern-activity"><i data-lucide="message-circle" class="w-4 text-cyan-400"></i><span><b class="text-white">Messagerie support</b><br>${unreadSupportMessages.length + unreadPrototypeSupportMessages.length} message(s) à lire</span></div>
+                                        <div class="modern-activity"><i data-lucide="user-check" class="w-4 text-purple-400"></i><span><b class="text-white">Comptes clients</b><br>${firebaseClientProfiles.length} profil(s) vérifié(s)</span></div>
+                                    </div>
+                                </div>
+                                <div class="modern-panel"><div class="modern-panel-title">ACTIONS RAPIDES</div><div class="modern-consult-list">
+                                    <button class="modern-consult" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="search"></i><span><b>Rechercher un client</b><small>Ouvrir la gestion des comptes</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i><span><b>Forcer un service</b><small>Activation sans frais</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('admin-services')"><i data-lucide="key-round"></i><span><b>Transmettre des identifiants</b><small>Envoyer les accès au client</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="wallet-cards"></i><span><b>Ajouter une transaction</b><small>Registre financier</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i><span><b>Publier une actualité</b><small>Informer tous les clients</small></span></button>
+                                </div></div>
+                            </div>` : `
+                            <div class="modern-client-grid">
+                                <div class="modern-panel"><div class="modern-panel-title">Mes abonnements</div>
+                                    <div class="modern-subscription">
+                                        <div class="modern-subscription-art">${window.escapeHTML(featuredService.name)}</div>
+                                        <div class="min-w-0"><h3 class="text-sm font-black text-white">${window.escapeHTML(featuredService.name)}</h3><span class="inline-flex mt-2 px-2 py-1 rounded-full ${featuredDays ? 'bg-emerald-950 text-emerald-300' : 'bg-slate-800 text-slate-400'} text-[9px] font-bold">${featuredDays ? '✓ Actif' : 'Inactif'}</span><p class="mt-3 text-[10px] text-slate-300">${featuredDays} jours restants</p><div class="modern-progress"><span style="width:${featuredProgress}%"></span></div><p class="text-[8px] text-slate-500">${featuredDays} / 365 jours</p><button onclick="window.mobileGoTo('services-section')" class="mt-3 w-full sm:w-auto px-4 py-2 rounded-lg bg-blue-600 text-white text-[9px] font-black">Voir mon service ›</button></div>
+                                    </div>
+                                    ${clientPendingPaymentCount ? `<div class="mt-3 rounded-xl border border-amber-500/45 bg-amber-950/35 px-4 py-3 text-amber-300 text-[10px] font-bold">ⓘ Paiement en cours de validation</div>` : ''}
+                                    <div class="modern-action-grid"><button class="modern-action" onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i><span>Contacter le support</span></button><button class="modern-action" onclick="window.mobileGoTo('services-section')"><i data-lucide="refresh-cw"></i><span>Renouveler</span></button></div>
+                                </div>
+                                <div class="modern-panel"><div class="modern-panel-title">À consulter</div><div class="modern-consult-list">
+                                    <button class="modern-consult" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i><span><b>Actualités Sésame ${unreadNewsCount ? `(${unreadNewsCount})` : ''}</b><small>Découvrez les dernières informations</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('client-support')"><i data-lucide="message-circle"></i><span><b>Support ${unreadSupportMessages.length ? `(${unreadSupportMessages.length})` : ''}</b><small>Réponse à votre demande d’assistance</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('client-credentials')"><i data-lucide="key-round"></i><span><b>Identifiants disponibles</b><small>${hasCredentials ? 'Voir vos identifiants confidentiels' : 'Aucun nouvel identifiant'}</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i><span><b>Groupe communautaire ${unreadPeerMessages.length ? `(${unreadPeerMessages.length})` : ''}</b><small>Messages de la communauté</small></span></button>
+                                    <button class="modern-consult" onclick="window.mobileGoTo('client-payments')"><i data-lucide="credit-card"></i><span><b>Voir mes paiements</b><small>Consulter l’historique</small></span></button>
+                                </div></div>
+                            </div>`}
                     </div>
                 </section>
 
