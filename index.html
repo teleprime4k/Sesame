@@ -261,6 +261,7 @@
         .modern-overview-link:first-of-type,.modern-overview-link:hover { color:#fff; border-color:rgba(34,211,238,.35); background:linear-gradient(90deg,rgba(8,145,178,.18),rgba(30,64,175,.09)); }
         .modern-overview-link svg { width:17px; height:17px; color:#22d3ee; flex:0 0 auto; }
         .modern-overview-main { padding:22px; min-width:0; background:radial-gradient(circle at 90% 0,rgba(8,145,178,.07),transparent 35%),#08111f; }
+        .modern-mobile-brand { display:none; }
         .modern-summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
         .modern-summary-card { min-width:0; padding:14px; border:1px solid #20304a; border-radius:14px; background:linear-gradient(145deg,#0e1b2f,#0a1424); box-shadow:0 9px 25px rgba(0,0,0,.2); }
         .modern-summary-card strong { display:block; color:#fff; font:800 22px/1.1 ui-monospace,monospace; margin-top:7px; }
@@ -290,6 +291,16 @@
         .modern-action:hover { border-color:rgba(168,85,247,.55); background:#111a31; }
         .modern-action svg { width:19px; height:19px; color:#a78bfa; flex:0 0 auto; }
         @media (max-width:1023px) { .modern-overview{grid-template-columns:1fr}.modern-overview-nav{display:none}.modern-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.modern-client-grid,.modern-admin-grid{grid-template-columns:1fr} }
+        @media (min-width:768px) {
+            #dashboard-top { max-width:none !important; padding:0 !important; gap:0 !important; }
+            #dashboard-header { display:none !important; }
+            #overview-section { min-height:100vh; border:0; border-radius:0; }
+            #dashboard-top > #overview-section ~ *:not(.mobile-nav-shell):not(.mobile-shortcuts-sheet):not(.desktop-detail-active) { display:none !important; }
+            #dashboard-top.desktop-detail-mode { padding:18px !important; gap:18px !important; max-width:1280px !important; }
+            #dashboard-top.desktop-detail-mode #dashboard-header { display:flex !important; }
+            #dashboard-top.desktop-detail-mode #overview-section { display:none !important; }
+            #dashboard-top.desktop-detail-mode > .desktop-detail-active { display:block !important; }
+        }
         .kpi-auto-carousel {
             display: flex !important;
             overflow-x: auto;
@@ -344,8 +355,10 @@
         @media (max-width: 767px) {
             html { scroll-behavior: auto; }
             body { padding-bottom: 92px !important; }
-            #dashboard-top { padding: 10px; gap: 12px; }
-            #dashboard-header { position: sticky; top: 8px; z-index: 35; padding: 10px 12px; border-radius: 14px; backdrop-filter: none; -webkit-backdrop-filter: none; background: #0d1527; }
+            #dashboard-top { max-width:none !important; padding:0 0 82px !important; gap:0 !important; }
+            #dashboard-header { display:none !important; }
+            #overview-section { min-height:calc(100vh - 72px); border:0; border-radius:0; }
+            #dashboard-top > #overview-section ~ *:not(.mobile-nav-shell):not(.mobile-shortcuts-sheet):not(.mobile-route-active):not(.mobile-route-active-parent) { display:none !important; }
             #dashboard-header .mobile-brand-subtitle { display: none; }
             #dashboard-header .mobile-account-email { max-width: 128px; }
             #dashboard-header .mobile-profile-row { border-top: 0; padding-top: 0; }
@@ -368,6 +381,9 @@
             .mobile-shortcuts-sheet { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
             .mobile-shortcut-grid button { min-height: 82px; }
             .modern-overview-main { padding:12px; border-radius:14px; }
+            .modern-mobile-brand { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid #1d2a40; }
+            .modern-mobile-brand img { width:38px; height:38px; border-radius:11px; }
+            .modern-mobile-brand button { width:40px; height:40px; display:grid; place-items:center; border:1px solid #26364f; border-radius:11px; color:#cbd5e1; }
             .modern-summary-grid { gap:8px; }
             .modern-summary-card { padding:11px; min-height:82px; }
             .modern-summary-card strong { font-size:18px; }
@@ -3783,7 +3799,7 @@
                 </header>
 
                 <!-- TABLEAU DE BORD PRINCIPAL : reproduit les maquettes validées -->
-                <section class="modern-overview" aria-label="${isAdmin ? 'Tableau de bord administrateur' : 'Tableau de bord client'}">
+                <section id="overview-section" class="modern-overview mobile-anchor" aria-label="${isAdmin ? 'Tableau de bord administrateur' : 'Tableau de bord client'}">
                     <aside class="modern-overview-nav">
                         <div class="modern-brand"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame"><span><strong>Sésame ${isAdmin ? '<em class="not-italic text-purple-400">Admin</em>' : ''}</strong><small>${isAdmin ? 'Console sécurisée' : 'Ouvre-Toi'}</small></span></div>
                         ${isAdmin ? `
@@ -3813,9 +3829,11 @@
                         `}
                     </aside>
                     <div class="modern-overview-main">
-                        <div class="mb-4">
-                            <h2 class="text-xl sm:text-2xl font-black text-white">${isAdmin ? 'Vue d’ensemble' : `Bonjour ${window.escapeHTML(window.getClientName(user.email))} 👋`}</h2>
-                            <p class="mt-1 text-[10px] text-slate-400">${isAdmin ? 'Retrouvez les actions urgentes et les principaux outils de la plateforme.' : 'Bienvenue dans votre espace client'}</p>
+                        <div class="modern-mobile-brand"><span class="flex items-center gap-3"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame"><span><strong class="block text-white text-sm">Sésame ${isAdmin ? '<em class="not-italic text-purple-400">Admin</em>' : ''}</strong><small class="text-[9px] text-slate-500">${isAdmin ? 'Administration' : 'Ouvre-Toi'}</small></span></span><button type="button" onclick="window.openMobileShortcuts()" aria-label="Ouvrir le menu"><i data-lucide="menu"></i></button></div>
+                        <div class="mb-4 flex items-start justify-between gap-3">
+                            <span><h2 class="text-xl sm:text-2xl font-black text-white">${isAdmin ? 'Vue d’ensemble' : `Bonjour ${window.escapeHTML(window.getClientName(user.email))} 👋`}</h2>
+                            <p class="mt-1 text-[10px] text-slate-400">${isAdmin ? 'Retrouvez les actions urgentes et les principaux outils de la plateforme.' : 'Bienvenue dans votre espace client'}</p></span>
+                            <button type="button" onclick="window.handleLogout()" class="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 text-[9px] text-slate-300 hover:text-red-300"><i data-lucide="log-out" class="w-4"></i>Déconnexion</button>
                         </div>
                         <div class="modern-summary-grid">
                             ${isAdmin ? `
@@ -4050,7 +4068,7 @@
                 ` : ''}
 
                 <!-- SECTION DES KPI FINANCIERS -->
-                <section id="overview-section" aria-label="Indicateurs du tableau de bord" class="mobile-anchor mobile-kpi-strip kpi-auto-carousel relative z-10 w-full">
+                <section id="legacy-kpi-section" aria-label="Indicateurs détaillés du tableau de bord" class="mobile-anchor mobile-kpi-strip kpi-auto-carousel relative z-10 w-full">
                     <div class="bg-[#0b1322] border border-[#1e293b]/70 p-3.5 sm:p-4 rounded-xl flex flex-col justify-center shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
                         <span class="text-slate-500 text-[9px] sm:text-[10px] uppercase font-bold tracking-wider font-mono">Actifs</span>
                         <p class="text-lg sm:text-xl font-bold text-white font-mono mt-1">${activeCount}</p>
@@ -5441,14 +5459,12 @@
             target.classList.add('mobile-route-active');
             target.classList.toggle('mobile-route-animate', shouldAnimate);
             if (targetId === 'dashboard-top') {
-                const billingRules = document.getElementById('billing-rules');
-                billingRules?.classList.remove('mobile-route-hidden');
-                billingRules?.classList.add('mobile-route-active');
-                billingRules?.classList.toggle('mobile-route-animate', shouldAnimate);
-                const clientReferrals = document.getElementById('client-referrals');
-                clientReferrals?.classList.remove('mobile-route-hidden');
-                clientReferrals?.classList.add('mobile-route-active');
-                clientReferrals?.classList.toggle('mobile-route-animate', shouldAnimate);
+                // L'accueil mobile correspond uniquement au nouveau tableau de bord.
+                // Les anciennes cartes restent accessibles depuis Menu, sans se
+                // réafficher sous l'accueil comme dans l'ancienne présentation.
+                document.getElementById('dashboard-top')?.classList.remove('mobile-detail-mode');
+            } else {
+                document.getElementById('dashboard-top')?.classList.add('mobile-detail-mode');
             }
             window.appState.mobileActiveRoute = targetId;
             if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -5461,6 +5477,27 @@
                 if (targetId === 'news-section') window.markNewsAsRead();
                 if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
                 return;
+            }
+            const dashboard = document.getElementById('dashboard-top');
+            if (dashboard) {
+                dashboard.querySelectorAll(':scope > .desktop-detail-active').forEach(element => element.classList.remove('desktop-detail-active'));
+                if (targetId === 'dashboard-top') {
+                    dashboard.classList.remove('desktop-detail-mode');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                const desktopTarget = document.getElementById(targetId);
+                if (desktopTarget) {
+                    let branch = desktopTarget;
+                    while (branch.parentElement && branch.parentElement !== dashboard) branch = branch.parentElement;
+                    branch.classList.add('desktop-detail-active');
+                    dashboard.classList.add('desktop-detail-mode');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    desktopTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (targetId === 'news-section') window.markNewsAsRead();
+                    if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
+                    return;
+                }
             }
             const target = document.getElementById(targetId);
             if (!target) return;
