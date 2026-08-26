@@ -264,6 +264,7 @@
         #admin-console .request-center-tool { display:none !important; }
         .admin-workspace-search { flex:1; max-width:440px; height:40px; padding:0 13px; border-radius:8px; border:1px solid #263750; background:#07111f; color:#fff; font-size:12px; outline:none; }
         .admin-workspace-search:focus { border-color:#22d3ee; box-shadow:0 0 0 3px rgba(34,211,238,.08); }
+        .mobile-admin-tools-hub { display:none; }
         @media (max-width: 767px) {
             .admin-dashboard-home-mode .admin-home { display:block; padding-bottom:78px; }
             .admin-sidebar { display:none; }
@@ -420,6 +421,13 @@
             #prototype-client-dashboard-slot { gap:12px; }
             #prototype-clock-input { width:142px; min-height:36px; }
             #prototype-support-box { height:210px !important; }
+            #admin-console > :not(.admin-console-heading):not(.mobile-admin-tools-hub) { display:none !important; }
+            #admin-console .mobile-admin-tools-hub { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+            .mobile-admin-tools-hub > button,
+            .mobile-admin-tools-hub > a { min-height:88px; padding:12px; border:1px solid #24344c; border-radius:13px; background:#091525; color:#e2e8f0; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:9px; text-align:left; font-size:11px; font-weight:700; line-height:1.3; }
+            .mobile-admin-tools-hub > button:active,
+            .mobile-admin-tools-hub > a:active { border-color:#22d3ee; background:#0c2034; transform:scale(.98); }
+            .mobile-admin-tools-hub svg { width:22px; height:22px; color:#22d3ee; }
             .mobile-nav-shell { left:7px; right:7px; bottom:max(7px,env(safe-area-inset-bottom)); border-radius:16px; padding:5px 3px; }
             .mobile-nav-button { min-height:50px; font-size:8px; }
         }
@@ -4524,7 +4532,7 @@
                 <!-- CONSOLE D'ADMINISTRATION GLOBALE EN BAS -->
                 ${isAdmin ? `
                 <section id="admin-console" class="mobile-anchor mobile-compact-section bg-[#0d1527] border border-purple-900/40 rounded-2xl p-4 sm:p-6 relative z-10 shadow-[0_0_45px_rgba(168,85,247,0.03)] flex flex-col gap-6 font-sans w-full overflow-hidden">
-                    <div class="flex items-center gap-3 border-b border-slate-800 pb-4">
+                    <div class="admin-console-heading flex items-center gap-3 border-b border-slate-800 pb-4">
                         <div class="p-2 bg-purple-950 rounded border border-purple-500/30 text-purple-400 shrink-0">
                             <i data-lucide="shield" class="w-5 h-5"></i>
                         </div>
@@ -4534,6 +4542,25 @@
                             </h3>
                             <p class="text-xs text-slate-400 font-light">Cette section est strictement réservée au compte administrateur. Évaluez les devis, gérez Stripe et répondez aux messages de support de la plateforme.</p>
                         </div>
+                    </div>
+
+                    <div class="mobile-admin-tools-hub" aria-label="Tous les outils administrateur">
+                        <button type="button" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i><span>Gestion des clients</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="file-text"></i><span>Demandes à traiter</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-support')"><i data-lucide="messages-square"></i><span>Messagerie Support</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor-check"></i><span>Forcer un service</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-credentials')"><i data-lucide="key-round"></i><span>Transmettre des identifiants</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-referrals')"><i data-lucide="gift"></i><span>Parrainages et points</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="badge-euro"></i><span>Registre financier</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-announcement')"><i data-lucide="megaphone"></i><span>Diffuser une info globale</span></button>
+                        <button type="button" onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i><span>Actualités Sésame</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-pricing')"><i data-lucide="tags"></i><span>Ajuster les tarifs</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-stripe')"><i data-lucide="credit-card"></i><span>Liens Stripe</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-pimp-card')"><i data-lucide="palette"></i><span>Lien PIMP CARD</span></button>
+                        <button type="button" onclick="window.mobileGoTo('admin-prototype')"><i data-lucide="flask-conical"></i><span>Compte client prototype</span></button>
+                        <button type="button" onclick="window.mobileGoTo('community-section')"><i data-lucide="users-round"></i><span>Communauté</span></button>
+                        ${manageUrl && /^https:\/\//i.test(manageUrl) ? `<a href="${window.escapeHTML(manageUrl)}" target="_blank" rel="noopener noreferrer"><i data-lucide="crown"></i><span>Manage King Prime</span></a>` : ''}
+                        ${manageGoldVibeUrl && /^https:\/\//i.test(manageGoldVibeUrl) ? `<a href="${window.escapeHTML(manageGoldVibeUrl)}" target="_blank" rel="noopener noreferrer"><i data-lucide="gem"></i><span>Manage Gold Vibe</span></a>` : ''}
                     </div>
 
                     <div id="admin-attachments" class="request-center-tool bg-slate-950/70 border ${pendingSubscriptionAttachments.length ? 'border-amber-500/40' : 'border-slate-800'} rounded-xl p-4">
