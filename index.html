@@ -254,8 +254,10 @@
         .admin-workspace-head { min-height:64px; display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; padding:12px 18px; background:#0b1628; border:1px solid #1c2b41; border-radius:11px; }
         .admin-workspace-head h2 { color:#fff; font-size:20px; font-weight:800; }
         .admin-workspace-back { display:flex; align-items:center; gap:8px; padding:9px 14px; color:#67e8f9; border:1px solid rgba(34,211,238,.35); border-radius:8px; background:#071525; font-size:12px; font-weight:700; }
-        .admin-workspace-body { width:100%; min-width:0; }
+        .admin-workspace-body { width:100%; min-width:0; display:grid; gap:18px; }
         .admin-workspace-body > * { width:100% !important; max-width:none !important; margin:0 !important; }
+        #admin-console .service-tools-relocated { display:none !important; }
+        .admin-workspace-body > .service-tools-relocated { display:flex !important; }
         .admin-workspace-search { flex:1; max-width:440px; height:40px; padding:0 13px; border-radius:8px; border:1px solid #263750; background:#07111f; color:#fff; font-size:12px; outline:none; }
         .admin-workspace-search:focus { border-color:#22d3ee; box-shadow:0 0 0 3px rgba(34,211,238,.08); }
         @media (max-width: 767px) {
@@ -4710,7 +4712,7 @@
                         </div>
 
                         <!-- 3. ATTRIBUTION D'IDENTIFIANTS CONFIDENTIELS -->
-                        <div class="bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-credentials" class="service-tools-relocated bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <i data-lucide="key" class="text-purple-400 w-4 h-4"></i> Transmettre des Identifiants
                             </h4>
@@ -4860,7 +4862,7 @@
                         </div>
 
                         <!-- 5. DIFFUSION DE NOTIFICATION GLOBALE AVEC CORBEILLE DE RETRAIT -->
-                        <div class="bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-announcement" class="service-tools-relocated bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
                                 <i data-lucide="megaphone" class="text-purple-400 w-4 h-4"></i> Diffuser une Info Globale
                             </h4>
@@ -5084,7 +5086,7 @@
                         </div>
 
                         <!-- AJUSTEMENT DE TARIFS COMPTES CLIENTS AVEC PRIX BARRÉS -->
-                        <div class="bg-slate-950/60 border border-purple-900/30 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
+                        <div id="admin-pricing" class="service-tools-relocated bg-slate-950/60 border border-purple-900/30 rounded-xl p-4 sm:p-5 flex flex-col gap-4 font-mono text-xs w-full">
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-2.5 gap-2">
                                 <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                                     <i data-lucide="tags" class="text-purple-400 w-4 h-4"></i> Ajuster les Tarifs Clients
@@ -5398,12 +5400,14 @@
                 if (!adminHome || !overview || !workspace || !workspaceBody) return;
 
                 // Remet l'outil précédemment ouvert exactement à sa place d'origine.
-                const currentPlacement = window.adminWorkspacePlacement;
-                if (currentPlacement?.element?.isConnected && currentPlacement?.placeholder?.parentNode) {
-                    currentPlacement.placeholder.parentNode.insertBefore(currentPlacement.element, currentPlacement.placeholder);
-                    currentPlacement.placeholder.remove();
-                }
-                window.adminWorkspacePlacement = null;
+                const currentPlacements = Array.isArray(window.adminWorkspacePlacements) ? window.adminWorkspacePlacements : [];
+                currentPlacements.forEach(currentPlacement => {
+                    if (currentPlacement?.element?.isConnected && currentPlacement?.placeholder?.parentNode) {
+                        currentPlacement.placeholder.parentNode.insertBefore(currentPlacement.element, currentPlacement.placeholder);
+                        currentPlacement.placeholder.remove();
+                    }
+                });
+                window.adminWorkspacePlacements = [];
 
                 if (targetId === 'dashboard-top' || targetId === 'admin-home') {
                     window.appState.adminActiveTool = null;
@@ -5416,13 +5420,19 @@
                     return;
                 }
 
-                const adminTarget = document.getElementById(targetId);
-                if (!adminTarget) return;
+                const requestedTargetIds = targetId === 'admin-services'
+                    ? ['admin-services', 'admin-credentials', 'admin-announcement', 'admin-pricing']
+                    : [targetId];
+                const adminTargets = requestedTargetIds.map(id => document.getElementById(id)).filter(Boolean);
+                if (!adminTargets.length) return;
                 window.appState.adminActiveTool = targetId;
-                const placeholder = document.createComment(`emplacement-${targetId}`);
-                adminTarget.parentNode.insertBefore(placeholder, adminTarget);
-                workspaceBody.replaceChildren(adminTarget);
-                window.adminWorkspacePlacement = { element: adminTarget, placeholder };
+                const placements = adminTargets.map(adminTarget => {
+                    const placeholder = document.createComment(`emplacement-${adminTarget.id}`);
+                    adminTarget.parentNode.insertBefore(placeholder, adminTarget);
+                    return { element: adminTarget, placeholder };
+                });
+                workspaceBody.replaceChildren(...adminTargets);
+                window.adminWorkspacePlacements = placements;
                 const titles = {
                     'admin-clients': 'Gestion des comptes clients', 'admin-pending-profiles': 'Demandes à traiter',
                     'admin-quotes': 'Demandes de devis', 'admin-support': 'Messagerie de support client',
@@ -5444,7 +5454,7 @@
                 overview.classList.add('hidden');
                 workspace.classList.remove('hidden');
                 adminHome.querySelectorAll('.admin-nav-link').forEach(link => link.classList.toggle('active', link.getAttribute('onclick')?.includes(`'${targetId}'`)));
-                adminTarget.classList.remove('mobile-route-hidden', 'mobile-route-active', 'mobile-route-active-parent', 'mobile-route-animate');
+                adminTargets.forEach(adminTarget => adminTarget.classList.remove('mobile-route-hidden', 'mobile-route-active', 'mobile-route-active-parent', 'mobile-route-animate'));
                 requestAnimationFrame(() => {
                     lucide.createIcons({ root: adminHome });
                     window.scrollTo({ top: 0, behavior: 'smooth' });
