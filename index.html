@@ -261,7 +261,6 @@
         #admin-console .service-tools-relocated { display:none !important; }
         .admin-workspace-body > .service-tools-relocated { display:flex !important; }
         #admin-console .standalone-admin-tool { display:none !important; }
-        .admin-workspace-body > .standalone-admin-tool { display:flex !important; }
         #admin-console .request-center-tool { display:none !important; }
         .admin-workspace-search { flex:1; max-width:440px; height:40px; padding:0 13px; border-radius:8px; border:1px solid #263750; background:#07111f; color:#fff; font-size:12px; outline:none; }
         .admin-workspace-search:focus { border-color:#22d3ee; box-shadow:0 0 0 3px rgba(34,211,238,.08); }
@@ -4776,7 +4775,7 @@
                         </div>
 
                         <!-- PARRAINAGES ET POINTS -->
-                        <div id="admin-referrals" class="mobile-anchor bg-gradient-to-br from-fuchsia-950/20 to-slate-950/70 border border-fuchsia-500/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
+                        <div id="admin-referrals" class="standalone-admin-tool mobile-anchor bg-gradient-to-br from-fuchsia-950/20 to-slate-950/70 border border-fuchsia-500/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <div><h4 class="text-xs font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2"><i data-lucide="users-round" class="text-fuchsia-400 w-4 h-4"></i> Parrainages et points</h4><p class="text-[9px] text-slate-500 mt-1">1 parrainage validé = 1 point · 5 points = 1 an d’abonnement gratuit.</p></div>
                             <select id="referral-client-select" onchange="window.adminChangeReferralClient(this.value)" class="w-full bg-slate-950 border border-fuchsia-900/60 rounded px-2 py-2 text-xs text-white focus:outline-none focus:border-fuchsia-500 min-h-[38px]">
                                 <option value="">-- Choisir un client --</option>
@@ -4909,7 +4908,7 @@
                         </div>
 
                         <!-- 6. REGISTRE FINANCIER AMÉLIORÉ (Avec statistiques par Mois et par Année & Mini Graphique CSS - Repositionné ici !) -->
-                        <div id="admin-finance" class="mobile-anchor bg-[#0c1221] border border-purple-900/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full relative overflow-hidden">
+                        <div id="admin-finance" class="standalone-admin-tool mobile-anchor bg-[#0c1221] border border-purple-900/30 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full relative overflow-hidden">
                             <div class="border-b border-slate-800 pb-2 flex flex-col gap-1">
                                 <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5 truncate">
                                     <i data-lucide="line-chart" class="text-purple-400 w-4 h-4 shrink-0"></i> Registre Financier
@@ -5178,7 +5177,7 @@
                     </div>
 
                     <!-- MOTEUR DE RECHERCHE DE CLIENTS ADMIN -->
-                    <div class="bg-slate-950/40 border border-[#1e293b]/70 p-3 sm:p-4 rounded-xl flex items-center gap-3 mt-4 w-full">
+                    <div class="standalone-admin-tool bg-slate-950/40 border border-[#1e293b]/70 p-3 sm:p-4 rounded-xl flex items-center gap-3 mt-4 w-full">
                         <i data-lucide="search" class="w-5 h-5 text-purple-400 shrink-0"></i>
                         <input type="text" placeholder="Rechercher un compte client par nom ou e-mail..." value="${adminSearchQuery}"
                             oninput="window.handleAdminSearch(this.value)"
@@ -5186,7 +5185,7 @@
                     </div>
 
                     <!-- TABLEAU RECAPITULATIF DES COMPTES CLIENTS -->
-                    <div id="admin-clients" class="mobile-anchor bg-slate-900/80 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl space-y-4 mt-6 w-full">
+                    <div id="admin-clients" class="standalone-admin-tool mobile-anchor bg-slate-900/80 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl space-y-4 mt-6 w-full">
                         <h3 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2 border-b border-slate-800 pb-3">
                            <i data-lucide="user-check" class="text-cyan-400 w-5 h-5"></i> Gestion des Comptes Clients Firebase (${firebaseClientProfiles.length})
                         </h3>
