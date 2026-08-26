@@ -1597,12 +1597,21 @@
                 const liveDate = new Date(window.appState.virtualDate);
                 const dateDisplay = document.getElementById('system-date-display');
                 const timeDisplay = document.getElementById('system-time-display');
+                const prototypeDateDisplay = document.getElementById('prototype-date-display');
+                const prototypeTimeDisplay = document.getElementById('prototype-time-display');
                 if (dateDisplay) dateDisplay.textContent = liveDate.toLocaleDateString('fr-BE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' });
                 if (timeDisplay) timeDisplay.textContent = liveDate.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                if (prototypeDateDisplay) prototypeDateDisplay.textContent = liveDate.toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                if (prototypeTimeDisplay) prototypeTimeDisplay.textContent = liveDate.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 const clockInput = document.getElementById('system-clock-input');
                 if (clockInput && document.activeElement !== clockInput) {
                     const formatted = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
                     clockInput.value = formatted;
+                }
+                const prototypeClockInput = document.getElementById('prototype-clock-input');
+                if (prototypeClockInput && document.activeElement !== prototypeClockInput) {
+                    const formatted = new Date(Date.now() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                    prototypeClockInput.value = formatted;
                 }
             }
         }, 1000);
@@ -4495,7 +4504,7 @@
                                     <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Profil client complet de simulation : services, identifiants, devis, tarifs, liens Stripe, PIMP CARD et information globale. Sélectionnez « Client Prototype » dans les outils de la Console ; aucune donnée d'un vrai client ne sera modifiée.</p>
                                 </div>
                             </div>
-                            <div class="flex flex-col sm:flex-row gap-2 shrink-0"><button type="button" onclick="window.startPrototypeOnboarding()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 border border-cyan-400/30 text-white text-[9px] uppercase font-bold transition-all">Simuler une première connexion</button><button type="button" onclick="window.resetAdminPrototype()" class="px-3 py-2 rounded-lg bg-slate-950 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/40 text-slate-400 hover:text-red-300 text-[9px] uppercase font-bold transition-all">Réinitialiser la simulation</button></div>
+                            <div class="flex flex-col gap-2 shrink-0"><div class="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-950/75 px-3 py-2 font-mono"><span class="flex items-center gap-2 text-yellow-400"><i data-lucide="clock-3" class="h-3.5 w-3.5"></i><span><b id="prototype-date-display" class="block text-[9px]">${new Date(virtualDate).toLocaleDateString('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</b><small id="prototype-time-display" class="block text-[10px] text-yellow-500">${new Date(virtualDate).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</small></span></span><input id="prototype-clock-input" type="datetime-local" value="${formattedVirtualDate}" onchange="window.updateVirtualDate(this.value)" aria-label="Date de simulation du prototype" class="w-[150px] rounded border border-slate-800 bg-slate-950 px-2 py-1 text-[8px] text-slate-400 outline-none focus:border-yellow-500" /></div><div class="flex flex-col sm:flex-row gap-2"><button type="button" onclick="window.startPrototypeOnboarding()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 border border-cyan-400/30 text-white text-[9px] uppercase font-bold transition-all">Simuler une première connexion</button><button type="button" onclick="window.resetAdminPrototype()" class="px-3 py-2 rounded-lg bg-slate-950 hover:bg-red-950/40 border border-slate-700 hover:border-red-500/40 text-slate-400 hover:text-red-300 text-[9px] uppercase font-bold transition-all">Réinitialiser la simulation</button></div></div>
                         </div>
                         <div id="prototype-client-dashboard-slot" class="mb-5 flex w-full flex-col gap-4"></div>
                         ${(() => {
@@ -5461,10 +5470,10 @@
                 const requestedTargetIds = targetId === 'admin-pending-profiles'
                     ? ['admin-attachments', 'admin-quotes', 'admin-services', 'admin-pending-profiles']
                     : targetId === 'admin-prototype'
-                        // Le prototype doit reproduire le véritable espace client :
-                        // ses indicateurs et son catalogue complet sont déplacés avec
-                        // le profil prototype, au lieu de rester dans un écran séparé.
-                        ? ['admin-prototype', 'overview-section', 'services-section']
+                        // Le prototype reprend le véritable catalogue client.
+                        // Les anciens grands indicateurs, redondants avec l’aperçu du
+                        // compte, ne sont plus déplacés dans cette rubrique.
+                        ? ['admin-prototype', 'services-section']
                         : [targetId];
                 const adminTargets = requestedTargetIds.map(id => document.getElementById(id)).filter(Boolean);
                 if (!adminTargets.length) return;
