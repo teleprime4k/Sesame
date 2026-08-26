@@ -3691,6 +3691,9 @@
                 { id: 'admin-support', icon: 'headphones', label: 'Support client' },
                 { id: 'admin-services', icon: 'badge-check', label: 'Forcer services' },
                 { id: 'admin-referrals', icon: 'gift', label: 'Parrainages' },
+                { id: 'admin-credentials', icon: 'key-round', label: 'Transmettre les identifiants' },
+                { id: 'admin-announcement', icon: 'megaphone', label: 'Info globale' },
+                { id: 'admin-pricing', icon: 'tags', label: 'Tarifs clients' },
                 { id: 'admin-stripe', icon: 'credit-card', label: 'Liens Stripe' },
                 { id: 'admin-pimp-card', icon: 'external-link', label: 'Lien PIMP CARD' },
                 { id: 'admin-manage-link', icon: 'crown', label: 'Manage King Prime' },
@@ -3764,7 +3767,7 @@
                         <div class="admin-brand"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame" onerror="this.src='https://sesameouvretoi.com/favicon.ico'"><span>Sésame <b>Admin</b></span></div>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Général</span><button class="admin-nav-link active" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Vue d’ensemble</button></nav>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Gestion</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i>Clients</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="file-text"></i>Demandes</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-support')"><i data-lucide="headphones"></i>Support</button></nav>
-                        <nav class="admin-nav-group"><span class="admin-nav-title">Services</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i>Services</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="credit-card"></i>Paiements</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-referrals')"><i data-lucide="users-round"></i>Parrainages</button></nav>
+                        <nav class="admin-nav-group"><span class="admin-nav-title">Services</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i>Services</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="credit-card"></i>Paiements</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-referrals')"><i data-lucide="users-round"></i>Parrainages</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-credentials')"><i data-lucide="key-round"></i>Transmettre les identifiants</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-announcement')"><i data-lucide="megaphone"></i>Diffuser une info globale</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-pricing')"><i data-lucide="tags"></i>Ajuster les tarifs clients</button></nav>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Contenu</span><button class="admin-nav-link" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i>Actualités</button><button class="admin-nav-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="message-square"></i>Communauté</button></nav>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Administration</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-console')"><i data-lucide="settings"></i>Paramètres</button></nav>
                         <div class="admin-system"><strong>● &nbsp;Systèmes opérationnels</strong><br><span class="text-[9px] text-emerald-400/80">Tous les services fonctionnent</span></div>
@@ -3794,7 +3797,7 @@
                                 <section class="admin-panel"><div class="admin-panel-title"><span>ϟ &nbsp; ACTIONS RAPIDES</span></div><div class="admin-actions">
                                     <button class="admin-action" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="search"></i><span>Rechercher un client</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
                                     <button class="admin-action" onclick="window.mobileGoTo('admin-services')"><i data-lucide="monitor"></i><span>Forcer un service</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
-                                    <button class="admin-action" onclick="window.mobileGoTo('admin-services')"><i data-lucide="key-round"></i><span>Transmettre des identifiants</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
+                                    <button class="admin-action" onclick="window.mobileGoTo('admin-credentials')"><i data-lucide="key-round"></i><span>Transmettre des identifiants</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
                                     <button class="admin-action" onclick="window.mobileGoTo('admin-finance')"><i data-lucide="badge-euro"></i><span>Ajouter une transaction</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
                                     <button class="admin-action" onclick="window.mobileGoTo('news-section')"><i data-lucide="megaphone"></i><span>Publier une actualité</span><i data-lucide="chevron-right" class="ml-auto w-4"></i></button>
                                 </div></section>
@@ -5420,9 +5423,7 @@
                     return;
                 }
 
-                const requestedTargetIds = targetId === 'admin-services'
-                    ? ['admin-services', 'admin-credentials', 'admin-announcement', 'admin-pricing']
-                    : [targetId];
+                const requestedTargetIds = [targetId];
                 const adminTargets = requestedTargetIds.map(id => document.getElementById(id)).filter(Boolean);
                 if (!adminTargets.length) return;
                 window.appState.adminActiveTool = targetId;
@@ -5437,6 +5438,8 @@
                     'admin-clients': 'Gestion des comptes clients', 'admin-pending-profiles': 'Demandes à traiter',
                     'admin-quotes': 'Demandes de devis', 'admin-support': 'Messagerie de support client',
                     'admin-services': 'Gestion des services', 'admin-finance': 'Registre financier',
+                    'admin-credentials': 'Transmettre des identifiants', 'admin-announcement': 'Diffuser une information globale',
+                    'admin-pricing': 'Ajuster les tarifs clients',
                     'admin-referrals': 'Points de parrainage', 'news-section': 'Actualités Sésame',
                     'community-section': 'Communauté Sésame', 'services-section': 'Catalogue des services',
                     'admin-console': 'Paramètres et outils administrateur', 'admin-prototype': 'Compte client prototype',
