@@ -4159,6 +4159,7 @@
                 { id: 'client-support', icon: 'headphones', label: 'Support' },
                 { id: 'client-payments', icon: 'history', label: 'Paiements' },
                 { id: 'client-referrals', icon: 'gift', label: 'Parrainages' },
+                { id: 'billing-rules', icon: 'file-text', label: 'Règles de facturation' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
                 { id: 'community-section', icon: 'messages-square', label: 'Groupe Sésame' },
                 { action: 'profile', icon: 'user-pen', label: 'Mes informations' }
@@ -6077,7 +6078,7 @@
                 clientWorkspaceBody.replaceChildren(...targets);
                 clientOverview?.classList.add('hidden');
                 clientWorkspace?.classList.remove('hidden');
-                const titles = {'services-section':'Mes services','client-payments':'Mes paiements','news-section':'Actualités','community-section':'Groupe Sésame','client-support':'Support','client-referrals':'Mes points de parrainage'};
+                const titles = {'services-section':'Mes services','client-payments':'Mes paiements','news-section':'Actualités','community-section':'Groupe Sésame','client-support':'Support','client-referrals':'Mes points de parrainage','billing-rules':'Règles de facturation'};
                 if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = titles[targetId] || 'Espace client';
                 clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.toggle('active', button.getAttribute('onclick')?.includes(`'${targetId}'`)));
                 requestAnimationFrame(() => { lucide.createIcons({root:clientHome}); window.scrollTo({top:0,behavior:'smooth'}); });
