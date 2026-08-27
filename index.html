@@ -1652,6 +1652,7 @@
                     else if (activeTool === 'client-service-focus') window.openClientMobileManagedService?.(window.appState.clientFocusedServiceId || '');
                     else if (activeTool === 'client-days-summary') window.openClientMobileSubscriptionSummary?.('days');
                     else if (activeTool === 'client-active-summary') window.openClientMobileSubscriptionSummary?.('active');
+                    else if (activeTool === 'client-renewal-summary') window.openClientMobileRenewalServices?.();
                     else window.mobileGoTo?.(activeTool);
                 });
             }
@@ -4191,6 +4192,13 @@
             const clientPrimaryOffer = isValidTvPassOffer(clientPrimaryState.subscriptionOffer) ? clientPrimaryState.subscriptionOffer.replace(/^\S+\s*/, '') : '';
             const clientReferralPoints = Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)));
             const clientPendingPayments = !isAdmin ? SERVICES_DATA.filter(service => servicesState[service.id]?.paymentStage === 'pending_confirmation').length : 0;
+            const clientRenewalServices = !isAdmin ? SERVICES_DATA.filter(service => {
+                const state = servicesState[service.id] || {};
+                const endTime = Number(state.subEnd || 0);
+                const daysLeft = endTime > virtualDate ? Math.ceil((endTime - virtualDate) / 86400000) : 0;
+                return state.status === 'expired' || (state.status === 'active' && daysLeft > 0 && daysLeft <= 30);
+            }) : [];
+            const clientRenewalCount = clientRenewalServices.length;
             const clientBellCount = !isAdmin ? unreadSupportMessages.length + unreadNewsCount + unreadPeerMessages.length : 0;
             const clientBellItems = !isAdmin ? [
                 { id:'support', label:'Messages du support', detail:'Consultez les réponses de l’administrateur.', count:unreadSupportMessages.length, icon:'message-circle', color:'text-cyan-300' },
@@ -4338,11 +4346,12 @@
                             <section class="client-panel client-consult"><h2>À consulter</h2><div class="client-consult-list">
                                 <button class="client-consult-row" onclick="window.mobileGoTo('news-section')"><span><i data-lucide="newspaper"></i></span><span><b>${unreadNewsCount} actualité${unreadNewsCount !== 1 ? 's' : ''} non lue${unreadNewsCount !== 1 ? 's' : ''}</b><small>Découvrez les dernières nouveautés.</small></span><i data-lucide="chevron-right"></i></button>
                                 <button class="client-consult-row" onclick="window.mobileGoTo('client-support')"><span><i data-lucide="message-circle"></i></span><span><b>${unreadSupportMessages.length} nouveau${unreadSupportMessages.length !== 1 ? 'x' : ''} message${unreadSupportMessages.length !== 1 ? 's' : ''}</b><small>Consultez les réponses du support.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-consult-row" onclick="window.mobileGoTo('community-section')"><span><i data-lucide="users"></i></span><span><b>${unreadPeerMessages.length} message${unreadPeerMessages.length !== 1 ? 's' : ''} du Groupe Sésame</b><small>${communityJoined ? 'Consultez les nouvelles discussions.' : 'Rejoignez le groupe pour participer.'}</small></span><i data-lucide="chevron-right"></i></button>
                                 <button class="client-consult-row" onclick="window.mobileGoTo('client-payments')"><span><i data-lucide="badge-check"></i></span><span><b>${clientPendingPayments ? `${clientPendingPayments} paiement en attente` : 'Paiements à jour'}</b><small>${clientPendingPayments ? 'Une confirmation est en cours.' : 'Consultez votre historique.'}</small></span><i data-lucide="chevron-right"></i></button>
                             </div></section>
                             <div class="client-quick-grid">
                                 <button class="client-quick" onclick="window.mobileGoTo('client-support')"><span><i data-lucide="headphones"></i></span><span><b>Contacter le support</b><small>Notre équipe est disponible.</small></span><i data-lucide="chevron-right"></i></button>
-                                <button class="client-quick" onclick="window.mobileGoTo('services-section')"><span><i data-lucide="refresh-cw"></i></span><span><b>Renouveler</b><small>Prolongez votre abonnement.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-quick" onclick="window.openClientMobileRenewalServices()"><span><i data-lucide="refresh-cw"></i></span><span><b>Renouvellement</b><small>${clientRenewalCount ? `${clientRenewalCount} service${clientRenewalCount > 1 ? 's' : ''} à renouveler` : 'Aucun renouvellement nécessaire'}</small></span><i data-lucide="chevron-right"></i></button>
                                 <button class="client-quick" onclick="window.mobileGoTo('client-payments')"><span><i data-lucide="credit-card"></i></span><span><b>Voir mes paiements</b><small>Consultez vos transactions.</small></span><i data-lucide="chevron-right"></i></button>
                             </div>
                         </div>
@@ -6235,6 +6244,73 @@
                 'Gérer mon service',
                 'Le service concerné est introuvable ou n’est pas encore disponible.'
             );
+        };
+
+        window.openClientMobileRenewalServices = () => {
+            if (window.appState.isAdmin || !window.appState.profile) return;
+            if (!window.matchMedia('(max-width: 767px)').matches) {
+                window.mobileGoTo('services-section');
+                return;
+            }
+            if (window.appState.activeCatalogTab !== 'Tous') {
+                window.appState.activeCatalogTab = 'Tous';
+                window.appState.clientActiveTool = 'client-renewal-summary';
+                renderApp();
+                return;
+            }
+
+            const clientHome = document.getElementById('client-home');
+            const clientOverview = document.getElementById('client-overview');
+            const clientWorkspace = document.getElementById('client-workspace');
+            const clientWorkspaceBody = document.getElementById('client-workspace-body');
+            const clientWorkspaceTitle = document.getElementById('client-workspace-title');
+            if (!clientWorkspace || !clientWorkspaceBody) return;
+
+            const previousPlacements = Array.isArray(window.clientWorkspacePlacements) ? window.clientWorkspacePlacements : [];
+            previousPlacements.forEach(previous => {
+                if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
+                    previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
+                    previous.placeholder.remove();
+                }
+            });
+            window.clientWorkspacePlacements = [];
+
+            const referenceTime = Number(window.appState.virtualDate || Date.now());
+            const servicesState = window.appState.profile.services || {};
+            const renewalServiceIds = SERVICES_DATA.filter(service => {
+                const state = servicesState[service.id] || {};
+                const endTime = Number(state.subEnd || 0);
+                const daysLeft = endTime > referenceTime ? Math.ceil((endTime - referenceTime) / 86400000) : 0;
+                return state.status === 'expired' || (state.status === 'active' && daysLeft > 0 && daysLeft <= 30);
+            }).map(service => service.id);
+
+            const cards = renewalServiceIds.map(serviceId => Array.from(document.querySelectorAll('[data-client-service-id]'))
+                .find(card => card.getAttribute('data-client-service-id') === serviceId)).filter(Boolean);
+
+            if (cards.length) {
+                window.clientWorkspacePlacements = cards.map(card => {
+                    const placeholder = document.createComment(`emplacement-renouvellement-${card.getAttribute('data-client-service-id') || 'service'}`);
+                    card.parentNode.insertBefore(placeholder, card);
+                    card.classList.remove('hidden','mobile-route-hidden','mobile-route-active','mobile-route-active-parent','mobile-route-animate');
+                    return { element: card, placeholder };
+                });
+                clientWorkspaceBody.replaceChildren(...cards);
+            } else {
+                const emptyPanel = document.createElement('div');
+                emptyPanel.className = 'rounded-2xl border border-dashed border-emerald-500/30 bg-[#0b182b] px-5 py-10 text-center';
+                emptyPanel.innerHTML = `<i data-lucide="badge-check" class="mx-auto mb-3 h-8 w-8 text-emerald-400"></i><strong class="block text-sm text-emerald-300">Aucun renouvellement nécessaire</strong><span class="mt-2 block text-[10px] text-slate-500">Aucun service n’est expiré ou proche de son échéance.</span>`;
+                clientWorkspaceBody.replaceChildren(emptyPanel);
+            }
+
+            clientOverview?.classList.add('hidden');
+            clientWorkspace.classList.remove('hidden');
+            window.appState.clientActiveTool = 'client-renewal-summary';
+            if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = 'Renouvellement';
+            clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.remove('active'));
+            requestAnimationFrame(() => {
+                lucide.createIcons({ root: clientWorkspace });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         };
 
         window.openReferralRules = (prototypeMode = false) => {
