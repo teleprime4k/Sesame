@@ -4298,8 +4298,8 @@
                         </header>
                         <div id="client-alerts-slot" class="mb-4 grid gap-3"></div>
                         <div class="client-kpis">
-                            <button class="client-kpi" onclick="window.mobileGoTo('services-section')"><span class="client-kpi-icon"><i data-lucide="monitor-play"></i></span><span>Services actifs<strong>${activeCount}</strong></span></button>
-                            <button class="client-kpi" onclick="window.mobileGoTo('services-section')"><span class="client-kpi-icon"><i data-lucide="calendar-days"></i></span><span>Jours restants<strong>${clientPrimaryDays}</strong></span></button>
+                            <button class="client-kpi" onclick="window.openClientMobileSubscriptionSummary('active')"><span class="client-kpi-icon"><i data-lucide="monitor-play"></i></span><span>Services actifs<strong>${activeCount}</strong></span></button>
+                            <button class="client-kpi" onclick="window.openClientMobileSubscriptionSummary('days')"><span class="client-kpi-icon"><i data-lucide="calendar-days"></i></span><span>Jours restants<strong>${clientPrimaryDays}</strong></span></button>
                             <button class="client-kpi" onclick="window.mobileGoTo('client-support')"><span class="client-kpi-icon"><i data-lucide="message-circle"></i></span><span>Messages<strong>${unreadSupportMessages.length}</strong></span></button>
                             <button class="client-kpi" onclick="window.mobileGoTo('client-referrals')"><span class="client-kpi-icon"><i data-lucide="gift"></i></span><span>Points parrainage<strong>${clientReferralPoints}/5</strong></span></button>
                         </div>
@@ -6086,6 +6086,61 @@
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             if (targetId === 'news-section') window.markNewsAsRead();
             if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
+        };
+
+        window.openClientMobileSubscriptionSummary = (mode = 'active') => {
+            if (window.appState.isAdmin || !window.appState.profile) return;
+            if (!window.matchMedia('(max-width: 767px)').matches) {
+                window.mobileGoTo('services-section');
+                return;
+            }
+
+            const clientHome = document.getElementById('client-home');
+            const clientOverview = document.getElementById('client-overview');
+            const clientWorkspace = document.getElementById('client-workspace');
+            const clientWorkspaceBody = document.getElementById('client-workspace-body');
+            const clientWorkspaceTitle = document.getElementById('client-workspace-title');
+            if (!clientWorkspaceBody || !clientWorkspace) return;
+
+            const previousPlacements = Array.isArray(window.clientWorkspacePlacements) ? window.clientWorkspacePlacements : [];
+            previousPlacements.forEach(previous => {
+                if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
+                    previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
+                    previous.placeholder.remove();
+                }
+            });
+            window.clientWorkspacePlacements = [];
+
+            const referenceTime = Number(window.appState.virtualDate || Date.now());
+            const servicesState = window.appState.profile.services || {};
+            const activeServices = SERVICES_DATA.map(service => {
+                const state = servicesState[service.id] || {};
+                const endTime = Number(state.subEnd || 0);
+                return {
+                    name: service.name,
+                    active: state.status === 'active' && endTime > referenceTime,
+                    days: endTime > referenceTime ? Math.max(1, Math.ceil((endTime - referenceTime) / 86400000)) : 0
+                };
+            }).filter(service => service.active);
+
+            const showDays = mode === 'days';
+            const panel = document.createElement('section');
+            panel.className = 'grid gap-3';
+            panel.setAttribute('aria-label', showDays ? 'Jours restants des abonnements' : 'Services actifs');
+            panel.innerHTML = activeServices.length
+                ? activeServices.map(service => `<article class="flex min-h-[72px] items-center justify-between gap-3 rounded-2xl border border-cyan-500/25 bg-[#0b182b] px-4 py-3 shadow-[0_10px_30px_rgba(0,0,0,.2)]"><span class="flex min-w-0 items-center gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cyan-950 text-cyan-300"><i data-lucide="${showDays ? 'calendar-days' : 'monitor-check'}" class="h-5 w-5"></i></span><strong class="block min-w-0 text-sm text-white">${window.escapeHTML(service.name)}</strong></span>${showDays ? `<span class="shrink-0 rounded-xl border border-cyan-500/30 bg-cyan-950/60 px-3 py-2 text-center"><b class="block text-xl leading-none text-cyan-300">${service.days}</b><small class="mt-1 block text-[8px] uppercase text-cyan-100">jour${service.days > 1 ? 's' : ''}</small></span>` : `<span class="shrink-0 rounded-full border border-emerald-500/30 bg-emerald-950/60 px-3 py-1.5 text-[9px] font-bold uppercase text-emerald-300">● Actif</span>`}</article>`).join('')
+                : `<div class="rounded-2xl border border-dashed border-slate-700 bg-[#0b182b] px-5 py-10 text-center"><i data-lucide="monitor-off" class="mx-auto mb-3 h-8 w-8 text-slate-600"></i><strong class="block text-sm text-slate-300">Aucun service actif</strong><span class="mt-2 block text-[10px] text-slate-500">Aucun abonnement actif n’est actuellement associé à votre compte.</span></div>`;
+
+            clientWorkspaceBody.replaceChildren(panel);
+            clientOverview?.classList.add('hidden');
+            clientWorkspace.classList.remove('hidden');
+            window.appState.clientActiveTool = showDays ? 'client-days-summary' : 'client-active-summary';
+            if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = showDays ? 'Jours restants' : 'Services actifs';
+            clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.remove('active'));
+            requestAnimationFrame(() => {
+                lucide.createIcons({ root: clientWorkspace });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         };
 
         window.openReferralRules = (prototypeMode = false) => {
