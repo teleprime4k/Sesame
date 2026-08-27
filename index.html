@@ -1175,6 +1175,7 @@
             subscriptionCorrectionOpen: false,
             prototypeOnboardingOpen: false,
             adminNotificationPanelOpen: false,
+            clientNotificationPanelOpen: false,
 
             // Personnalisation des liens Stripe par client
             selectedStripeClientId: "",
@@ -4131,6 +4132,11 @@
             const clientReferralPoints = Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)));
             const clientPendingPayments = !isAdmin ? SERVICES_DATA.filter(service => servicesState[service.id]?.paymentStage === 'pending_confirmation').length : 0;
             const clientBellCount = !isAdmin ? unreadSupportMessages.length + unreadNewsCount + unreadPeerMessages.length : 0;
+            const clientBellItems = !isAdmin ? [
+                { id:'support', label:'Messages du support', detail:'Consultez les réponses de l’administrateur.', count:unreadSupportMessages.length, icon:'message-circle', color:'text-cyan-300' },
+                { id:'news', label:'Actualités Sésame', detail:'Découvrez les nouvelles publications.', count:unreadNewsCount, icon:'newspaper', color:'text-purple-300' },
+                { id:'community', label:'Messages du Groupe Sésame', detail:'Ouvrez les nouvelles discussions.', count:unreadPeerMessages.length, icon:'messages-square', color:'text-emerald-300' }
+            ].filter(item => item.count > 0) : [];
 
             return `
             <div id="dashboard-top" class="mobile-anchor relative min-h-screen bg-[#030712] text-slate-100 p-3 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto z-10 font-sans w-full overflow-hidden ${isAdmin ? 'admin-dashboard-home-mode' : 'client-dashboard-home-mode'}">
@@ -4247,7 +4253,10 @@
                         <header class="client-topbar">
                             <div class="client-welcome"><h1>Bonjour ${window.escapeHTML(profile?.firstName || window.getClientName(user.email).split(' ')[0] || 'Client')}</h1><p>Retrouvez vos services et les informations importantes.</p></div>
                             <div class="client-top-actions">
-                                <button class="client-icon-button" onclick="window.mobileGoTo('${unreadSupportMessages.length ? 'client-support' : unreadNewsCount ? 'news-section' : 'dashboard-top'}')" aria-label="Notifications"><i data-lucide="bell"></i>${clientBellCount ? `<span class="badge">${clientBellCount > 99 ? '99+' : clientBellCount}</span>` : ''}</button>
+                                <div class="relative">
+                                    <button class="client-icon-button" onclick="window.toggleClientNotificationPanel()" aria-label="Notifications client : ${clientBellCount} en attente" title="Afficher mes notifications"><i data-lucide="bell" class="${clientBellCount ? 'animate-pulse' : ''}"></i>${clientBellCount ? `<span class="badge">${clientBellCount > 99 ? '99+' : clientBellCount}</span>` : ''}</button>
+                                    ${window.appState.clientNotificationPanelOpen ? `<div class="absolute right-0 top-[calc(100%+12px)] z-[120] w-[min(92vw,370px)] overflow-hidden rounded-2xl border border-slate-700 bg-[#081220] shadow-[0_22px_60px_rgba(0,0,0,.7)]"><div class="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3"><div><strong class="block text-xs text-white">Mes notifications</strong><span class="text-[9px] text-slate-400">${clientBellCount ? `${clientBellCount} élément${clientBellCount > 1 ? 's' : ''} non lu${clientBellCount > 1 ? 's' : ''}` : 'Aucune notification en attente'}</span></div><button type="button" onclick="window.toggleClientNotificationPanel(false)" class="grid h-8 w-8 place-items-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Fermer"><i data-lucide="x" class="h-4 w-4"></i></button></div><div class="max-h-[360px] overflow-y-auto p-2">${clientBellItems.length ? clientBellItems.map(item => `<button type="button" onclick="window.openClientBellNotification('${item.id}')" class="mb-1 flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-3 text-left hover:border-slate-700 hover:bg-slate-900"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-950 ${item.color}"><i data-lucide="${item.icon}" class="h-4 w-4"></i></span><span class="min-w-0 flex-1"><strong class="block truncate text-[10px] text-white">${item.label}</strong><small class="block truncate text-[9px] text-slate-500">${item.detail}</small></span><b class="min-w-[24px] rounded-full bg-purple-600 px-1.5 py-1 text-center text-[9px] text-white">${item.count}</b></button>`).join('') : `<div class="px-4 py-8 text-center"><i data-lucide="bell-check" class="mx-auto mb-2 h-7 w-7 text-emerald-400"></i><strong class="block text-[10px] text-emerald-300">Tout est à jour</strong><span class="mt-1 block text-[9px] text-slate-500">Les nouveaux messages et les actualités apparaîtront ici.</span></div>`}</div></div>` : ''}
+                                </div>
                                 <button class="client-avatar-small" onclick="window.openMyPersonalInformation()" aria-label="Mon profil">${profile?.avatar ? `<img src="${profile.avatar}" alt="Photo de profil">` : `<i data-lucide="user"></i>`}</button>
                                 <button class="client-icon-button" onclick="window.handleLogout()" aria-label="Déconnexion" title="Déconnexion"><i data-lucide="log-out"></i></button>
                             </div>
@@ -6190,6 +6199,32 @@
                 const chatBox = document.getElementById('admin-chat-box');
                 if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
             }, 60);
+        };
+
+        window.toggleClientNotificationPanel = (forceValue) => {
+            if (window.appState.isAdmin) return;
+            window.appState.clientNotificationPanelOpen = typeof forceValue === 'boolean'
+                ? forceValue
+                : !window.appState.clientNotificationPanelOpen;
+            renderApp();
+        };
+
+        window.openClientBellNotification = async (notificationId) => {
+            if (window.appState.isAdmin) return;
+            window.appState.clientNotificationPanelOpen = false;
+            if (notificationId === 'support') {
+                await window.openUnreadSupportNotification();
+                return;
+            }
+            if (notificationId === 'news') {
+                window.mobileGoTo('news-section');
+                return;
+            }
+            if (notificationId === 'community') {
+                window.mobileGoTo('community-section');
+                return;
+            }
+            renderApp();
         };
 
         window.toggleAdminNotificationPanel = (forceValue) => {
