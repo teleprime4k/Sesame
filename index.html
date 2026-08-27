@@ -4120,6 +4120,13 @@
                 return Boolean(state.cancellationRequestedAt);
             }).length, 0) : 0;
             const adminServiceRequestCount = adminRenewalRequestCount + adminCancellationRequestCount;
+            const adminRequestFilter = isAdmin ? String(window.appState.adminRequestFilter || '') : '';
+            const adminRequestServiceMatches = (state = {}) => !adminRequestFilter
+                || (adminRequestFilter === 'payments' && state.paymentStage === 'pending_confirmation')
+                || (adminRequestFilter === 'renewals' && Boolean(state.renewalRequestedAt) && state.reactivationRequestStatus === 'pending')
+                || (adminRequestFilter === 'cancellations' && Boolean(state.cancellationRequestedAt));
+            const adminRequestClients = isAdmin ? [prototypeProfile, ...firebaseClientProfiles].filter(client =>
+                !adminRequestFilter || SERVICES_DATA.some(service => adminRequestServiceMatches(client?.services?.[service.id] || {}))) : [];
             const adminDemandCount = adminPendingQuotes.length + pendingSubscriptionAttachments.length + unverifiedClientProfiles.length + adminPendingPaymentCount + adminServiceRequestCount;
             const adminUnreadCount = unreadSupportMessages.length + unreadPrototypeSupportMessages.length;
             const communityJoined = isAdmin || profile?.communityChatJoined === true;
@@ -4282,12 +4289,12 @@
                             <div class="admin-grid">
                                 <div class="grid gap-5">
                                     <section class="admin-panel"><div class="admin-panel-title"><span>▣ &nbsp; À TRAITER AUJOURD’HUI <b class="ml-2 rounded-full bg-purple-600 px-2 py-1 text-[9px] text-white">${adminDemandCount}</b></span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-pending-profiles')">Tout voir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-amber-400"><i data-lucide="credit-card"></i></span><span><b class="block text-white text-sm">${adminPendingPaymentCount} paiement${adminPendingPaymentCount !== 1 ? 's' : ''} à confirmer</b><small class="text-slate-400">Vérifiez et confirmez les paiements en attente.</small></span><span class="admin-priority text-amber-400">Priorité élevée</span><button class="admin-open border-amber-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-purple-400"><i data-lucide="refresh-cw"></i></span><span><b class="block text-white text-sm">${pendingSubscriptionAttachments.length} demande${pendingSubscriptionAttachments.length !== 1 ? 's' : ''} de réactivation</b><small class="text-slate-400">Traitez les demandes en attente.</small></span><span class="admin-priority text-purple-400">Priorité moyenne</span><button class="admin-open border-purple-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-blue-400"><i data-lucide="link"></i></span><span><b class="block text-white text-sm">${adminPendingQuotes.length} demande${adminPendingQuotes.length !== 1 ? 's' : ''} ou devis</b><small class="text-slate-400">Consultez les demandes reçues.</small></span><span class="admin-priority text-blue-400">Priorité normale</span><button class="admin-open" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-cyan-400"><i data-lucide="calendar-clock"></i></span><span><b class="block text-white text-sm">${adminRenewalRequestCount} renouvellement${adminRenewalRequestCount !== 1 ? 's' : ''} demandé${adminRenewalRequestCount !== 1 ? 's' : ''}</b><small class="text-slate-400">Traitez les services à renouveler.</small></span><span class="admin-priority text-cyan-400">Priorité normale</span><button class="admin-open border-cyan-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-red-400"><i data-lucide="power-off"></i></span><span><b class="block text-white text-sm">${adminCancellationRequestCount} désactivation${adminCancellationRequestCount !== 1 ? 's' : ''} demandée${adminCancellationRequestCount !== 1 ? 's' : ''}</b><small class="text-slate-400">Consultez les demandes de désactivation.</small></span><span class="admin-priority text-red-400">Priorité élevée</span><button class="admin-open border-red-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
-                                        <div class="admin-task"><span class="admin-task-icon text-emerald-400"><i data-lucide="user-round-check"></i></span><span><b class="block text-white text-sm">${unverifiedClientProfiles.length} profil${unverifiedClientProfiles.length !== 1 ? 's' : ''} à vérifier</b><small class="text-slate-400">Validez les nouveaux comptes clients.</small></span><span class="admin-priority text-emerald-400">Priorité normale</span><button class="admin-open border-emerald-500" onclick="window.mobileGoTo('admin-pending-profiles')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-amber-400"><i data-lucide="credit-card"></i></span><span><b class="block text-white text-sm">${adminPendingPaymentCount} paiement${adminPendingPaymentCount !== 1 ? 's' : ''} à confirmer</b><small class="text-slate-400">Vérifiez et confirmez les paiements en attente.</small></span><span class="admin-priority text-amber-400">Priorité élevée</span><button class="admin-open border-amber-500" onclick="window.openAdminRequestCategory('payments')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-purple-400"><i data-lucide="refresh-cw"></i></span><span><b class="block text-white text-sm">${pendingSubscriptionAttachments.length} demande${pendingSubscriptionAttachments.length !== 1 ? 's' : ''} de réactivation</b><small class="text-slate-400">Traitez les demandes en attente.</small></span><span class="admin-priority text-purple-400">Priorité moyenne</span><button class="admin-open border-purple-500" onclick="window.openAdminRequestCategory('attachments')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-blue-400"><i data-lucide="link"></i></span><span><b class="block text-white text-sm">${adminPendingQuotes.length} demande${adminPendingQuotes.length !== 1 ? 's' : ''} ou devis</b><small class="text-slate-400">Consultez les demandes reçues.</small></span><span class="admin-priority text-blue-400">Priorité normale</span><button class="admin-open" onclick="window.openAdminRequestCategory('quotes')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-cyan-400"><i data-lucide="calendar-clock"></i></span><span><b class="block text-white text-sm">${adminRenewalRequestCount} renouvellement${adminRenewalRequestCount !== 1 ? 's' : ''} demandé${adminRenewalRequestCount !== 1 ? 's' : ''}</b><small class="text-slate-400">Traitez les services à renouveler.</small></span><span class="admin-priority text-cyan-400">Priorité normale</span><button class="admin-open border-cyan-500" onclick="window.openAdminRequestCategory('renewals')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-red-400"><i data-lucide="power-off"></i></span><span><b class="block text-white text-sm">${adminCancellationRequestCount} désactivation${adminCancellationRequestCount !== 1 ? 's' : ''} demandée${adminCancellationRequestCount !== 1 ? 's' : ''}</b><small class="text-slate-400">Consultez les demandes de désactivation.</small></span><span class="admin-priority text-red-400">Priorité élevée</span><button class="admin-open border-red-500" onclick="window.openAdminRequestCategory('cancellations')">Ouvrir</button></div>
+                                        <div class="admin-task"><span class="admin-task-icon text-emerald-400"><i data-lucide="user-round-check"></i></span><span><b class="block text-white text-sm">${unverifiedClientProfiles.length} profil${unverifiedClientProfiles.length !== 1 ? 's' : ''} à vérifier</b><small class="text-slate-400">Validez les nouveaux comptes clients.</small></span><span class="admin-priority text-emerald-400">Priorité normale</span><button class="admin-open border-emerald-500" onclick="window.openAdminRequestCategory('profiles')">Ouvrir</button></div>
                                     </section>
                                     <section class="admin-panel"><div class="admin-panel-title"><span>ϟ &nbsp; ACTIVITÉ RÉCENTE</span><button class="text-cyan-400 text-xs" onclick="window.mobileGoTo('admin-finance')">Tout voir</button></div><div class="admin-activity">
                                         <div class="admin-activity-row"><span class="text-slate-500">Maintenant</span><span class="text-cyan-400">●</span><span><b class="block text-white">Données synchronisées</b><small class="text-slate-400">La console affiche les informations Firebase actuelles</small></span><span class="text-cyan-400">Système</span></div>
@@ -5391,7 +5398,7 @@
                         <!-- 4. CONTRÔLE DIRECT DES SERVICES -->
                         <div id="admin-services" class="request-center-tool mobile-anchor bg-slate-950/60 border border-[#1e293b]/70 rounded-xl p-4 flex flex-col gap-4 min-w-0 w-full">
                             <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider font-mono flex items-center gap-1.5">
-                                <i data-lucide="toggle-left" class="text-purple-400 w-4 h-4"></i> Forcer Services (Sans frais)
+                                <i data-lucide="toggle-left" class="text-purple-400 w-4 h-4"></i> ${adminRequestFilter === 'payments' ? 'Paiements à confirmer' : adminRequestFilter === 'renewals' ? 'Renouvellements demandés' : adminRequestFilter === 'cancellations' ? 'Désactivations demandées' : 'Forcer Services (Sans frais)'}
                             </h4>
                             <div class="space-y-3 font-mono text-xs flex-1 flex flex-col justify-between">
                                 <div>
@@ -5399,10 +5406,9 @@
                                     <select id="service-client-select" onchange="window.adminChangeServiceClient(this.value)"
                                         class="w-full bg-slate-950 border border-slate-850 rounded px-2 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 min-h-[36px]">
                                         <option value="">-- Choisir un client --</option>
-                                        <option value="${PROTOTYPE_CLIENT_ID}" ${window.appState.selectedServiceClientId === PROTOTYPE_CLIENT_ID ? 'selected' : ''}>🧪 Client Prototype (Simulation)</option>
-                                        ${firebaseClientProfiles.map(p => `
+                                        ${adminRequestClients.map(p => `
                                             <option value="${p.id}" ${window.appState.selectedServiceClientId === p.id ? 'selected' : ''}>
-                                                ${window.getClientName(p.email)} (${p.email})
+                                                ${p.id === PROTOTYPE_CLIENT_ID ? '🧪 Client Prototype (Simulation)' : `${window.getClientName(p.email)} (${p.email})`}
                                             </option>
                                         `).join('')}
                                     </select>
@@ -5410,13 +5416,11 @@
 
                                 <div class="space-y-2 flex-1 overflow-y-auto max-h-[160px] pr-1 no-scrollbar">
                                     ${(() => {
-                                        const sClient = window.appState.selectedServiceClientId === PROTOTYPE_CLIENT_ID
-                                            ? prototypeProfile
-                                            : firebaseClientProfiles.find(p => p.id === window.appState.selectedServiceClientId);
-                                        if (!sClient) return `<p class="text-slate-600 text-center italic text-[9px] mt-6">Choisissez un client pour gérer ses services.</p>`;
+                                        const sClient = adminRequestClients.find(p => p.id === window.appState.selectedServiceClientId);
+                                        if (!sClient) return `<p class="text-slate-600 text-center italic text-[9px] mt-6">${adminRequestFilter ? 'Aucun client ne possède une demande dans cette catégorie.' : 'Choisissez un client pour gérer ses services.'}</p>`;
                                         
                                         const clientServices = sClient.services || {};
-                                        return SERVICES_DATA.map(s => {
+                                        return SERVICES_DATA.filter(s => adminRequestServiceMatches(clientServices[s.id] || {})).map(s => {
                                             const sState = clientServices[s.id] || { status: 'inactive', subEnd: null };
                                             const isActive = sState.status === 'active' && sState.subEnd > virtualDate;
                                             const remainingDays = isActive ? Math.max(1, Math.ceil((sState.subEnd - virtualDate) / 86400000)) : 0;
@@ -5976,6 +5980,27 @@
             if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
+        window.openAdminRequestCategory = (category) => {
+            if (!window.appState.isAdmin) return;
+            const allowedCategories = ['payments', 'attachments', 'quotes', 'renewals', 'cancellations', 'profiles'];
+            if (!allowedCategories.includes(category)) return;
+            const serviceCategories = ['payments', 'renewals', 'cancellations'];
+            window.appState.adminRequestFilter = serviceCategories.includes(category) ? category : '';
+            window.appState.adminActiveTool = `admin-request-${category}`;
+            if (serviceCategories.includes(category)) {
+                const prototype = window.getAdminPrototypeClient?.();
+                const verifiedClients = (window.appState.allProfiles || []).filter(client =>
+                    client?.authVerified === true && !isAdminProfile(client));
+                const clients = [prototype, ...verifiedClients].filter(Boolean);
+                const matches = (state = {}) => (category === 'payments' && state.paymentStage === 'pending_confirmation')
+                    || (category === 'renewals' && Boolean(state.renewalRequestedAt) && state.reactivationRequestStatus === 'pending')
+                    || (category === 'cancellations' && Boolean(state.cancellationRequestedAt));
+                const firstClient = clients.find(client => SERVICES_DATA.some(service => matches(client?.services?.[service.id] || {})));
+                window.appState.selectedServiceClientId = firstClient?.id || '';
+            }
+            renderApp();
+        };
+
         window.mobileGoTo = (targetId) => {
             window.closeMobileShortcuts();
             const dashboard = document.getElementById('dashboard-top');
@@ -6000,6 +6025,7 @@
 
                 if (targetId === 'dashboard-top' || targetId === 'admin-home') {
                     window.appState.adminActiveTool = null;
+                    window.appState.adminRequestFilter = '';
                     workspaceBody.replaceChildren();
                     workspace.classList.add('hidden');
                     overview.classList.remove('hidden');
@@ -6009,7 +6035,14 @@
                     return;
                 }
 
-                const requestedTargetIds = targetId === 'admin-pending-profiles'
+                const requestCategory = targetId.startsWith('admin-request-') ? targetId.replace('admin-request-', '') : '';
+                const requestTargetMap = {
+                    payments: 'admin-services', attachments: 'admin-attachments', quotes: 'admin-quotes',
+                    renewals: 'admin-services', cancellations: 'admin-services', profiles: 'admin-pending-profiles'
+                };
+                const requestedTargetIds = requestCategory && requestTargetMap[requestCategory]
+                    ? [requestTargetMap[requestCategory]]
+                    : targetId === 'admin-pending-profiles'
                     ? ['admin-attachments', 'admin-quotes', 'admin-services', 'admin-pending-profiles']
                     : targetId === 'admin-prototype'
                         // Le prototype reprend le véritable catalogue client.
@@ -6050,6 +6083,14 @@
                     'admin-stripe': 'Liens Stripe personnalisés', 'admin-pimp-card': 'Lien PIMP CARD',
                     'admin-manage-link': 'Manage King Prime', 'admin-manage-gold-vibe-link': 'Manage Gold Vibe'
                 };
+                Object.assign(titles, {
+                    'admin-request-payments': 'Paiements à confirmer',
+                    'admin-request-attachments': 'Rattachements et réactivations',
+                    'admin-request-quotes': 'Demandes de devis',
+                    'admin-request-renewals': 'Renouvellements demandés',
+                    'admin-request-cancellations': 'Désactivations demandées',
+                    'admin-request-profiles': 'Profils clients à vérifier'
+                });
                 if (workspaceTitle) workspaceTitle.textContent = titles[targetId] || 'Outil administrateur';
                 if (workspaceSearch) {
                     workspaceSearch.classList.toggle('hidden', targetId !== 'admin-clients');
