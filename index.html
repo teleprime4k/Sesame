@@ -1525,7 +1525,12 @@
             // Ces indicateurs appartiennent uniquement à l’espace client réel.
             // Dans l’interface Admin, retirer complètement le bloc du DOM évite
             // qu’une règle responsive du carrousel puisse le réafficher en bas.
-            if (window.appState.isAdmin) document.getElementById('overview-section')?.remove();
+            if (window.appState.isAdmin || window.appState.authRole === 'admin') {
+                document.getElementById('overview-section')?.remove();
+                document.getElementById('client-referrals')?.remove();
+                document.getElementById('client-retention-notice')?.remove();
+                document.getElementById('client-global-announcement')?.remove();
+            }
             lucide.createIcons({ root: root });
             initKpiCarousel();
             restoreDirtyFormFields(dirtyFormFields);
@@ -1616,9 +1621,19 @@
         onAuthStateChanged(auth, async (currentUser) => {
             stopClientInactivityTimer();
             // Sécurité anti-login automatique après inscription
+            // Garder l'écran de chargement pendant la vérification du rôle.
+            // Sans cela, l'espace client pouvait apparaître une fraction de seconde
+            // avant la confirmation du rôle administrateur.
+            window.appState.loadingAuth = true;
             window.appState.user = currentUser;
+            // Ne jamais réutiliser le profil ou les annonces de la session
+            // précédente pendant l'identification du nouveau compte.
+            window.appState.profile = null;
+            window.appState.globalAnnouncement = null;
+            window.appState.expandedGlobalAnnouncement = false;
             window.appState.firestoreBlocked = false; 
             window.appState.authLoading = false; 
+            renderApp();
 
             if (currentUser) {
                 const secureAdminRole = await resolveAdminRole(currentUser);
@@ -1689,6 +1704,9 @@
                         });
                     } else {
                         const existingProfile = snap.data();
+                        // Le profil exact de la session est disponible avant que
+                        // l'écran principal puisse être rendu.
+                        window.appState.profile = existingProfile;
                         if (window.appState.isAdmin) {
                             // Répare automatiquement un ancien profil Admin dont
                             // l'adresse Firestore ne correspond plus à Firebase Auth.
@@ -3723,7 +3741,11 @@
         }
 
         function getMainDashboardHTML() {
-            const { user, profile, transactions, allTransactions, activeCatalogTab, virtualDate, manualTimeMode, isAdmin, adminSelectedClient, adminSearchQuery, stripeLinks, pimpCardUrl, manageUrl, manageGoldVibeUrl, globalAnnouncement, adminFinanceYearFilter, adminFinanceMonthFilter } = window.appState;
+            const { user, profile, transactions, allTransactions, activeCatalogTab, virtualDate, manualTimeMode, isAdmin, authRole, adminSelectedClient, adminSearchQuery, stripeLinks, pimpCardUrl, manageUrl, manageGoldVibeUrl, globalAnnouncement, adminFinanceYearFilter, adminFinanceMonthFilter } = window.appState;
+            // Un élément réservé au client ne peut être rendu qu'après réception
+            // de son profil et seulement si l'écran Client a réellement été choisi.
+            // Cette barrière supprime les images intermédiaires sur mobile.
+            const showRealClientContent = !isAdmin && authRole !== 'admin' && Boolean(profile);
             if (isAdmin) window.normalizeAdminPrototypeServices?.();
             
             // Sur le compte Admin, les cartes du catalogue utilisent directement
@@ -4149,7 +4171,7 @@
                     </main>
                 </section>` : ''}
 
-                ${!isAdmin ? (() => {
+                ${showRealClientContent ? (() => {
                     const referralPoints = Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)));
                     const remainingReferrals = Math.max(0, 5 - referralPoints);
                     return `<section id="client-referrals" class="mobile-anchor relative z-20 w-full bg-gradient-to-r from-fuchsia-950/45 via-slate-950/95 to-cyan-950/45 border border-fuchsia-500/35 p-4 rounded-2xl shadow-[0_0_22px_rgba(217,70,239,.12)] overflow-hidden">
@@ -4193,8 +4215,8 @@
                     <span class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-[9px] uppercase font-bold shrink-0">J’ai lu</span>
                 </button>` : ''}
 
-                ${!isAdmin && !profile?.retentionNoticeAcknowledgedAt ? `
-                <div class="relative z-20 w-full bg-slate-900/95 border border-cyan-500/35 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                ${showRealClientContent && !profile.retentionNoticeAcknowledgedAt ? `
+                <div id="client-retention-notice" class="relative z-20 w-full bg-slate-900/95 border border-cyan-500/35 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <span class="flex items-start gap-3"><span class="p-2 bg-cyan-950 rounded-lg shrink-0"><i data-lucide="calendar-clock" class="w-5 h-5 text-cyan-300"></i></span><span><strong class="block text-white text-xs uppercase font-mono">Conservation de vos données : 1 an</strong><span class="block text-[10px] text-slate-300 mt-1">Vos conversations, demandes de devis et suivis sont supprimés automatiquement après un an. Vous pouvez aussi les effacer manuellement à tout moment.</span></span></span>
                     <button onclick="window.acknowledgeRetentionNotice()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[9px] uppercase font-bold shrink-0">J’ai compris</button>
                 </div>` : ''}
@@ -4239,8 +4261,8 @@
                 </button>` : ''}
 
                 <!-- BANNIÈRE DE NOTIFICATION GLOBALE (Totalement optimisée pour mobile) -->
-                ${!isAdmin && globalAnnouncement && globalAnnouncement.text && profile?.dismissedAnnouncementId !== (globalAnnouncement.id || String(globalAnnouncement.timestamp)) ? `
-                <div class="relative bg-gradient-to-r from-amber-950/40 to-yellow-950/30 border border-amber-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 overflow-hidden z-10">
+                ${showRealClientContent && globalAnnouncement && globalAnnouncement.text && profile.dismissedAnnouncementId !== (globalAnnouncement.id || String(globalAnnouncement.timestamp)) ? `
+                <div id="client-global-announcement" class="relative bg-gradient-to-r from-amber-950/40 to-yellow-950/30 border border-amber-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.15)] flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 overflow-hidden z-10">
                     <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
                     <div class="flex items-start sm:items-center gap-3">
                         <div class="p-2 bg-amber-950 rounded-lg text-amber-500 border border-amber-500/20 shrink-0">
