@@ -1629,7 +1629,14 @@
                 requestAnimationFrame(() => window.mobileGoTo?.(window.appState.adminActiveTool, false));
             }
             if (!window.appState.isAdmin && window.appState.clientActiveTool) {
-                requestAnimationFrame(() => window.mobileGoTo?.(window.appState.clientActiveTool));
+                requestAnimationFrame(() => {
+                    const activeTool = window.appState.clientActiveTool;
+                    if (activeTool === 'client-credentials-focus') window.openClientMobileCredentials?.();
+                    else if (activeTool === 'client-service-focus') window.openClientMobileManagedService?.(window.appState.clientFocusedServiceId || '');
+                    else if (activeTool === 'client-days-summary') window.openClientMobileSubscriptionSummary?.('days');
+                    else if (activeTool === 'client-active-summary') window.openClientMobileSubscriptionSummary?.('active');
+                    else window.mobileGoTo?.(activeTool);
+                });
             }
 
             // Auto-scroll des tchats après le rendu
@@ -4308,7 +4315,7 @@
                                 <div class="client-subscription-head"><div class="client-subscription-title"><h2>${window.escapeHTML(clientPrimaryService?.name || 'Mes services')}</h2><div class="client-badges">${clientPrimaryOffer ? `<span class="client-pill">${window.escapeHTML(clientPrimaryOffer)}</span>` : ''}<span class="client-pill ${clientPrimaryDays ? 'active' : ''}">${clientPrimaryDays ? '● Actif' : 'Inactif'}</span></div></div><i data-lucide="tv" class="h-9 w-9 text-cyan-300"></i></div>
                                 <div class="client-progress"><span style="width:${Math.max(4,Math.min(100,(clientPrimaryDays/365)*100))}%"></span></div>
                                 <div class="client-sub-meta"><span>État de votre abonnement</span><strong>${clientPrimaryDays} jours restants</strong></div>
-                                <div class="client-sub-actions"><button onclick="window.mobileGoTo('services-section')">Voir mes identifiants</button><button class="primary" onclick="window.mobileGoTo('services-section')">Gérer mon service</button></div>
+                                <div class="client-sub-actions"><button onclick="window.openClientMobileCredentials()">Voir mes identifiants</button><button class="primary" onclick="window.openClientMobileManagedService('${clientPrimaryService?.id || ''}')">Gérer mon service</button></div>
                             </section>
                             <section class="client-panel client-consult"><h2>À consulter</h2><div class="client-consult-list">
                                 <button class="client-consult-row" onclick="window.mobileGoTo('news-section')"><span><i data-lucide="newspaper"></i></span><span><b>${unreadNewsCount} actualité${unreadNewsCount !== 1 ? 's' : ''} non lue${unreadNewsCount !== 1 ? 's' : ''}</b><small>Découvrez les dernières nouveautés.</small></span><i data-lucide="chevron-right"></i></button>
@@ -4691,7 +4698,7 @@
                                     }
 
                                     return `
-                                    <div class="border ${borderStyle} rounded-xl p-4 sm:p-5 flex flex-col gap-4 transition-all relative overflow-hidden group w-full">
+                                    <div data-client-service-id="${service.id}" class="border ${borderStyle} rounded-xl p-4 sm:p-5 flex flex-col gap-4 transition-all relative overflow-hidden group w-full">
                                         <div class="flex justify-between items-start gap-2 min-w-0">
                                             <h4 class="flex-1 min-w-0 text-xs sm:text-sm font-bold text-white uppercase font-mono whitespace-normal break-words leading-snug">${service.name}</h4>
                                             <span class="shrink-0">${stateBadge}</span>
@@ -6043,6 +6050,7 @@
                 window.clientWorkspacePlacements = [];
                 if (targetId === 'dashboard-top' || targetId === 'client-home') {
                     window.appState.clientActiveTool = null;
+                    window.appState.clientFocusedServiceId = null;
                     dashboard.classList.add('client-dashboard-home-mode');
                     clientHome?.classList.remove('hidden');
                     clientOverview?.classList.remove('hidden');
@@ -6141,6 +6149,72 @@
                 lucide.createIcons({ root: clientWorkspace });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
+        };
+
+        window.openClientMobileFocusedElement = (target, title, emptyMessage = '') => {
+            if (window.appState.isAdmin || !window.appState.profile) return;
+            if (!window.matchMedia('(max-width: 767px)').matches) {
+                window.mobileGoTo('services-section');
+                return;
+            }
+
+            const clientHome = document.getElementById('client-home');
+            const clientOverview = document.getElementById('client-overview');
+            const clientWorkspace = document.getElementById('client-workspace');
+            const clientWorkspaceBody = document.getElementById('client-workspace-body');
+            const clientWorkspaceTitle = document.getElementById('client-workspace-title');
+            if (!clientWorkspace || !clientWorkspaceBody) return;
+
+            const previousPlacements = Array.isArray(window.clientWorkspacePlacements) ? window.clientWorkspacePlacements : [];
+            previousPlacements.forEach(previous => {
+                if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
+                    previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
+                    previous.placeholder.remove();
+                }
+            });
+            window.clientWorkspacePlacements = [];
+
+            if (target?.parentNode) {
+                const placeholder = document.createComment(`emplacement-client-focus-${target.id || target.dataset?.clientServiceId || 'element'}`);
+                target.parentNode.insertBefore(placeholder, target);
+                target.classList.remove('hidden','mobile-route-hidden','mobile-route-active','mobile-route-active-parent','mobile-route-animate');
+                clientWorkspaceBody.replaceChildren(target);
+                window.clientWorkspacePlacements = [{ element: target, placeholder }];
+            } else {
+                const emptyPanel = document.createElement('div');
+                emptyPanel.className = 'rounded-2xl border border-dashed border-slate-700 bg-[#0b182b] px-5 py-10 text-center';
+                emptyPanel.innerHTML = `<i data-lucide="key-round" class="mx-auto mb-3 h-8 w-8 text-slate-600"></i><strong class="block text-sm text-slate-300">Information indisponible</strong><span class="mt-2 block text-[10px] text-slate-500">${window.escapeHTML(emptyMessage || 'Aucune information n’est actuellement disponible.')}</span>`;
+                clientWorkspaceBody.replaceChildren(emptyPanel);
+            }
+
+            clientOverview?.classList.add('hidden');
+            clientWorkspace.classList.remove('hidden');
+            window.appState.clientActiveTool = title === 'Identifiants confidentiels' ? 'client-credentials-focus' : 'client-service-focus';
+            if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = title;
+            clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.remove('active'));
+            requestAnimationFrame(() => {
+                lucide.createIcons({ root: clientWorkspace });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        };
+
+        window.openClientMobileCredentials = () => {
+            window.openClientMobileFocusedElement(
+                document.getElementById('client-credentials-banner'),
+                'Identifiants confidentiels',
+                'Aucun identifiant confidentiel ne vous a encore été transmis.'
+            );
+        };
+
+        window.openClientMobileManagedService = (serviceId) => {
+            window.appState.clientFocusedServiceId = serviceId || null;
+            const serviceCard = Array.from(document.querySelectorAll('[data-client-service-id]'))
+                .find(card => card.getAttribute('data-client-service-id') === serviceId);
+            window.openClientMobileFocusedElement(
+                serviceCard || null,
+                'Gérer mon service',
+                'Le service concerné est introuvable ou n’est pas encore disponible.'
+            );
         };
 
         window.openReferralRules = (prototypeMode = false) => {
