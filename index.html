@@ -1503,6 +1503,45 @@
             });
         }
 
+        function prepareUnifiedClientInterface() {
+            if (window.appState.isAdmin) return;
+            const dashboard = document.getElementById('dashboard-top');
+            const clientHome = document.getElementById('client-home');
+            const store = document.getElementById('client-modules-store');
+            if (!dashboard || !clientHome || !store) return;
+
+            // Extraire uniquement les véritables fonctions du compte client.
+            // Elles ne dépendent plus de l'ancienne grille ni de son ancien en-tête.
+            [
+                'client-credentials-banner', 'services-section', 'billing-rules',
+                'client-support', 'client-payments', 'client-referrals',
+                'news-section', 'community-section'
+            ].forEach(id => {
+                const element = document.getElementById(id);
+                if (element && !clientHome.contains(element)) store.appendChild(element);
+            });
+
+            // Les fenêtres fonctionnelles (paiement, devis, informations, factures…)
+            // sont conservées dans la nouvelle interface avant suppression du vieux DOM.
+            dashboard.querySelectorAll('[id$="-modal"]').forEach(modal => {
+                if (!clientHome.contains(modal)) clientHome.appendChild(modal);
+            });
+
+            const alertsSlot = document.getElementById('client-alerts-slot');
+            if (alertsSlot) {
+                Array.from(dashboard.children).forEach(child => {
+                    if (child.classList.contains('z-20') || child.id === 'client-global-announcement') alertsSlot.appendChild(child);
+                });
+            }
+
+            // Supprimer réellement l'ancienne présentation client. Seuls le nouvel
+            // espace, sa navigation mobile et son panneau Menu restent dans le DOM.
+            Array.from(dashboard.children).forEach(child => {
+                if (child === clientHome || child.id === 'mobile-shortcuts-sheet' || child.classList.contains('mobile-nav-shell')) return;
+                child.remove();
+            });
+        }
+
         function renderApp() {
             const root = document.getElementById('root');
             if(!root) return;
@@ -1525,6 +1564,7 @@
             } else {
                 root.innerHTML = getMainDashboardHTML();
             }
+            prepareUnifiedClientInterface();
             // Ces indicateurs appartiennent uniquement à l’espace client réel.
             // Dans l’interface Admin, retirer complètement le bloc du DOM évite
             // qu’une règle responsive du carrousel puisse le réafficher en bas.
@@ -1543,7 +1583,7 @@
             // Appliquer la rubrique avant le prochain affichage du navigateur.
             // Un setTimeout créait une image intermédiaire où toutes les cartes
             // devenaient visibles pendant les synchronisations Firebase.
-            window.applyMobileRoute?.(window.appState.mobileActiveRoute || 'dashboard-top', false, false);
+            if (window.appState.isAdmin) window.applyMobileRoute?.(window.appState.mobileActiveRoute || 'dashboard-top', false, false);
 
             // Les mises à jour Firebase reconstruisent le tableau de bord.
             // Rouvrir immédiatement l'outil Admin actif évite qu'il disparaisse
@@ -1551,7 +1591,7 @@
             if (window.appState.isAdmin && window.appState.adminActiveTool) {
                 requestAnimationFrame(() => window.mobileGoTo?.(window.appState.adminActiveTool, false));
             }
-            if (!window.appState.isAdmin && window.appState.clientActiveTool && !window.matchMedia('(max-width: 767px)').matches) {
+            if (!window.appState.isAdmin && window.appState.clientActiveTool) {
                 requestAnimationFrame(() => window.mobileGoTo?.(window.appState.clientActiveTool));
             }
 
@@ -4211,6 +4251,7 @@
                                 <button class="client-icon-button" onclick="window.handleLogout()" aria-label="Déconnexion" title="Déconnexion"><i data-lucide="log-out"></i></button>
                             </div>
                         </header>
+                        <div id="client-alerts-slot" class="mb-4 grid gap-3"></div>
                         <div class="client-kpis">
                             <button class="client-kpi" onclick="window.mobileGoTo('services-section')"><span class="client-kpi-icon"><i data-lucide="monitor-play"></i></span><span>Services actifs<strong>${activeCount}</strong></span></button>
                             <button class="client-kpi" onclick="window.mobileGoTo('services-section')"><span class="client-kpi-icon"><i data-lucide="calendar-days"></i></span><span>Jours restants<strong>${clientPrimaryDays}</strong></span></button>
@@ -4240,6 +4281,7 @@
                             <div class="mb-4 flex items-center gap-3"><button type="button" onclick="window.mobileGoTo('dashboard-top')" class="flex min-h-[40px] items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-950/30 px-4 text-xs font-bold text-cyan-300"><i data-lucide="arrow-left" class="h-4 w-4"></i>Accueil</button><h2 id="client-workspace-title" class="text-lg font-black text-white">Espace client</h2></div>
                             <div id="client-workspace-body" class="grid gap-4"></div>
                         </section>
+                        <div id="client-modules-store" class="hidden" aria-hidden="true"></div>
                     </main>
                 </section>` : ''}
 
@@ -4365,7 +4407,7 @@
 
                 <!-- BANNIÈRE D'IDENTIFIANTS SÉCURISÉS DU CLIENT -->
                 ${hasCredentials ? `
-                <div class="relative bg-gradient-to-r from-cyan-950/30 to-purple-950/30 border border-cyan-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.15)] flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 overflow-hidden z-10 animate-fadeIn w-full">
+                <div id="client-credentials-banner" class="relative bg-gradient-to-r from-cyan-950/30 to-purple-950/30 border border-cyan-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.15)] flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 overflow-hidden z-10 animate-fadeIn w-full">
                     <div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
                     <div class="flex items-center gap-3">
                         <div class="p-2 bg-cyan-950 rounded-lg text-cyan-400 border border-cyan-500/20 shrink-0">
@@ -5940,18 +5982,20 @@
                 if (targetId === 'news-section') window.markNewsAsRead();
                 return;
             }
-            if (!window.appState.isAdmin && dashboard && !window.matchMedia('(max-width: 767px)').matches) {
+            if (!window.appState.isAdmin && dashboard) {
                 const clientHome = document.getElementById('client-home');
                 const clientOverview = document.getElementById('client-overview');
                 const clientWorkspace = document.getElementById('client-workspace');
                 const clientWorkspaceBody = document.getElementById('client-workspace-body');
                 const clientWorkspaceTitle = document.getElementById('client-workspace-title');
-                const previous = window.clientWorkspacePlacement;
-                if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
-                    previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
-                    previous.placeholder.remove();
-                }
-                window.clientWorkspacePlacement = null;
+                const previousPlacements = Array.isArray(window.clientWorkspacePlacements) ? window.clientWorkspacePlacements : [];
+                previousPlacements.forEach(previous => {
+                    if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
+                        previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
+                        previous.placeholder.remove();
+                    }
+                });
+                window.clientWorkspacePlacements = [];
                 if (targetId === 'dashboard-top' || targetId === 'client-home') {
                     window.appState.clientActiveTool = null;
                     dashboard.classList.add('client-dashboard-home-mode');
@@ -5963,14 +6007,19 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }
-                const target = document.getElementById(targetId);
-                if (!target || !clientWorkspaceBody) return;
+                const requestedIds = targetId === 'services-section'
+                    ? ['client-credentials-banner','services-section','billing-rules']
+                    : [targetId];
+                const targets = requestedIds.map(id => document.getElementById(id)).filter(Boolean);
+                if (!targets.length || !clientWorkspaceBody) return;
                 window.appState.clientActiveTool = targetId;
-                const placeholder = document.createComment(`emplacement-client-${targetId}`);
-                target.parentNode.insertBefore(placeholder, target);
-                window.clientWorkspacePlacement = { element: target, placeholder };
-                clientWorkspaceBody.replaceChildren(target);
-                target.classList.remove('mobile-route-hidden','mobile-route-active','mobile-route-active-parent','mobile-route-animate');
+                window.clientWorkspacePlacements = targets.map(target => {
+                    const placeholder = document.createComment(`emplacement-client-${target.id}`);
+                    target.parentNode.insertBefore(placeholder, target);
+                    target.classList.remove('mobile-route-hidden','mobile-route-active','mobile-route-active-parent','mobile-route-animate','hidden');
+                    return { element:target, placeholder };
+                });
+                clientWorkspaceBody.replaceChildren(...targets);
                 clientOverview?.classList.add('hidden');
                 clientWorkspace?.classList.remove('hidden');
                 const titles = {'services-section':'Mes services','client-payments':'Mes paiements','news-section':'Actualités','community-section':'Groupe Sésame','client-support':'Support','client-referrals':'Mes points de parrainage'};
@@ -5978,6 +6027,7 @@
                 clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.toggle('active', button.getAttribute('onclick')?.includes(`'${targetId}'`)));
                 requestAnimationFrame(() => { lucide.createIcons({root:clientHome}); window.scrollTo({top:0,behavior:'smooth'}); });
                 if (targetId === 'news-section') window.markNewsAsRead();
+                if (targetId === 'community-section' && window.appState.profile?.communityChatJoined === true) window.openUnreadPeerNotification();
                 return;
             }
             if (window.matchMedia('(max-width: 767px)').matches) {
@@ -6183,8 +6233,10 @@
             }
             renderApp();
             setTimeout(() => {
-                if (window.matchMedia('(max-width: 767px)').matches) {
+                if (window.appState.isAdmin && window.matchMedia('(max-width: 767px)').matches) {
                     window.applyMobileRoute(supportTargetId, true, false);
+                } else if (!window.appState.isAdmin) {
+                    window.mobileGoTo(supportTargetId);
                 } else {
                     document.getElementById(supportTargetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
