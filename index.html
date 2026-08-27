@@ -180,6 +180,211 @@
             background: linear-gradient(155deg, rgba(15,23,42,.97), rgba(7,13,25,.98));
             box-shadow: 0 24px 70px rgba(0,0,0,.48), 0 0 0 1px rgba(255,255,255,.025) inset;
         }
+        .auth-panel > *:not(.auth-ocean):not(.absolute) { position: relative; z-index: 2; }
+        .auth-ocean {
+            position:absolute;
+            inset:0;
+            z-index:0;
+            overflow:hidden;
+            pointer-events:none;
+            border-radius:inherit;
+        }
+        .auth-ocean::after {
+            content:'';
+            position:absolute;
+            inset:auto 0 0;
+            height:58%;
+            background:linear-gradient(to top,rgba(3,105,161,.18),rgba(8,145,178,.06) 55%,transparent);
+        }
+        .auth-storm-flash {
+            position:absolute;
+            inset:0 0 42%;
+            background:
+                radial-gradient(ellipse at 22% 5%,rgba(255,255,255,.42),rgba(56,189,248,.15) 32%,transparent 62%),
+                radial-gradient(ellipse at 76% 12%,rgba(224,242,254,.34),rgba(96,165,250,.12) 36%,transparent 68%);
+            opacity:0;
+            animation:authStormFlash 7.5s linear infinite;
+            animation-play-state:running !important;
+            will-change:opacity;
+        }
+        .auth-lightning {
+            position:absolute;
+            top:5%;
+            width:7px;
+            height:125px;
+            opacity:0;
+            transform-origin:top center;
+            background:linear-gradient(to bottom,rgba(255,255,255,.98),rgba(125,211,252,.82),transparent);
+            box-shadow:0 0 10px rgba(255,255,255,1),0 0 26px rgba(125,211,252,.95),0 0 58px rgba(37,99,235,.75);
+            clip-path:polygon(38% 0,100% 0,62% 39%,100% 39%,12% 100%,40% 52%,0 52%);
+            animation:authLightningStrike 8s linear infinite;
+            animation-play-state:running !important;
+            will-change:opacity,transform;
+        }
+        .auth-lightning::after {
+            content:'';
+            position:absolute;
+            left:2px;
+            top:38%;
+            width:72px;
+            height:5px;
+            transform:rotate(32deg);
+            transform-origin:left center;
+            background:linear-gradient(90deg,rgba(255,255,255,.95),rgba(125,211,252,.72),transparent);
+            clip-path:polygon(0 25%,43% 0,36% 42%,100% 58%,38% 70%,45% 100%,0 72%);
+            box-shadow:0 0 12px rgba(186,230,253,.9),0 0 30px rgba(59,130,246,.65);
+        }
+        .auth-lightning.bolt-left { left:14%; transform:rotate(7deg) scale(.92); }
+        .auth-lightning.bolt-center { left:51%; height:155px; animation-duration:10.5s; transform:rotate(-5deg); }
+        .auth-lightning.bolt-right { right:12%; height:112px; animation-duration:13s; transform:rotate(9deg) scale(.86); }
+        .auth-rain {
+            position:absolute;
+            inset:0 0 22%;
+            overflow:hidden;
+            pointer-events:none;
+        }
+        .auth-raindrop {
+            position:absolute;
+            top:-15%;
+            left:var(--rain-left);
+            width:var(--rain-width);
+            height:var(--rain-length);
+            border-radius:999px;
+            opacity:var(--rain-opacity);
+            background:linear-gradient(to bottom,transparent,rgba(186,230,253,.92));
+            box-shadow:0 0 5px rgba(56,189,248,.36);
+            transform:rotate(7deg);
+            animation:authRainFall var(--rain-duration) linear infinite;
+            animation-delay:var(--rain-delay);
+            animation-play-state:running !important;
+            will-change:transform,opacity;
+        }
+        .auth-rain-splash {
+            position:absolute;
+            left:var(--splash-left);
+            bottom:20.5%;
+            width:7px;
+            height:3px;
+            border:1px solid rgba(125,211,252,.72);
+            border-radius:50%;
+            opacity:0;
+            transform:translateX(-50%) scale(.2);
+            box-shadow:0 0 8px rgba(56,189,248,.35);
+            animation:authRainSplash var(--splash-duration) ease-out infinite;
+            animation-delay:var(--splash-delay);
+            animation-play-state:running !important;
+            will-change:transform,opacity;
+        }
+        .auth-rain-splash::before,
+        .auth-rain-splash::after {
+            content:'';
+            position:absolute;
+            bottom:0;
+            width:2px;
+            height:7px;
+            border-radius:50%;
+            background:linear-gradient(to top,rgba(125,211,252,.75),transparent);
+        }
+        .auth-rain-splash::before { left:-2px; transform:rotate(-36deg); }
+        .auth-rain-splash::after { right:-2px; transform:rotate(36deg); }
+        @keyframes authRainFall {
+            0% { transform:translate3d(18px,-12vh,0) rotate(7deg); opacity:0; }
+            8% { opacity:var(--rain-opacity); }
+            94% { opacity:var(--rain-opacity); }
+            100% { transform:translate3d(-28px,78vh,0) rotate(7deg); opacity:0; }
+        }
+        @keyframes authRainSplash {
+            0%,76% { opacity:0; transform:translateX(-50%) scale(.15); }
+            80% { opacity:.9; transform:translateX(-50%) scale(.65); }
+            88% { opacity:.58; transform:translateX(-50%) scale(1.7); }
+            100% { opacity:0; transform:translateX(-50%) scale(2.8); }
+        }
+        @keyframes authStormFlash {
+            0%,61%,100% { opacity:0; }
+            61.2% { opacity:.42; }
+            61.65% { opacity:.04; }
+            62.05% { opacity:.72; }
+            62.55% { opacity:.12; }
+            63% { opacity:.58; }
+            64.2% { opacity:0; }
+        }
+        @keyframes authLightningStrike {
+            0%,63%,100% { opacity:0; filter:brightness(1); }
+            63.12% { opacity:1; filter:brightness(2.4); }
+            63.45% { opacity:.08; }
+            63.72% { opacity:1; filter:brightness(2); }
+            64.05% { opacity:.2; }
+            64.34% { opacity:.92; filter:brightness(1.8); }
+            65.2% { opacity:0; }
+        }
+        .auth-ocean-wave {
+            position:absolute;
+            left:-55%;
+            bottom:-31%;
+            width:210%;
+            height:53%;
+            border-radius:44% 56% 0 0 / 30% 36% 0 0;
+            transform-origin:center bottom;
+            will-change:transform;
+            animation-play-state:running !important;
+            backface-visibility:hidden;
+        }
+        .auth-ocean-wave::before {
+            content:'';
+            position:absolute;
+            left:0;
+            right:0;
+            top:-3px;
+            height:8px;
+            border-radius:50%;
+            background:linear-gradient(90deg,transparent 2%,rgba(255,255,255,.18) 18%,transparent 34%,rgba(103,232,249,.28) 54%,transparent 72%,rgba(255,255,255,.14) 88%,transparent 98%);
+            filter:blur(2px);
+            opacity:.75;
+        }
+        .auth-ocean-wave.wave-one {
+            background:linear-gradient(180deg,rgba(34,211,238,.24),rgba(2,132,199,.12));
+            border-top:1px solid rgba(103,232,249,.55);
+            box-shadow:0 -12px 34px rgba(6,182,212,.09);
+            animation-name:authOceanWaveOne;
+            animation-duration:9s;
+            animation-timing-function:ease-in-out;
+            animation-iteration-count:infinite;
+            animation-direction:alternate;
+        }
+        .auth-ocean-wave.wave-two {
+            bottom:-36%;
+            opacity:.75;
+            background:linear-gradient(180deg,rgba(59,130,246,.2),rgba(30,64,175,.1));
+            border-top:1px solid rgba(96,165,250,.42);
+            animation-name:authOceanWaveTwo;
+            animation-duration:12s;
+            animation-timing-function:ease-in-out;
+            animation-iteration-count:infinite;
+            animation-direction:alternate-reverse;
+        }
+        .auth-ocean-wave.wave-three {
+            bottom:-40%;
+            opacity:.48;
+            background:linear-gradient(180deg,rgba(168,85,247,.2),rgba(76,29,149,.08));
+            border-top:1px solid rgba(192,132,252,.35);
+            animation-name:authOceanWaveThree;
+            animation-duration:15s;
+            animation-timing-function:ease-in-out;
+            animation-iteration-count:infinite;
+            animation-direction:alternate;
+        }
+        @keyframes authOceanWaveOne {
+            from { transform:translateX(-4%) rotate(-1.6deg) scaleY(.94); }
+            to { transform:translateX(5%) rotate(1.8deg) scaleY(1.08); }
+        }
+        @keyframes authOceanWaveTwo {
+            from { transform:translateX(5%) rotate(1.2deg) scaleY(1.03); }
+            to { transform:translateX(-5%) rotate(-1.4deg) scaleY(.92); }
+        }
+        @keyframes authOceanWaveThree {
+            from { transform:translateX(-3%) rotate(-.8deg); }
+            to { transform:translateX(4%) rotate(1deg); }
+        }
         .auth-role-button {
             min-height: 76px;
             border: 1px solid #1e293b;
@@ -204,9 +409,15 @@
             .auth-3d-logo-wrap.is-left { left: -128px; }
             .auth-3d-logo-wrap.is-right { right: -128px; }
             .auth-3d-scene { position: absolute; }
+            .auth-ocean-wave { height:48%; bottom:-29%; }
+            .auth-ocean-wave.wave-two { bottom:-34%; }
+            .auth-ocean-wave.wave-three { bottom:-38%; }
         }
         @media (prefers-reduced-motion: reduce) {
             .auth-3d-logo-wrap, .auth-3d-ring, .auth-3d-scene::before, .auth-3d-scene::after { animation: none !important; }
+            .auth-ocean-wave { animation:none !important; }
+            .auth-storm-flash,.auth-lightning { animation:none !important; opacity:0 !important; }
+            .auth-raindrop,.auth-rain-splash { animation:none !important; opacity:0 !important; }
         }
 
         /* Nouvelle page d'accueil administrateur — isolée de l'espace client */
@@ -3245,6 +3456,30 @@
             const authRightDelay = -((authAnimationClock + 4500) % 9000);
             const authRingDelay = -(authAnimationClock % 12000);
             const authGlowDelay = -(authAnimationClock % 13000);
+            const authOceanOneDelay = -(authAnimationClock % 9000);
+            const authOceanTwoDelay = -(authAnimationClock % 12000);
+            const authOceanThreeDelay = -(authAnimationClock % 15000);
+            const authStormDelay = -(authAnimationClock % 7500);
+            const authBoltLeftDelay = -(authAnimationClock % 8000);
+            const authBoltCenterDelay = -((authAnimationClock + 3600) % 10500);
+            const authBoltRightDelay = -((authAnimationClock + 6800) % 13000);
+            const authRainDropsHTML = Array.from({ length: 28 }, (_, index) => {
+                const duration = 920 + ((index * 137) % 760);
+                const offset = index * 193;
+                const delay = -((authAnimationClock + offset) % duration);
+                const left = 2 + ((index * 37) % 97);
+                const length = 15 + ((index * 11) % 25);
+                const width = index % 5 === 0 ? 2 : 1;
+                const opacity = (0.28 + ((index * 7) % 48) / 100).toFixed(2);
+                return `<span class="auth-raindrop" style="--rain-left:${left}%;--rain-length:${length}px;--rain-width:${width}px;--rain-opacity:${opacity};--rain-duration:${duration}ms;--rain-delay:${delay}ms"></span>`;
+            }).join('');
+            const authRainSplashesHTML = Array.from({ length: 16 }, (_, index) => {
+                const duration = 1050 + ((index * 173) % 850);
+                const offset = index * 257;
+                const delay = -((authAnimationClock + offset) % duration);
+                const left = 4 + ((index * 43) % 93);
+                return `<span class="auth-rain-splash" style="--splash-left:${left}%;--splash-duration:${duration}ms;--splash-delay:${delay}ms"></span>`;
+            }).join('');
 
             return `
             <div class="auth-page min-h-screen flex flex-col items-center justify-center p-4 font-mono relative">
@@ -3261,6 +3496,17 @@
                 </div>
               </div>
               <div class="auth-panel z-10 w-full max-w-lg p-6 sm:p-8 rounded-[26px] border ${authRole === 'admin' ? 'border-purple-500/25' : 'border-cyan-500/25'} relative overflow-hidden font-sans">
+                <div class="auth-ocean" aria-hidden="true">
+                  <span class="auth-storm-flash" style="animation-delay:${authStormDelay}ms"></span>
+                  <span class="auth-lightning bolt-left" style="animation-delay:${authBoltLeftDelay}ms"></span>
+                  <span class="auth-lightning bolt-center" style="animation-delay:${authBoltCenterDelay}ms"></span>
+                  <span class="auth-lightning bolt-right" style="animation-delay:${authBoltRightDelay}ms"></span>
+                  <span class="auth-rain">${authRainDropsHTML}</span>
+                  <span class="auth-ocean-wave wave-three" style="animation-delay:${authOceanThreeDelay}ms"></span>
+                  <span class="auth-ocean-wave wave-two" style="animation-delay:${authOceanTwoDelay}ms"></span>
+                  <span class="auth-ocean-wave wave-one" style="animation-delay:${authOceanOneDelay}ms"></span>
+                  ${authRainSplashesHTML}
+                </div>
                 <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent ${authRole === 'admin' ? 'via-purple-500' : 'via-cyan-500'} to-transparent"></div>
                 
                 <div class="flex justify-center mb-4">
