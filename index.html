@@ -597,6 +597,23 @@
         }
         @media (max-width: 767px) {
             .client-dashboard-home-mode .client-home{display:block;min-height:100vh;padding-bottom:86px}.client-sidebar{display:none}.client-main{padding:0 14px 18px}.client-topbar{height:76px;margin:0 -14px 16px;padding:0 16px;position:sticky;top:0;z-index:30;background:#06101f}.client-welcome h1{font-size:18px}.client-welcome p{display:none}.client-top-actions{gap:8px}.client-icon-button,.client-avatar-small{width:38px;height:38px}.client-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.client-kpi{min-height:94px;padding:13px;gap:10px}.client-kpi-icon{width:39px;height:39px}.client-kpi strong{font-size:23px}.client-dashboard-grid{grid-template-columns:1fr;gap:14px}.client-panel{padding:16px}.client-subscription-title h2{font-size:18px}.client-sub-actions{grid-template-columns:1fr}.client-quick-grid{grid-template-columns:1fr;gap:10px}.client-quick{min-height:78px;padding:13px}
+            .client-top-actions > .relative > div.absolute {
+                position:fixed !important;
+                top:68px !important;
+                left:10px !important;
+                right:10px !important;
+                bottom:auto !important;
+                width:auto !important;
+                max-width:calc(100vw - 20px) !important;
+                max-height:calc(100dvh - 168px) !important;
+                box-sizing:border-box;
+            }
+            .client-top-actions > .relative > div.absolute > div:last-child {
+                max-height:calc(100dvh - 230px) !important;
+                overflow-y:auto !important;
+                overscroll-behavior:contain;
+                -webkit-overflow-scrolling:touch;
+            }
             html { scroll-behavior: auto; }
             body { padding-bottom: 92px !important; }
             #dashboard-top { padding: 10px; gap: 12px; }
