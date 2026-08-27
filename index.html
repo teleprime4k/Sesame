@@ -426,6 +426,8 @@
         .admin-dashboard-home-mode > #dashboard-header,
         .admin-dashboard-home-mode > :not(.admin-home):not(.mobile-nav-shell):not(.mobile-shortcuts-sheet) { display: none; }
         .admin-dashboard-home-mode .admin-home { display: grid; grid-template-columns: 278px minmax(0,1fr); min-height: 100vh; width: 100%; background: #030817; position: relative; z-index: 20; }
+        /* Nouvelle page d'accueil client — séparée des anciennes rubriques */
+        .client-home{display:none}.client-dashboard-home-mode{max-width:none!important;padding:0!important;gap:0!important;overflow:visible!important}.client-dashboard-home-mode>#dashboard-header,.client-dashboard-home-mode>:not(.client-home):not(.mobile-nav-shell):not(.mobile-shortcuts-sheet){display:none}.client-dashboard-home-mode .client-home{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh;width:100%;background:#030914;position:relative;z-index:20}.client-sidebar{background:#06101f;border-right:1px solid #1c2c42;padding:24px 16px;display:flex;flex-direction:column;gap:22px}.client-brand{display:flex;align-items:center;gap:11px;padding:0 10px 18px;border-bottom:1px solid #17263a;color:#fff;font-size:18px;font-weight:800}.client-brand img{width:36px;height:36px}.client-brand b{color:#22d3ee}.client-nav{display:grid;gap:8px}.client-nav button{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:0 14px;border:1px solid transparent;border-radius:12px;color:#b7c4d7;font-size:13px;text-align:left}.client-nav button:hover,.client-nav button.active{color:#fff;background:#0d1c31;border-color:#1e3a55}.client-nav button.active{color:#22d3ee;border-left:3px solid #22d3ee}.client-nav button svg{width:19px;height:19px}.client-sidebar-foot{margin-top:auto;padding:14px;border:1px solid #1c344d;border-radius:13px;background:#0a1728;color:#7f93ad;font-size:10px;line-height:1.5}.client-main{min-width:0;padding:0 28px 30px}.client-topbar{height:88px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid #17263a;margin:0 -28px 26px;padding:0 30px}.client-welcome h1{color:#fff;font-size:22px;font-weight:800}.client-welcome p{color:#71839c;font-size:11px;margin-top:3px}.client-top-actions{display:flex;align-items:center;gap:12px}.client-icon-button{position:relative;width:42px;height:42px;display:grid;place-items:center;border:1px solid #24364d;border-radius:12px;color:#9eb0c7;background:#091426}.client-icon-button .badge{position:absolute;right:-6px;top:-7px;min-width:20px;height:20px;padding:0 5px;border-radius:20px;background:#8b5cf6;color:#fff;font:800 10px/20px sans-serif}.client-avatar-small{width:42px;height:42px;border-radius:50%;border:2px solid #22d3ee;overflow:hidden;display:grid;place-items:center;color:#22d3ee;background:#0a1c2d}.client-avatar-small img{width:100%;height:100%;object-fit:cover}.client-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}.client-kpi{min-height:112px;padding:18px;border:1px solid #20344d;border-radius:16px;background:#0b182b;display:flex;align-items:center;gap:14px;text-align:left}.client-kpi-icon{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#063647;color:#22d3ee;flex:none}.client-kpi:nth-child(3) .client-kpi-icon{background:#2a2159;color:#a78bfa}.client-kpi strong{display:block;color:#22d3ee;font-size:28px;line-height:1;margin-top:7px}.client-kpi span{color:#cbd7e7;font-size:12px}.client-dashboard-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(300px,.85fr);gap:20px}.client-panel{border:1px solid #20344d;border-radius:17px;background:#0b182b;padding:22px}.client-subscription-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.client-subscription-title h2{color:#fff;font-size:22px;font-weight:900}.client-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.client-pill{padding:5px 10px;border-radius:8px;font-size:10px;font-weight:800;border:1px solid #7c5cff;color:#c4b5fd;background:#241b52}.client-pill.active{border-color:#1d8d64;color:#5ee3a7;background:#0b3a2d}.client-progress{height:11px;overflow:hidden;border-radius:20px;background:#1a2a40;margin:20px 0 8px}.client-progress>span{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#06b6d4,#22d3ee)}.client-sub-meta{display:flex;justify-content:space-between;gap:10px;color:#8da0b9;font-size:11px}.client-sub-meta strong{color:#67e8f9;font-size:14px}.client-sub-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding-top:20px;margin-top:20px;border-top:1px solid #203047}.client-sub-actions button{min-height:46px;border-radius:11px;border:1px solid #22d3ee;color:#67e8f9;font-size:12px;font-weight:800}.client-sub-actions button.primary{color:#03121d;background:linear-gradient(90deg,#22d3ee,#2dd4bf)}.client-consult h2{color:#fff;font-size:17px;font-weight:800;margin-bottom:12px}.client-consult-list{display:grid;gap:8px}.client-consult-row{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:11px;padding:13px 0;border-bottom:1px solid #1d3047;color:#cbd7e7;text-align:left}.client-consult-row:last-child{border-bottom:0}.client-consult-row>span:first-child{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#a78bfa;background:#241c52}.client-consult-row b{display:block;color:#fff;font-size:11px}.client-consult-row small{display:block;color:#71839c;font-size:9px;margin-top:3px}.client-quick-grid{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.client-quick{min-height:96px;padding:18px;border:1px solid #20344d;border-radius:15px;background:#0b182b;display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:12px;text-align:left}.client-quick>span:first-child{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;color:#67e8f9;background:#083348}.client-quick b{display:block;color:#fff;font-size:12px}.client-quick small{color:#71839c;font-size:10px}.client-home.hidden{display:none!important}
         .admin-sidebar { background: linear-gradient(180deg,#050b1c,#030817); border-right: 1px solid #1d2a3f; padding: 24px 20px; display: flex; flex-direction: column; gap: 22px; position:sticky; top:0; height:100vh; overflow-y:auto; }
         .admin-brand { display:flex; align-items:center; gap:12px; padding-bottom:20px; border-bottom:1px solid #1d2a3f; color:#fff; font-size:20px; font-weight:800; }
         .admin-brand img { width:44px; height:44px; border-radius:12px; object-fit:cover; }
@@ -558,6 +560,7 @@
             }
         }
         @media (max-width: 767px) {
+            .client-dashboard-home-mode .client-home{display:block;min-height:100vh;padding-bottom:86px}.client-sidebar{display:none}.client-main{padding:0 14px 18px}.client-topbar{height:76px;margin:0 -14px 16px;padding:0 16px;position:sticky;top:0;z-index:30;background:#06101f}.client-welcome h1{font-size:18px}.client-welcome p{display:none}.client-top-actions{gap:8px}.client-icon-button,.client-avatar-small{width:38px;height:38px}.client-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.client-kpi{min-height:94px;padding:13px;gap:10px}.client-kpi-icon{width:39px;height:39px}.client-kpi strong{font-size:23px}.client-dashboard-grid{grid-template-columns:1fr;gap:14px}.client-panel{padding:16px}.client-subscription-title h2{font-size:18px}.client-sub-actions{grid-template-columns:1fr}.client-quick-grid{grid-template-columns:1fr;gap:10px}.client-quick{min-height:78px;padding:13px}
             html { scroll-behavior: auto; }
             body { padding-bottom: 92px !important; }
             #dashboard-top { padding: 10px; gap: 12px; }
@@ -1547,6 +1550,9 @@
             // après une action, un filtre, une validation ou un enregistrement.
             if (window.appState.isAdmin && window.appState.adminActiveTool) {
                 requestAnimationFrame(() => window.mobileGoTo?.(window.appState.adminActiveTool, false));
+            }
+            if (!window.appState.isAdmin && window.appState.clientActiveTool && !window.matchMedia('(max-width: 767px)').matches) {
+                requestAnimationFrame(() => window.mobileGoTo?.(window.appState.clientActiveTool));
             }
 
             // Auto-scroll des tchats après le rendu
@@ -4043,7 +4049,7 @@
             ] : [
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
-                { id: 'community-section', icon: 'users', label: 'Groupe' }
+                { id: 'client-support', icon: 'headphones', label: 'Support' }
             ];
             const mobileAllShortcuts = isAdmin ? [
                 { id: 'dashboard-top', icon: 'house', label: 'Accueil' },
@@ -4074,8 +4080,19 @@
                 { action: 'profile', icon: 'user-pen', label: 'Mes informations' }
             ];
 
+            const clientPrimaryService = !isAdmin ? (SERVICES_DATA.find(service => {
+                const state = servicesState[service.id] || {};
+                return state.status === 'active' && Number(state.subEnd || 0) > virtualDate;
+            }) || SERVICES_DATA.find(service => service.id === TV_PASS_SERVICE_ID) || SERVICES_DATA[0]) : null;
+            const clientPrimaryState = clientPrimaryService ? (servicesState[clientPrimaryService.id] || {}) : {};
+            const clientPrimaryDays = clientPrimaryState.subEnd ? Math.max(0, Math.ceil((clientPrimaryState.subEnd - virtualDate) / 86400000)) : 0;
+            const clientPrimaryOffer = isValidTvPassOffer(clientPrimaryState.subscriptionOffer) ? clientPrimaryState.subscriptionOffer.replace(/^\S+\s*/, '') : '';
+            const clientReferralPoints = Math.max(0, Math.min(5, Number(profile?.referralPoints || 0)));
+            const clientPendingPayments = !isAdmin ? SERVICES_DATA.filter(service => servicesState[service.id]?.paymentStage === 'pending_confirmation').length : 0;
+            const clientBellCount = !isAdmin ? unreadSupportMessages.length + unreadNewsCount + unreadPeerMessages.length : 0;
+
             return `
-            <div id="dashboard-top" class="mobile-anchor relative min-h-screen bg-[#030712] text-slate-100 p-3 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto z-10 font-sans w-full overflow-hidden ${isAdmin ? 'admin-dashboard-home-mode' : ''}">
+            <div id="dashboard-top" class="mobile-anchor relative min-h-screen bg-[#030712] text-slate-100 p-3 sm:p-6 flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto z-10 font-sans w-full overflow-hidden ${isAdmin ? 'admin-dashboard-home-mode' : 'client-dashboard-home-mode'}">
                 <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-950/10 via-[#030712] to-[#030712] z-0"></div>
 
                 <!-- EN-TÊTE PRINCIPAL (Totalement responsive) -->
@@ -4087,7 +4104,7 @@
                     </div>
 
                     <!-- Gauche: Logo Sésame & Version (Ouvre-Toi) -->
-                    <div class="flex items-center gap-3 relative z-10">
+                    <button type="button" onclick="window.mobileGoTo('dashboard-top')" class="flex items-center gap-3 relative z-10 text-left" title="Retour à l’accueil">
                         <div class="p-2 bg-[#091524] border border-cyan-500/40 rounded-xl text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
                             <i data-lucide="shield" class="w-5 h-5 fill-cyan-400/10"></i>
                         </div>
@@ -4167,6 +4184,61 @@
                         <section id="admin-workspace" class="admin-workspace hidden" aria-live="polite">
                             <div class="admin-workspace-head"><button class="admin-workspace-back" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="arrow-left" class="w-4 h-4"></i>Vue d’ensemble</button><h2 id="admin-workspace-title">Outil administrateur</h2><input id="admin-workspace-search" class="admin-workspace-search hidden" type="search" placeholder="Rechercher un client par nom ou e-mail…" oninput="window.handleAdminSearch(this.value)" /></div>
                             <div id="admin-workspace-body" class="admin-workspace-body"></div>
+                        </section>
+                    </main>
+                </section>` : ''}
+
+                ${!isAdmin ? `<section id="client-home" class="client-home" aria-label="Tableau de bord client">
+                    <aside class="client-sidebar">
+                        <div class="client-brand"><img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Logo Sésame" onerror="this.src='https://sesameouvretoi.com/favicon.ico'"><span>Sésame <b>Ouvre-Toi</b></span></div>
+                        <nav class="client-nav">
+                            <button class="active" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Accueil</button>
+                            <button onclick="window.mobileGoTo('services-section')"><i data-lucide="layout-grid"></i>Mes services</button>
+                            <button onclick="window.mobileGoTo('client-payments')"><i data-lucide="credit-card"></i>Paiements</button>
+                            <button onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i>Actualités${unreadNewsCount ? `<span class="ml-auto rounded-full bg-purple-600 px-2 py-0.5 text-[9px] text-white">${unreadNewsCount}</span>` : ''}</button>
+                            <button onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i>Groupe Sésame</button>
+                            <button onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i>Support</button>
+                        </nav>
+                        <div class="client-sidebar-foot"><strong class="block text-emerald-300">● Espace sécurisé</strong>Vos services et vos données sont synchronisés avec votre compte.</div>
+                    </aside>
+                    <main class="client-main">
+                        <div id="client-overview">
+                        <header class="client-topbar">
+                            <div class="client-welcome"><h1>Bonjour ${window.escapeHTML(profile?.firstName || window.getClientName(user.email).split(' ')[0] || 'Client')}</h1><p>Retrouvez vos services et les informations importantes.</p></div>
+                            <div class="client-top-actions">
+                                <button class="client-icon-button" onclick="window.mobileGoTo('${unreadSupportMessages.length ? 'client-support' : unreadNewsCount ? 'news-section' : 'dashboard-top'}')" aria-label="Notifications"><i data-lucide="bell"></i>${clientBellCount ? `<span class="badge">${clientBellCount > 99 ? '99+' : clientBellCount}</span>` : ''}</button>
+                                <button class="client-avatar-small" onclick="window.openMyPersonalInformation()" aria-label="Mon profil">${profile?.avatar ? `<img src="${profile.avatar}" alt="Photo de profil">` : `<i data-lucide="user"></i>`}</button>
+                                <button class="client-icon-button" onclick="window.handleLogout()" aria-label="Déconnexion" title="Déconnexion"><i data-lucide="log-out"></i></button>
+                            </div>
+                        </header>
+                        <div class="client-kpis">
+                            <button class="client-kpi" onclick="window.mobileGoTo('services-section')"><span class="client-kpi-icon"><i data-lucide="monitor-play"></i></span><span>Services actifs<strong>${activeCount}</strong></span></button>
+                            <button class="client-kpi" onclick="window.mobileGoTo('services-section')"><span class="client-kpi-icon"><i data-lucide="calendar-days"></i></span><span>Jours restants<strong>${clientPrimaryDays}</strong></span></button>
+                            <button class="client-kpi" onclick="window.mobileGoTo('client-support')"><span class="client-kpi-icon"><i data-lucide="message-circle"></i></span><span>Messages<strong>${unreadSupportMessages.length}</strong></span></button>
+                            <button class="client-kpi" onclick="window.mobileGoTo('client-referrals')"><span class="client-kpi-icon"><i data-lucide="gift"></i></span><span>Points parrainage<strong>${clientReferralPoints}/5</strong></span></button>
+                        </div>
+                        <div class="client-dashboard-grid">
+                            <section class="client-panel">
+                                <div class="client-subscription-head"><div class="client-subscription-title"><h2>${window.escapeHTML(clientPrimaryService?.name || 'Mes services')}</h2><div class="client-badges">${clientPrimaryOffer ? `<span class="client-pill">${window.escapeHTML(clientPrimaryOffer)}</span>` : ''}<span class="client-pill ${clientPrimaryDays ? 'active' : ''}">${clientPrimaryDays ? '● Actif' : 'Inactif'}</span></div></div><i data-lucide="tv" class="h-9 w-9 text-cyan-300"></i></div>
+                                <div class="client-progress"><span style="width:${Math.max(4,Math.min(100,(clientPrimaryDays/365)*100))}%"></span></div>
+                                <div class="client-sub-meta"><span>État de votre abonnement</span><strong>${clientPrimaryDays} jours restants</strong></div>
+                                <div class="client-sub-actions"><button onclick="window.mobileGoTo('services-section')">Voir mes identifiants</button><button class="primary" onclick="window.mobileGoTo('services-section')">Gérer mon service</button></div>
+                            </section>
+                            <section class="client-panel client-consult"><h2>À consulter</h2><div class="client-consult-list">
+                                <button class="client-consult-row" onclick="window.mobileGoTo('news-section')"><span><i data-lucide="newspaper"></i></span><span><b>${unreadNewsCount} actualité${unreadNewsCount !== 1 ? 's' : ''} non lue${unreadNewsCount !== 1 ? 's' : ''}</b><small>Découvrez les dernières nouveautés.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-consult-row" onclick="window.mobileGoTo('client-support')"><span><i data-lucide="message-circle"></i></span><span><b>${unreadSupportMessages.length} nouveau${unreadSupportMessages.length !== 1 ? 'x' : ''} message${unreadSupportMessages.length !== 1 ? 's' : ''}</b><small>Consultez les réponses du support.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-consult-row" onclick="window.mobileGoTo('client-payments')"><span><i data-lucide="badge-check"></i></span><span><b>${clientPendingPayments ? `${clientPendingPayments} paiement en attente` : 'Paiements à jour'}</b><small>${clientPendingPayments ? 'Une confirmation est en cours.' : 'Consultez votre historique.'}</small></span><i data-lucide="chevron-right"></i></button>
+                            </div></section>
+                            <div class="client-quick-grid">
+                                <button class="client-quick" onclick="window.mobileGoTo('client-support')"><span><i data-lucide="headphones"></i></span><span><b>Contacter le support</b><small>Notre équipe est disponible.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-quick" onclick="window.mobileGoTo('services-section')"><span><i data-lucide="refresh-cw"></i></span><span><b>Renouveler</b><small>Prolongez votre abonnement.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-quick" onclick="window.mobileGoTo('client-payments')"><span><i data-lucide="credit-card"></i></span><span><b>Voir mes paiements</b><small>Consultez vos transactions.</small></span><i data-lucide="chevron-right"></i></button>
+                            </div>
+                        </div>
+                        </div>
+                        <section id="client-workspace" class="hidden py-5" aria-live="polite">
+                            <div class="mb-4 flex items-center gap-3"><button type="button" onclick="window.mobileGoTo('dashboard-top')" class="flex min-h-[40px] items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-950/30 px-4 text-xs font-bold text-cyan-300"><i data-lucide="arrow-left" class="h-4 w-4"></i>Accueil</button><h2 id="client-workspace-title" class="text-lg font-black text-white">Espace client</h2></div>
+                            <div id="client-workspace-body" class="grid gap-4"></div>
                         </section>
                     </main>
                 </section>` : ''}
@@ -4808,7 +4880,7 @@
                             </h3>
                             <p class="text-xs text-slate-400 font-light">Cette section est strictement réservée au compte administrateur. Évaluez les devis, gérez Stripe et répondez aux messages de support de la plateforme.</p>
                         </div>
-                    </div>
+                    </button>
 
                     <div class="mobile-admin-tools-hub" aria-label="Tous les outils administrateur">
                         <button type="button" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i><span>Gestion des clients</span></button>
@@ -5601,7 +5673,7 @@
                 <!-- BARRE DE NAVIGATION MOBILE -->
                 <nav class="mobile-nav-shell" aria-label="Raccourcis mobiles">
                     <button type="button" onclick="window.mobileGoTo('dashboard-top')" class="mobile-nav-button"><i data-lucide="house"></i><span>Accueil</span></button>
-                    ${mobilePrimaryShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; return `<button type="button" onclick="window.mobileGoTo('${item.id}')" class="mobile-nav-button relative">${badgeCount ? `<span class="absolute top-0.5 left-1/2 ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-[#0b1322] text-white text-[9px] leading-[14px] font-black text-center animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}"></i><span>${item.label}</span></button>`; }).join('')}
+                    ${mobilePrimaryShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'client-support' ? unreadSupportMessages.length : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; return `<button type="button" onclick="window.mobileGoTo('${item.id}')" class="mobile-nav-button relative">${badgeCount ? `<span class="absolute top-0.5 left-1/2 ml-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 border-2 border-[#0b1322] text-white text-[9px] leading-[14px] font-black text-center animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}"></i><span>${item.label}</span></button>`; }).join('')}
                     <button type="button" onclick="window.openMobileShortcuts()" class="mobile-nav-button text-cyan-400"><i data-lucide="menu"></i><span>Menu</span></button>
                 </nav>
 
@@ -5708,13 +5780,13 @@
         window.applyMobileRoute = (targetId, shouldScroll = true, shouldAnimate = true) => {
             if (!window.matchMedia('(max-width: 767px)').matches) return;
             const routeIds = [
-                'admin-home', 'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
+                'admin-home', 'client-home', 'overview-section', 'billing-rules', 'services-section', 'client-support', 'client-payments',
                 'client-referrals', 'news-section', 'community-section', 'admin-console', 'admin-quotes',
                 'admin-prototype', 'admin-support', 'admin-services', 'admin-referrals', 'admin-stripe',
                 'admin-pimp-card', 'admin-manage-link', 'admin-manage-gold-vibe-link',
                 'admin-deletion-history', 'admin-pending-profiles', 'admin-clients', 'admin-finance'
             ];
-            const resolvedId = targetId === 'dashboard-top' ? (window.appState.isAdmin ? 'admin-home' : 'overview-section') : targetId;
+            const resolvedId = targetId === 'dashboard-top' ? (window.appState.isAdmin ? 'admin-home' : 'client-home') : targetId;
             routeIds.forEach(id => {
                 const element = document.getElementById(id);
                 element?.classList.add('mobile-route-hidden');
@@ -5771,16 +5843,6 @@
             target.classList.remove('mobile-route-hidden');
             target.classList.add('mobile-route-active');
             target.classList.toggle('mobile-route-animate', shouldAnimate);
-            if (targetId === 'dashboard-top' && !window.appState.isAdmin) {
-                const billingRules = document.getElementById('billing-rules');
-                billingRules?.classList.remove('mobile-route-hidden');
-                billingRules?.classList.add('mobile-route-active');
-                billingRules?.classList.toggle('mobile-route-animate', shouldAnimate);
-                const clientReferrals = document.getElementById('client-referrals');
-                clientReferrals?.classList.remove('mobile-route-hidden');
-                clientReferrals?.classList.add('mobile-route-active');
-                clientReferrals?.classList.toggle('mobile-route-animate', shouldAnimate);
-            }
             window.appState.mobileActiveRoute = targetId;
             if (shouldScroll) window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -5875,6 +5937,46 @@
                     lucide.createIcons({ root: adminHome });
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 });
+                if (targetId === 'news-section') window.markNewsAsRead();
+                return;
+            }
+            if (!window.appState.isAdmin && dashboard && !window.matchMedia('(max-width: 767px)').matches) {
+                const clientHome = document.getElementById('client-home');
+                const clientOverview = document.getElementById('client-overview');
+                const clientWorkspace = document.getElementById('client-workspace');
+                const clientWorkspaceBody = document.getElementById('client-workspace-body');
+                const clientWorkspaceTitle = document.getElementById('client-workspace-title');
+                const previous = window.clientWorkspacePlacement;
+                if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
+                    previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
+                    previous.placeholder.remove();
+                }
+                window.clientWorkspacePlacement = null;
+                if (targetId === 'dashboard-top' || targetId === 'client-home') {
+                    window.appState.clientActiveTool = null;
+                    dashboard.classList.add('client-dashboard-home-mode');
+                    clientHome?.classList.remove('hidden');
+                    clientOverview?.classList.remove('hidden');
+                    clientWorkspace?.classList.add('hidden');
+                    clientWorkspaceBody?.replaceChildren();
+                    clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.toggle('active', button.getAttribute('onclick')?.includes("'dashboard-top'")));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
+                const target = document.getElementById(targetId);
+                if (!target || !clientWorkspaceBody) return;
+                window.appState.clientActiveTool = targetId;
+                const placeholder = document.createComment(`emplacement-client-${targetId}`);
+                target.parentNode.insertBefore(placeholder, target);
+                window.clientWorkspacePlacement = { element: target, placeholder };
+                clientWorkspaceBody.replaceChildren(target);
+                target.classList.remove('mobile-route-hidden','mobile-route-active','mobile-route-active-parent','mobile-route-animate');
+                clientOverview?.classList.add('hidden');
+                clientWorkspace?.classList.remove('hidden');
+                const titles = {'services-section':'Mes services','client-payments':'Mes paiements','news-section':'Actualités','community-section':'Groupe Sésame','client-support':'Support','client-referrals':'Mes points de parrainage'};
+                if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = titles[targetId] || 'Espace client';
+                clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.toggle('active', button.getAttribute('onclick')?.includes(`'${targetId}'`)));
+                requestAnimationFrame(() => { lucide.createIcons({root:clientHome}); window.scrollTo({top:0,behavior:'smooth'}); });
                 if (targetId === 'news-section') window.markNewsAsRead();
                 return;
             }
