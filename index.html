@@ -6061,7 +6061,9 @@
                     return;
                 }
                 const requestedIds = targetId === 'services-section'
-                    ? ['client-credentials-banner','services-section','billing-rules']
+                    ? (window.matchMedia('(max-width: 767px)').matches
+                        ? ['services-section']
+                        : ['client-credentials-banner','services-section','billing-rules'])
                     : [targetId];
                 const targets = requestedIds.map(id => document.getElementById(id)).filter(Boolean);
                 if (!targets.length || !clientWorkspaceBody) return;
