@@ -596,7 +596,7 @@
             }
         }
         @media (max-width: 767px) {
-            .client-dashboard-home-mode .client-home{display:block;min-height:100vh;padding-bottom:86px}.client-sidebar{display:none}.client-main{padding:0 14px 18px}.client-topbar{height:76px;margin:0 -14px 16px;padding:0 16px;position:sticky;top:0;z-index:30;background:#06101f}.client-welcome h1{font-size:18px}.client-welcome p{display:none}.client-top-actions{gap:8px}.client-icon-button,.client-avatar-small{width:38px;height:38px}.client-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.client-kpi{min-height:94px;padding:13px;gap:10px}.client-kpi-icon{width:39px;height:39px}.client-kpi strong{font-size:23px}.client-dashboard-grid{grid-template-columns:1fr;gap:14px}.client-panel{padding:16px}.client-subscription-title h2{font-size:18px}.client-sub-actions{grid-template-columns:1fr}.client-quick-grid{grid-template-columns:1fr;gap:10px}.client-quick{min-height:78px;padding:13px}
+            .client-dashboard-home-mode .client-home{display:block;min-height:100vh;padding-bottom:86px}.client-sidebar{display:none}.client-main{padding:0 14px 18px}.client-topbar{height:76px;margin:0 -14px 16px;padding:0 16px;position:sticky;top:0;z-index:30;background:#06101f}.client-welcome h1{font-size:18px}.client-welcome p{display:none}.client-top-actions{gap:8px}.client-icon-button,.client-avatar-small{width:38px;height:38px}.client-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.client-kpi{min-height:94px;padding:13px;gap:10px}.client-kpi-icon{width:39px;height:39px}.client-kpi strong{font-size:23px}.client-dashboard-grid{grid-template-columns:1fr;gap:14px}.client-panel{padding:16px}.client-subscription-title h2{font-size:18px}.client-sub-actions{grid-template-columns:1fr}.client-quick-grid{grid-template-columns:1fr;gap:10px}.client-quick{min-height:78px;padding:13px}.client-payments-quick{display:none!important}
             .client-top-actions > .relative > div.absolute {
                 position:fixed !important;
                 top:68px !important;
@@ -4367,7 +4367,7 @@
                             <div class="client-quick-grid">
                                 <button class="client-quick" onclick="window.mobileGoTo('client-support')"><span><i data-lucide="headphones"></i></span><span><b>Contacter le support</b><small>Notre équipe est disponible.</small></span><i data-lucide="chevron-right"></i></button>
                                 <button class="client-quick" onclick="window.openClientMobileRenewalServices()"><span><i data-lucide="refresh-cw"></i></span><span><b>Renouvellement</b><small>${clientRenewalCount ? `${clientRenewalCount} service${clientRenewalCount > 1 ? 's' : ''} à renouveler` : 'Aucun renouvellement nécessaire'}</small></span><i data-lucide="chevron-right"></i></button>
-                                <button class="client-quick" onclick="window.mobileGoTo('client-payments')"><span><i data-lucide="credit-card"></i></span><span><b>Voir mes paiements</b><small>Consultez vos transactions.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-quick client-payments-quick" onclick="window.mobileGoTo('client-payments')"><span><i data-lucide="credit-card"></i></span><span><b>Voir mes paiements</b><small>Consultez vos transactions.</small></span><i data-lucide="chevron-right"></i></button>
                             </div>
                         </div>
                         </div>
