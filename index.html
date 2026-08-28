@@ -1034,6 +1034,7 @@
         const appId = "sesameouvretoi";
 
         const ADMIN_SESSION_ENDPOINT = "https://icy-snow-93d1.teleprime4k.workers.dev/api/admin-session";
+        const GEMINI_ASSISTANT_ENDPOINT = "https://icy-snow-93d1.teleprime4k.workers.dev/api/gemini-assistant";
         const PROTOTYPE_CLIENT_ID = "__admin_client_prototype__";
         const CLIENT_DATA_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
         const retentionCleanupInProgress = new Set();
@@ -1245,6 +1246,8 @@
             newsDraftTitle: '',
             newsDraftContent: '',
             adminSupportDrafts: {},
+            geminiAssistantOutputs: {},
+            geminiAssistantLoadingClientId: '',
             adminSupportExpanded: false,
             announcementDraftTitle: null,
             announcementDraftIntro: null,
@@ -5306,7 +5309,10 @@
                                             const lastClientMessage = [...window.appState.allMessages].filter(message => message.userId === window.appState.adminSelectedClient && message.sender === 'user').sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))[0];
                                             if (!lastClientMessage) return '';
                                             const suggestions = window.getSupportReplySuggestions(lastClientMessage.text || '');
-                                            return `<details class="mt-2 shrink-0 rounded-lg bg-gradient-to-r from-purple-950/45 to-cyan-950/35 border border-purple-500/25 group"><summary class="list-none cursor-pointer px-2.5 py-2 flex items-center justify-between gap-2 select-none"><span class="text-[9px] uppercase font-bold text-purple-300 flex items-center gap-1"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i> Assistant de réponse</span><span class="flex items-center gap-1 text-[8px] text-slate-500"><span class="hidden sm:inline">Afficher les suggestions</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform group-open:rotate-180"></i></span></summary><div class="border-t border-purple-500/20 px-2.5 py-2"><span class="block mb-2 text-[8px] text-slate-500">Suggestions selon le dernier message du client</span><div class="flex flex-wrap gap-1.5 max-h-[84px] overflow-y-auto">${suggestions.map((suggestion, index) => `<button type="button" onclick="window.useAdminReplySuggestion(${index})" class="px-2 py-1.5 rounded bg-slate-950 hover:bg-purple-950 border border-slate-700 hover:border-purple-500/40 text-[8px] text-slate-300 text-left">${window.escapeHTML(suggestion.label)}</button>`).join('')}</div></div></details>`;
+                                            const clientId = window.appState.adminSelectedClient;
+                                            const geminiOutput = window.appState.geminiAssistantOutputs[clientId] || null;
+                                            const geminiLoading = window.appState.geminiAssistantLoadingClientId === clientId;
+                                            return `<details class="mt-2 shrink-0 rounded-lg bg-gradient-to-r from-purple-950/45 to-cyan-950/35 border border-purple-500/25 group"><summary class="list-none cursor-pointer px-2.5 py-2 flex items-center justify-between gap-2 select-none"><span class="text-[9px] uppercase font-bold text-purple-300 flex items-center gap-1"><i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i> Assistant Gemini</span><span class="flex items-center gap-1 text-[8px] text-slate-500"><span class="hidden sm:inline">Brouillons privés · aucun envoi automatique</span><i data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform group-open:rotate-180"></i></span></summary><div class="border-t border-purple-500/20 px-2.5 py-2"><span class="block mb-2 text-[8px] text-slate-500">Suggestions locales</span><div class="flex flex-wrap gap-1.5 max-h-[84px] overflow-y-auto">${suggestions.map((suggestion, index) => `<button type="button" onclick="window.useAdminReplySuggestion(${index})" class="px-2 py-1.5 rounded bg-slate-950 hover:bg-purple-950 border border-slate-700 hover:border-purple-500/40 text-[8px] text-slate-300 text-left">${window.escapeHTML(suggestion.label)}</button>`).join('')}</div><div class="mt-2 border-t border-purple-500/20 pt-2"><span class="mb-2 flex items-center gap-1 text-[8px] font-bold uppercase text-cyan-300"><i data-lucide="sparkles" class="h-3 w-3"></i> Gemini sécurisé</span><div class="flex flex-wrap gap-1.5"><button type="button" onclick="window.askGeminiAdminSupport('draft')" ${geminiLoading ? 'disabled' : ''} class="rounded border border-cyan-500/30 bg-cyan-950 px-2 py-1.5 text-[8px] text-cyan-200 disabled:opacity-50">Proposer une réponse</button><button type="button" onclick="window.askGeminiAdminSupport('correct')" ${geminiLoading ? 'disabled' : ''} class="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-[8px] text-slate-300 disabled:opacity-50">Corriger mon brouillon</button><button type="button" onclick="window.askGeminiAdminSupport('rewrite')" ${geminiLoading ? 'disabled' : ''} class="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-[8px] text-slate-300 disabled:opacity-50">Reformuler</button><button type="button" onclick="window.askGeminiAdminSupport('summary')" ${geminiLoading ? 'disabled' : ''} class="rounded border border-slate-700 bg-slate-950 px-2 py-1.5 text-[8px] text-slate-300 disabled:opacity-50">Résumer</button></div>${geminiLoading ? `<div class="mt-2 flex items-center gap-2 rounded border border-cyan-500/20 bg-cyan-950/30 px-2 py-2 text-[8px] text-cyan-200"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i> Gemini prépare votre brouillon…</div>` : ''}${geminiOutput ? `<div class="mt-2 rounded-lg border border-purple-500/30 bg-slate-950/80 p-2"><span class="block text-[8px] font-bold uppercase text-purple-300">${geminiOutput.action === 'summary' ? 'Résumé privé' : 'Proposition à vérifier'}</span><p class="mt-1 whitespace-pre-wrap text-[9px] leading-relaxed text-slate-200">${window.escapeHTML(geminiOutput.text)}</p>${geminiOutput.action !== 'summary' ? `<button type="button" onclick="window.useGeminiAdminDraft()" class="mt-2 rounded bg-purple-700 px-2 py-1.5 text-[8px] font-bold text-white hover:bg-purple-600">Utiliser ce brouillon</button>` : ''}</div>` : ''}</div></div></details>`;
                                         })()}
                                         <form onsubmit="window.adminSendSupportMessage(event)" class="mt-2 pt-2 border-t border-slate-800 flex gap-1 font-mono shrink-0">
                                             <input id="admin-chat-input" type="text" value="${window.escapeHTML(window.appState.adminSupportDrafts[window.appState.adminSelectedClient] || '')}" oninput="window.updateAdminSupportDraft(this.value)" placeholder="Répondre..." autocomplete="off" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" enterkeyhint="send"
@@ -6666,6 +6672,60 @@
             input.value = corrected;
             window.updateAdminSupportDraft(corrected);
             input.focus();
+        };
+
+        window.askGeminiAdminSupport = async (action = 'draft') => {
+            const clientId = window.appState.adminSelectedClient;
+            const allowedActions = new Set(['draft', 'correct', 'rewrite', 'summary']);
+            if (!window.appState.isAdmin || !clientId || !allowedActions.has(action)) return;
+            const input = document.getElementById('admin-chat-input');
+            const draft = String(input?.value || window.appState.adminSupportDrafts[clientId] || '').trim();
+            if (['correct', 'rewrite'].includes(action) && !draft) {
+                window.showToast('Écrivez d’abord un brouillon à corriger ou reformuler.', 'error');
+                input?.focus();
+                return;
+            }
+            if (window.appState.geminiAssistantLoadingClientId) return;
+
+            const conversation = window.appState.allMessages
+                .filter(message => message.userId === clientId && ['user', 'admin'].includes(message.sender))
+                .sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0))
+                .slice(-20)
+                .map(message => ({ role: message.sender === 'admin' ? 'admin' : 'client', text: String(message.text || '').slice(0, 1500) }));
+            if (!conversation.length && !draft) return window.showToast('Aucun message à analyser.', 'error');
+
+            window.appState.geminiAssistantLoadingClientId = clientId;
+            renderApp();
+            try {
+                const token = await window.appState.user?.getIdToken(true);
+                if (!token) throw new Error('Session administrateur indisponible');
+                const response = await fetch(GEMINI_ASSISTANT_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ action, draft, conversation })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data?.text) throw new Error(data?.error || 'Réponse Gemini indisponible');
+                window.appState.geminiAssistantOutputs[clientId] = { action, text: String(data.text).trim() };
+            } catch (error) {
+                console.error('Assistant Gemini indisponible :', error);
+                window.showToast('Assistant Gemini indisponible. Vérifiez le déploiement du Worker et sa clé API.', 'error');
+            } finally {
+                window.appState.geminiAssistantLoadingClientId = '';
+                renderApp();
+            }
+        };
+
+        window.useGeminiAdminDraft = () => {
+            const clientId = window.appState.adminSelectedClient;
+            const result = window.appState.geminiAssistantOutputs[clientId];
+            const input = document.getElementById('admin-chat-input');
+            if (!window.appState.isAdmin || !result?.text || result.action === 'summary' || !input) return;
+            input.value = result.text;
+            window.updateAdminSupportDraft(result.text);
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+            window.showToast('Brouillon Gemini inséré. Vérifiez-le avant l’envoi.');
         };
 
         window.adminSendSupportMessage = async (e) => {
