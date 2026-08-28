@@ -3099,6 +3099,11 @@
             if(!text) return;
 
             input.disabled = true;
+            btn.disabled = true;
+            // Vider immédiatement le brouillon avant que le listener Firebase
+            // reconstruise la messagerie avec l'ancienne valeur.
+            window.appState.clientSupportDraft = '';
+            input.value = '';
 
             try {
                 const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
@@ -3111,14 +3116,20 @@
                     readByClient: true,
                     timestamp: window.getVirtualTimestamp() 
                 });
-                window.appState.clientSupportDraft = '';
-                input.value = '';
             } catch (err) {
                 console.error(err);
+                // En cas d'échec seulement, rendre son texte au client.
+                window.appState.clientSupportDraft = text;
+                renderApp();
                 window.showToast("Erreur d'envoi du message.", "error");
             } finally {
-                input.disabled = false;
-                input.focus();
+                const currentInput = document.getElementById('chat-input');
+                const currentButton = document.getElementById('chat-btn');
+                if (currentInput) {
+                    currentInput.disabled = false;
+                    currentInput.focus();
+                }
+                if (currentButton) currentButton.disabled = false;
             }
         };
 
