@@ -6176,10 +6176,6 @@
 
         window.openClientMobileSubscriptionSummary = (mode = 'active') => {
             if (window.appState.isAdmin || !window.appState.profile) return;
-            if (!window.matchMedia('(max-width: 767px)').matches) {
-                window.mobileGoTo('services-section');
-                return;
-            }
 
             const clientHome = document.getElementById('client-home');
             const clientOverview = document.getElementById('client-overview');
@@ -6231,10 +6227,6 @@
 
         window.openClientMobileFocusedElement = (target, title, emptyMessage = '') => {
             if (window.appState.isAdmin || !window.appState.profile) return;
-            if (!window.matchMedia('(max-width: 767px)').matches) {
-                window.mobileGoTo('services-section');
-                return;
-            }
 
             const clientHome = document.getElementById('client-home');
             const clientOverview = document.getElementById('client-overview');
