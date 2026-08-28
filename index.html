@@ -6289,10 +6289,6 @@
 
         window.openClientMobileRenewalServices = () => {
             if (window.appState.isAdmin || !window.appState.profile) return;
-            if (!window.matchMedia('(max-width: 767px)').matches) {
-                window.mobileGoTo('services-section');
-                return;
-            }
             if (window.appState.activeCatalogTab !== 'Tous') {
                 window.appState.activeCatalogTab = 'Tous';
                 window.appState.clientActiveTool = 'client-renewal-summary';
@@ -6346,7 +6342,7 @@
             clientOverview?.classList.add('hidden');
             clientWorkspace.classList.remove('hidden');
             window.appState.clientActiveTool = 'client-renewal-summary';
-            if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = 'Renouvellement';
+            if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = `Renouvellement (${renewalServiceIds.length})`;
             clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.remove('active'));
             requestAnimationFrame(() => {
                 lucide.createIcons({ root: clientWorkspace });
