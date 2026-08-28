@@ -1603,6 +1603,11 @@
         function renderApp() {
             const root = document.getElementById('root');
             if(!root) return;
+            const selectedAssistantClientId = window.appState.adminSelectedClient;
+            const existingAssistantPanel = document.querySelector('#admin-support details');
+            if (selectedAssistantClientId && existingAssistantPanel) {
+                window.appState.cloudflareAssistantOpenByClient[selectedAssistantClientId] = existingAssistantPanel.open;
+            }
             const activeAdminField = captureActiveAdminField();
             const dirtyFormFields = captureDirtyFormFields();
             
@@ -1636,6 +1641,15 @@
             initKpiCarousel();
             restoreDirtyFormFields(dirtyFormFields);
             restoreActiveAdminField(activeAdminField);
+
+            // Une synchronisation Firebase peut reconstruire le DOM. Restaurer
+            // l'état du panneau IA évite qu'il se ferme ou semble disparaître.
+            if (selectedAssistantClientId && window.appState.cloudflareAssistantOpenByClient[selectedAssistantClientId] === true) {
+                requestAnimationFrame(() => {
+                    const assistantPanel = document.querySelector('#admin-support details');
+                    if (assistantPanel && window.appState.adminSelectedClient === selectedAssistantClientId) assistantPanel.open = true;
+                });
+            }
 
             // Sur téléphone, une seule rubrique est affichée à la fois.
             // Appliquer la rubrique avant le prochain affichage du navigateur.
@@ -2043,13 +2057,23 @@
                     ? collection(db, 'artifacts', appId, 'public', 'data', 'presence')
                     : doc(db, 'artifacts', appId, 'public', 'data', 'presence', 'admin');
                 unsubPresence = onSnapshot(presenceSource, (snap) => {
+                    const previousPresence = window.appState.presence || {};
+                    const onlineSignature = (presenceMap) => Object.entries(presenceMap)
+                        .filter(([, item]) => item?.online === true && (Date.now() - Number(item.lastSeen || 0)) < PRESENCE_TIMEOUT_MS)
+                        .map(([id]) => id)
+                        .sort()
+                        .join('|');
+                    const previousOnlineSignature = onlineSignature(previousPresence);
                     if (window.appState.isAdmin) {
                         window.appState.presence = Object.fromEntries(snap.docs.map(d => [d.id, d.data()]));
                     } else {
                         window.appState.presence = snap.exists() ? { admin: snap.data() } : {};
                     }
                     schedulePresenceExpiry();
-                    renderApp();
+                    // Les battements Firebase actualisent lastSeen toutes les 30 s.
+                    // Ne reconstruire l'interface que si un utilisateur passe
+                    // réellement en ligne ou hors ligne.
+                    if (previousOnlineSignature !== onlineSignature(window.appState.presence)) renderApp();
                 }, handlePermissionError);
 
                 const quotesCol = collection(db, 'artifacts', appId, 'public', 'data', 'quotes');
@@ -2075,7 +2099,7 @@
                 unsubAdminMessages = onSnapshot(messagesSource, (snap) => {
                     const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     if (window.appState.isAdmin) {
-                        msgs.filter(message => message.deleteRequestedByClient === true || !isWithinClientRetention(message, 'timestamp')).forEach(message => {
+                        msgs.filter(message => !isWithinClientRetention(message, 'timestamp')).forEach(message => {
                             const cleanupKey = `message:${message.id}`;
                             if (retentionCleanupInProgress.has(cleanupKey)) return;
                             retentionCleanupInProgress.add(cleanupKey);
@@ -2083,7 +2107,10 @@
                         });
                     }
                     msgs.sort((a, b) => a.timestamp - b.timestamp);
-                    window.appState.allMessages = msgs.filter(message => message.deleteRequestedByClient !== true && isWithinClientRetention(message, 'timestamp'));
+                    window.appState.allMessages = msgs.filter(message =>
+                        isWithinClientRetention(message, 'timestamp') &&
+                        (window.appState.isAdmin || (message.hiddenByClient !== true && message.deleteRequestedByClient !== true))
+                    );
                     renderApp();
                 }, handlePermissionError);
 
@@ -3128,11 +3155,15 @@
             if (window.appState.isAdmin || !window.appState.user) return;
             const messages = window.appState.allMessages.filter(message => message.userId === window.appState.user.uid);
             if (!messages.length) return;
-            window.showCyberConfirm("Effacer toute votre conversation de support ? Elle disparaîtra immédiatement de votre espace.", async () => {
+            window.showCyberConfirm("Effacer toute votre conversation de support ? Elle sera masquée uniquement dans votre espace et restera accessible à l’administrateur.", async () => {
                 try {
-                    await Promise.all(messages.map(message => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', message.id))));
+                    const hiddenAt = Date.now();
+                    await Promise.all(messages.map(message => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', message.id), {
+                        hiddenByClient: true,
+                        hiddenByClientAt: hiddenAt
+                    })));
                     await window.recordClientDeletionHistory('messages', messages.length, 'Conversation complète');
-                    window.showToast("Conversation effacée de votre espace client.");
+                    window.showToast("Conversation masquée dans votre espace client. Elle reste conservée pour l’administrateur.");
                 } catch (error) {
                     console.error(error);
                     window.showToast("Impossible d’effacer cette conversation.", "error");
@@ -3144,11 +3175,14 @@
             if (window.appState.isAdmin || !window.appState.user) return;
             const message = window.appState.allMessages.find(item => item.id === messageId && item.userId === window.appState.user.uid);
             if (!message) return;
-            window.showCyberConfirm("Effacer ce message de votre conversation ?", async () => {
+            window.showCyberConfirm("Effacer ce message de votre espace ? Il restera accessible à l’administrateur.", async () => {
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId));
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId), {
+                        hiddenByClient: true,
+                        hiddenByClientAt: Date.now()
+                    });
                     await window.recordClientDeletionHistory('messages', 1, 'Message individuel');
-                    window.showToast("Message effacé de votre espace client.");
+                    window.showToast("Message masqué dans votre espace client. Il reste accessible à l’administrateur.");
                 } catch (error) {
                     console.error(error);
                     window.showToast("Impossible d’effacer ce message.", "error");
@@ -5276,7 +5310,8 @@
                                                     : `<div class="w-5 h-5 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center text-[8px] text-slate-400 font-mono">${selectedClientName.charAt(0)}</div>`;
                                             })()}
                                             <span class="truncate">DISCUSSION AVEC ${selectedClientName}</span>
-                                            <span class="ml-auto shrink-0 normal-case flex items-center gap-1 ${isUserOnline(window.appState.adminSelectedClient) ? 'text-emerald-400' : 'text-slate-500'}"><span class="w-2 h-2 rounded-full ${isUserOnline(window.appState.adminSelectedClient) ? 'bg-emerald-500' : 'bg-slate-600'}"></span>${isUserOnline(window.appState.adminSelectedClient) ? 'Connecté' : 'Déconnecté'}</span>
+                                            <span class="ml-auto shrink-0 normal-case hidden sm:flex items-center gap-1 ${isUserOnline(window.appState.adminSelectedClient) ? 'text-emerald-400' : 'text-slate-500'}"><span class="w-2 h-2 rounded-full ${isUserOnline(window.appState.adminSelectedClient) ? 'bg-emerald-500' : 'bg-slate-600'}"></span>${isUserOnline(window.appState.adminSelectedClient) ? 'Connecté' : 'Déconnecté'}</span>
+                                            <button type="button" onclick="window.adminClearSupportConversation()" class="shrink-0 rounded border border-red-500/30 bg-red-950/40 p-1.5 text-red-300 hover:bg-red-900/60" title="Supprimer définitivement toute la conversation"><i data-lucide="trash-2" class="h-3.5 w-3.5"></i><span class="sr-only">Supprimer la conversation</span></button>
                                         </div>
                                         ${(() => {
                                             const selectedProfile = window.appState.allProfiles.find(p => p.id === window.appState.adminSelectedClient);
@@ -5303,6 +5338,7 @@
                                                                 : `<span class="mt-2 block px-2 py-1.5 rounded bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-[9px] uppercase font-bold">Service réactivé</span>`;
                                                         })()}
                                                     </div>
+                                                    <button type="button" onclick="window.adminDeleteSupportMessage('${m.id}')" class="mt-1 inline-flex items-center gap-1 text-[8px] uppercase text-red-500 hover:text-red-300" title="Supprimer définitivement ce message"><i data-lucide="trash-2" class="h-3 w-3"></i>Effacer</button>
                                                 </div>
                                             `).join('')}
                                         </div>
@@ -6684,6 +6720,42 @@
             input.value = corrected;
             window.updateAdminSupportDraft(corrected);
             input.focus();
+        };
+
+        window.adminDeleteSupportMessage = (messageId) => {
+            if (!window.appState.isAdmin || !messageId) return;
+            const message = window.appState.allMessages.find(item => item.id === messageId);
+            if (!message || message.userId !== window.appState.adminSelectedClient) return;
+            window.showCyberConfirm("Supprimer définitivement ce message pour le client et l’administrateur ?", async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId));
+                    window.showToast("Message définitivement supprimé.");
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible de supprimer ce message.", "error");
+                }
+            });
+        };
+
+        window.adminClearSupportConversation = () => {
+            if (!window.appState.isAdmin || !window.appState.adminSelectedClient) return;
+            const clientId = window.appState.adminSelectedClient;
+            const messages = window.appState.allMessages.filter(message => message.userId === clientId);
+            if (!messages.length) return window.showToast("Cette conversation est déjà vide.");
+            window.showCyberConfirm(`Supprimer définitivement toute cette conversation (${messages.length} message${messages.length > 1 ? 's' : ''}) pour le client et l’administrateur ?`, async () => {
+                try {
+                    await Promise.all(messages.map(message => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', message.id))));
+                    delete window.appState.adminSupportDrafts[clientId];
+                    delete window.appState.cloudflareAssistantOutputs[clientId];
+                    delete window.appState.cloudflareAssistantOpenByClient[clientId];
+                    window.appState.adminSelectedClient = '';
+                    window.showToast("Conversation définitivement supprimée.");
+                    renderApp();
+                } catch (error) {
+                    console.error(error);
+                    window.showToast("Impossible de supprimer toute la conversation.", "error");
+                }
+            });
         };
 
         window.askCloudflareAdminSupport = async (action = 'draft') => {
