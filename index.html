@@ -1248,6 +1248,7 @@
             adminSupportDrafts: {},
             cloudflareAssistantOutputs: {},
             cloudflareAssistantLoadingClientId: '',
+            cloudflareAssistantOpenByClient: {},
             adminSupportExpanded: false,
             announcementDraftTitle: null,
             announcementDraftIntro: null,
@@ -6627,6 +6628,19 @@
             window.appState.adminSupportDrafts[clientId] = String(value ?? '');
         };
 
+        window.rememberCloudflareAssistantState = (isOpen) => {
+            const clientId = window.appState.adminSelectedClient;
+            if (!window.appState.isAdmin || !clientId) return;
+            window.appState.cloudflareAssistantOpenByClient[clientId] = Boolean(isOpen);
+        };
+
+        window.keepCloudflareAssistantVisible = () => {
+            requestAnimationFrame(() => {
+                const panel = document.querySelector('#admin-support details');
+                if (panel) panel.open = true;
+            });
+        };
+
         window.useAdminReplySuggestion = (index) => {
             if (!window.appState.isAdmin || !window.appState.adminSelectedClient) return;
             const latestClientMessage = [...window.appState.allMessages]
@@ -6694,6 +6708,7 @@
 
             window.appState.cloudflareAssistantLoadingClientId = clientId;
             renderApp();
+            window.keepCloudflareAssistantVisible();
             try {
                 const token = await window.appState.user?.getIdToken(true);
                 if (!token) throw new Error('Session administrateur indisponible');
@@ -6711,6 +6726,7 @@
             } finally {
                 window.appState.cloudflareAssistantLoadingClientId = '';
                 renderApp();
+                window.keepCloudflareAssistantVisible();
             }
         };
 
