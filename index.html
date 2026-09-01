@@ -4323,7 +4323,21 @@
                         <nav class="admin-nav-group"><span class="admin-nav-title">Gestion</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-clients')"><i data-lucide="users"></i>Clients</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-pending-profiles')"><i data-lucide="file-text"></i>Demandes</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-support')"><i data-lucide="headphones"></i>Messagerie de Support Client</button></nav>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Services</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-referrals')"><i data-lucide="users-round"></i>Parrainages</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-announcement')"><i data-lucide="megaphone"></i>Diffuser une info globale</button><button class="admin-nav-link" onclick="window.mobileGoTo('admin-pricing')"><i data-lucide="tags"></i>Ajuster les tarifs clients</button>${manageUrl && /^https:\/\//i.test(manageUrl) ? `<a class="admin-nav-link" href="${window.escapeHTML(manageUrl)}" target="_blank" rel="noopener noreferrer" title="Ouvrir Manage King Prime"><i data-lucide="crown"></i>Manage King Prime</a>` : ''}${manageGoldVibeUrl && /^https:\/\//i.test(manageGoldVibeUrl) ? `<a class="admin-nav-link" href="${window.escapeHTML(manageGoldVibeUrl)}" target="_blank" rel="noopener noreferrer" title="Ouvrir Manage Gold Vibe"><i data-lucide="gem"></i>Manage Gold Vibe</a>` : ''}</nav>
                         <nav class="admin-nav-group"><span class="admin-nav-title">Contenu</span><button class="admin-nav-link" onclick="window.mobileGoTo('community-section')"><i data-lucide="message-square"></i>Communauté</button></nav>
-                        <nav class="admin-nav-group"><span class="admin-nav-title">Administration</span><button class="admin-nav-link" onclick="window.mobileGoTo('admin-console')"><i data-lucide="settings"></i>Outils administrateur</button></nav>
+                        <nav class="admin-nav-group">
+    <span class="admin-nav-title">Administration</span>
+
+    <button class="admin-nav-link"
+            onclick="window.mobileGoTo('admin-console')">
+        <i data-lucide="settings"></i>
+        Outils administrateur
+    </button>
+
+    <button class="admin-nav-link"
+            onclick="window.openTelePrimeLicenseConsole()">
+        <i data-lucide="key-round"></i>
+        Licences Télé Prime4K
+    </button>
+</nav>
                         <div class="admin-system"><strong>● &nbsp;Systèmes opérationnels</strong><br><span class="text-[9px] text-emerald-400/80">Tous les services fonctionnent</span></div>
                     </aside>
                     <main class="admin-main">
