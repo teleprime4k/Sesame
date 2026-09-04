@@ -714,6 +714,71 @@
             .kpi-auto-carousel > * { transition: none; }
             .auth-input-wrap { transition: none; }
         }
+    
+        /* =========================================================
+           TÉLÉ PRIME4K — PAGE PUBLIQUE / ACHAT DE LICENCES
+           URL publique prévue : ?teleprime=licence
+           ========================================================= */
+        .tp-public-page{
+            min-height:100vh;background:
+            radial-gradient(circle at 15% 12%,rgba(124,58,237,.20),transparent 32%),
+            radial-gradient(circle at 88% 80%,rgba(6,182,212,.16),transparent 34%),
+            #030712;color:#e2e8f0;padding:28px 16px 48px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
+        }
+        .tp-public-shell{width:min(1120px,100%);margin:0 auto}
+        .tp-public-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}
+        .tp-public-brand{display:flex;align-items:center;gap:12px;color:#fff;font-weight:900;font-size:19px}
+        .tp-public-brand img{width:46px;height:46px;border-radius:13px;object-fit:contain;background:#07111f;border:1px solid #334155;padding:5px}
+        .tp-public-back{min-height:42px;padding:0 15px;border:1px solid #334155;border-radius:11px;background:#07111f;color:#cbd5e1;font-size:12px;font-weight:800}
+        .tp-public-hero{border:1px solid #25334a;border-radius:24px;background:linear-gradient(145deg,rgba(15,23,42,.96),rgba(5,10,21,.98));padding:28px;box-shadow:0 24px 70px rgba(0,0,0,.35)}
+        .tp-public-hero-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:24px;align-items:center}
+        .tp-public-eyebrow{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#a78bfa;font-weight:900}
+        .tp-public-title{margin:9px 0 10px;color:#fff;font-size:clamp(28px,5vw,48px);line-height:1.03;font-weight:950}
+        .tp-public-lead{max-width:720px;color:#94a3b8;font-size:14px;line-height:1.7}
+        .tp-public-points{margin-top:18px;display:grid;gap:9px;color:#cbd5e1;font-size:12px}
+        .tp-public-points span{display:flex;align-items:center;gap:9px}
+        .tp-public-points i{color:#22d3ee;width:17px;height:17px}
+        .tp-public-choice{display:grid;gap:12px}
+        .tp-public-choice-card{border:1px solid #293a54;border-radius:17px;background:#091426;padding:18px;text-align:left;transition:.2s}
+        .tp-public-choice-card:hover{border-color:#22d3ee;transform:translateY(-1px)}
+        .tp-public-choice-card.sesame{border-color:rgba(34,211,238,.36);background:linear-gradient(145deg,rgba(8,145,178,.12),#091426)}
+        .tp-public-choice-card.external{border-color:rgba(167,139,250,.34);background:linear-gradient(145deg,rgba(124,58,237,.10),#091426)}
+        .tp-public-choice-card strong{display:block;color:#fff;font-size:15px}
+        .tp-public-choice-card small{display:block;color:#94a3b8;margin-top:6px;line-height:1.5}
+        .tp-public-choice-card b{display:inline-flex;margin-top:13px;color:#67e8f9;font-size:11px}
+        .tp-public-member-banner{margin-top:18px;padding:14px 16px;border:1px solid rgba(16,185,129,.28);border-radius:14px;background:rgba(6,78,59,.17);color:#a7f3d0;font-size:12px}
+        .tp-plan-area{margin-top:26px}
+        .tp-plan-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px}
+        .tp-plan-head h2{color:#fff;font-size:22px;font-weight:900}
+        .tp-plan-head p{color:#64748b;font-size:11px}
+        .tp-plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+        .tp-plan-card{position:relative;overflow:hidden;border:1px solid #25364f;border-radius:18px;background:#091426;padding:19px;min-height:205px;display:flex;flex-direction:column}
+        .tp-plan-card.featured{border-color:#7c3aed;box-shadow:0 0 30px rgba(124,58,237,.12)}
+        .tp-plan-badge{position:absolute;right:12px;top:12px;padding:5px 8px;border-radius:999px;background:#25154f;color:#c4b5fd;font-size:8px;font-weight:900;text-transform:uppercase}
+        .tp-plan-duration{color:#fff;font-size:18px;font-weight:900}
+        .tp-plan-price{color:#67e8f9;font-size:29px;font-weight:950;margin-top:9px}
+        .tp-plan-price small{font-size:10px;color:#64748b;font-weight:700}
+        .tp-plan-desc{color:#94a3b8;font-size:10px;line-height:1.55;margin:9px 0 15px}
+        .tp-plan-buy{margin-top:auto;min-height:43px;border-radius:11px;background:linear-gradient(90deg,#6d28d9,#7c3aed);color:#fff;font-size:11px;font-weight:900;text-transform:uppercase}
+        .tp-plan-buy:hover{filter:brightness(1.1)}
+        .tp-plan-buy[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+        .tp-public-note{margin-top:15px;padding:12px 14px;border:1px solid #1e293b;border-radius:12px;background:#050b16;color:#64748b;font-size:9px;line-height:1.55}
+        .tp-public-actions{margin-top:20px;display:flex;flex-wrap:wrap;gap:10px}
+        .tp-public-action{min-height:42px;padding:0 15px;border-radius:11px;border:1px solid #334155;background:#08111f;color:#cbd5e1;font-size:11px;font-weight:800}
+        .tp-public-action.primary{border-color:#0891b2;background:#075985;color:#fff}
+        @media(max-width:850px){
+            .tp-public-hero-grid{grid-template-columns:1fr}
+            .tp-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+        }
+        @media(max-width:560px){
+            .tp-public-page{padding:14px 10px 30px}
+            .tp-public-top{margin-bottom:14px}
+            .tp-public-brand{font-size:15px}.tp-public-brand img{width:40px;height:40px}
+            .tp-public-hero{padding:18px;border-radius:18px}
+            .tp-plan-grid{grid-template-columns:1fr}
+            .tp-plan-head{align-items:flex-start;flex-direction:column}
+        }
+
     </style>
 </head>
 <body class="bg-[#030712] text-slate-300 font-sans overflow-y-auto min-h-screen w-full pb-12" id="app">
@@ -1254,7 +1319,11 @@
             announcementDraftIntro: null,
             announcementDraftText: null,
             expandedNewsIds: new Set(),
-            expandedGlobalAnnouncement: false
+            expandedGlobalAnnouncement: false,
+
+            // Achat public / espace client des licences Télé Prime4K
+            telePrimePublicPurchase: new URLSearchParams(window.location.search).get('teleprime') === 'licence',
+            telePrimePurchaseStage: 'choice'
         };
 
         let unsubProfile = null;
@@ -1615,6 +1684,8 @@
                 root.innerHTML = `<div class="min-h-screen flex items-center justify-center text-cyan-500"><i data-lucide="zap" class="animate-pulse w-12 h-12"></i></div>`;
             } else if (window.appState.firestoreBlocked) {
                 root.innerHTML = getPermissionDiagnosticScreenHTML();
+            } else if (window.appState.telePrimePublicPurchase) {
+                root.innerHTML = getTelePrimePurchaseHTML();
             } else if (!window.appState.user) {
                 root.innerHTML = getAuthScreenHTML();
             } else if (!window.appState.isAdmin && window.appState.profile &&
@@ -3621,6 +3692,184 @@
             }
         };
 
+
+        // =========================================================
+        // TÉLÉ PRIME4K — ACHAT PUBLIC ET DEPUIS L'ESPACE SÉSAME
+        // =========================================================
+        const TELEPRIME_LICENSE_OFFERS = Object.freeze([
+            { id:'1y', label:'1 an', price:'9,90 €', description:'Licence valable 1 an à compter de la première activation.', featured:true },
+            { id:'2y', label:'2 ans', price:'16,90 €', description:'Licence valable 2 ans à compter de la première activation.' },
+            { id:'3y', label:'3 ans', price:'22,90 €', description:'Licence valable 3 ans à compter de la première activation.' },
+            { id:'4y', label:'4 ans', price:'27,90 €', description:'Licence valable 4 ans à compter de la première activation.' },
+            { id:'5y', label:'5 ans', price:'32,90 €', description:'Licence valable 5 ans à compter de la première activation.' },
+            { id:'lifetime', label:'À vie ♾️', price:'100 €', description:'Licence permanente pour l’appareil associé.' }
+        ]);
+
+        // IMPORTANT : renseigner ici les 6 Payment Links LIVE Stripe lorsque le webhook
+        // de création automatique des licences aura été validé en production.
+        // Les boutons restent volontairement bloqués tant qu'un lien n'est pas renseigné.
+        const TELEPRIME_LICENSE_PAYMENT_LINKS = Object.freeze({
+            '1y': '',
+            '2y': '',
+            '3y': '',
+            '4y': '',
+            '5y': '',
+            'lifetime': ''
+        });
+
+        window.getTelePrimePublicPurchaseUrl = () => {
+            const url = new URL(window.location.href);
+            url.search = '';
+            url.hash = '';
+            url.searchParams.set('teleprime', 'licence');
+            return url.toString();
+        };
+
+        window.openTelePrimePublicPurchase = (stage = 'choice') => {
+            window.appState.telePrimePublicPurchase = true;
+            window.appState.telePrimePurchaseStage = stage;
+            const url = new URL(window.location.href);
+            url.searchParams.set('teleprime', 'licence');
+            history.pushState({ teleprime: 'licence' }, '', url);
+            renderApp();
+        };
+
+        window.closeTelePrimePublicPurchase = () => {
+            window.appState.telePrimePublicPurchase = false;
+            window.appState.telePrimePurchaseStage = 'choice';
+            const url = new URL(window.location.href);
+            url.searchParams.delete('teleprime');
+            history.pushState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+            renderApp();
+        };
+
+        window.telePrimeContinueExternal = () => {
+            window.appState.telePrimePurchaseStage = 'external';
+            renderApp();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.telePrimeJoinSesame = (mode = 'register') => {
+            window.appState.telePrimePublicPurchase = false;
+            window.appState.authRole = 'client';
+            window.appState.isLoginMode = mode !== 'register';
+            window.appState.authError = '';
+            window.appState.authSuccessMessage = mode === 'register'
+                ? 'Créez votre compte Sésame puis achetez votre licence Télé Prime4K depuis votre espace client.'
+                : 'Connectez-vous pour acheter votre licence Télé Prime4K depuis votre espace client.';
+            const url = new URL(window.location.href);
+            url.searchParams.delete('teleprime');
+            history.pushState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+            renderApp();
+        };
+
+        window.openTelePrimeClientPurchase = () => {
+            window.openTelePrimePublicPurchase('member');
+        };
+
+        window.buyTelePrimeLicense = (planId) => {
+            const offer = TELEPRIME_LICENSE_OFFERS.find(item => item.id === planId);
+            const paymentUrl = TELEPRIME_LICENSE_PAYMENT_LINKS[planId];
+            if (!offer) return;
+            if (!paymentUrl || !/^https:\/\/buy\.stripe\.com\//i.test(paymentUrl)) {
+                window.showToast('Le lien Stripe de cette licence doit encore être configuré.', 'error');
+                return;
+            }
+            const target = window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+            if (!target) window.location.assign(paymentUrl);
+        };
+
+        window.telePrimeLostLicense = () => {
+            window.showToast('La récupération automatique de licence sera activée après la finalisation du service Stripe.', 'error');
+        };
+
+        window.addEventListener('popstate', () => {
+            const active = new URLSearchParams(window.location.search).get('teleprime') === 'licence';
+            if (window.appState.telePrimePublicPurchase !== active) {
+                window.appState.telePrimePublicPurchase = active;
+                if (active && !window.appState.telePrimePurchaseStage) window.appState.telePrimePurchaseStage = 'choice';
+                renderApp();
+            }
+        });
+
+        function getTelePrimeLicensePlansHTML() {
+            return TELEPRIME_LICENSE_OFFERS.map(offer => {
+                const configured = /^https:\/\/buy\.stripe\.com\//i.test(TELEPRIME_LICENSE_PAYMENT_LINKS[offer.id] || '');
+                return `<article class="tp-plan-card ${offer.featured ? 'featured' : ''}">
+                    ${offer.featured ? '<span class="tp-plan-badge">Populaire</span>' : ''}
+                    <div class="tp-plan-duration">${offer.label}</div>
+                    <div class="tp-plan-price">${offer.price} <small>paiement unique</small></div>
+                    <p class="tp-plan-desc">${offer.description}<br>1 licence = 1 appareil.</p>
+                    <button type="button" class="tp-plan-buy" onclick="window.buyTelePrimeLicense('${offer.id}')" ${configured ? '' : 'title="Lien Stripe à configurer"'}>Acheter cette licence</button>
+                </article>`;
+            }).join('');
+        }
+
+        function getTelePrimePurchaseHTML() {
+            const member = Boolean(window.appState.user && !window.appState.isAdmin);
+            const externalStage = window.appState.telePrimePurchaseStage === 'external';
+            const showOffers = member || externalStage || window.appState.telePrimePurchaseStage === 'member';
+            return `<div class="tp-public-page">
+                <div class="tp-public-shell">
+                    <div class="tp-public-top">
+                        <div class="tp-public-brand">
+                            <img src="https://sesameouvretoi.com/assets/icons/favicon.svg" alt="Sésame">
+                            <span>Télé Prime4K <span class="text-cyan-300">× Sésame</span></span>
+                        </div>
+                        <button type="button" class="tp-public-back" onclick="window.closeTelePrimePublicPurchase()">${member ? '← Retour à mon espace' : '← Retour'}</button>
+                    </div>
+
+                    <section class="tp-public-hero">
+                        <div class="tp-public-hero-grid">
+                            <div>
+                                <div class="tp-public-eyebrow">Licence officielle de l’application</div>
+                                <h1 class="tp-public-title">Activez Télé Prime4K</h1>
+                                <p class="tp-public-lead">Choisissez la durée de votre licence d’application. La durée commence à la première activation et la licence est liée à un seul appareil.</p>
+                                <div class="tp-public-points">
+                                    <span><i data-lucide="shield-check"></i>Paiement sécurisé par Stripe.</span>
+                                    <span><i data-lucide="key-round"></i>Clé au format TP4K-XXXX-XXXX-XXXX.</span>
+                                    <span><i data-lucide="smartphone"></i>1 licence = 1 appareil.</span>
+                                </div>
+                                ${member ? `<div class="tp-public-member-banner"><strong>✓ Vous êtes connecté à Sésame.</strong><br>Votre achat pourra être rattaché à votre espace client lorsque l’automatisation Stripe sera finalisée.</div>` : ''}
+                            </div>
+
+                            ${!member && !showOffers ? `<div class="tp-public-choice">
+                                <button type="button" class="tp-public-choice-card sesame" onclick="window.telePrimeJoinSesame('register')">
+                                    <strong>✨ Rejoindre Sésame</strong>
+                                    <small>Créez gratuitement votre compte et achetez ensuite votre licence depuis votre espace client pour profiter des avantages Sésame.</small>
+                                    <b>Créer mon compte Sésame →</b>
+                                </button>
+                                <button type="button" class="tp-public-choice-card external" onclick="window.telePrimeContinueExternal()">
+                                    <strong>Continuer sans compte</strong>
+                                    <small>Vous préférez ne pas créer de compte ? Achetez votre licence comme utilisateur externe.</small>
+                                    <b>Continuer vers les licences →</b>
+                                </button>
+                                <button type="button" class="tp-public-action" onclick="window.telePrimeJoinSesame('login')">Je suis déjà client Sésame</button>
+                            </div>` : `<div class="tp-public-choice">
+                                <div class="tp-public-choice-card ${member ? 'sesame' : 'external'}">
+                                    <strong>${member ? 'Compte Sésame reconnu' : 'Achat sans compte Sésame'}</strong>
+                                    <small>${member ? 'Choisissez maintenant la durée de votre licence Télé Prime4K.' : 'Choisissez votre licence. L’adresse e-mail saisie chez Stripe servira à identifier votre achat.'}</small>
+                                </div>
+                            </div>`}
+                        </div>
+                    </section>
+
+                    ${showOffers ? `<section class="tp-plan-area">
+                        <div class="tp-plan-head">
+                            <div><h2>Choisissez votre licence</h2><p>De 1 à 5 ans ou À vie ♾️</p></div>
+                            ${!member ? `<button type="button" class="tp-public-action primary" onclick="window.telePrimeJoinSesame('register')">Créer plutôt un compte Sésame</button>` : ''}
+                        </div>
+                        <div class="tp-plan-grid">${getTelePrimeLicensePlansHTML()}</div>
+                        <div class="tp-public-note"><strong>Configuration Stripe :</strong> la page est prête, mais les 6 liens de paiement LIVE ne sont volontairement pas intégrés dans ce fichier tant que le webhook de création automatique de licence n’est pas validé. Aucun paiement ne peut donc être lancé accidentellement depuis cette version.</div>
+                        <div class="tp-public-actions">
+                            <button type="button" class="tp-public-action" onclick="window.telePrimeLostLicense()">J’ai acheté une licence mais je ne retrouve plus ma clé</button>
+                            ${!member ? `<button type="button" class="tp-public-action" onclick="window.appState.telePrimePurchaseStage='choice';renderApp()">← Revenir au choix Sésame / sans compte</button>` : ''}
+                        </div>
+                    </section>` : ''}
+                </div>
+            </div>`;
+        }
+
         function getAuthScreenHTML() {
             const { isLoginMode, authLoading, authError, authSuccessMessage, authRole, email, password, showPassword, firstName, lastName } = window.appState;
             // Le formulaire est reconstruit lors d'un changement Client/Admin.
@@ -3793,7 +4042,8 @@
                 <div class="mt-6 text-center font-mono font-sans">
                   ${authRole === 'client' ? `<button type="button" onclick="window.toggleAuthMode()" class="text-slate-400 hover:text-cyan-300 text-xs transition-colors rounded-lg px-3 py-2">
                     ${isLoginMode ? "Pas encore de compte ? Créer un compte" : "Déjà un compte ? Se connecter"}
-                  </button>` : `<p class="text-[11px] text-slate-500">La création du compte administrateur est réservée au responsable du site.</p>`}
+                  </button>
+                  <div class="mt-2"><button type="button" onclick="window.openTelePrimePublicPurchase('choice')" class="text-[10px] text-purple-300 hover:text-purple-200 underline underline-offset-4">Acheter une licence Télé Prime4K</button></div>` : `<p class="text-[11px] text-slate-500">La création du compte administrateur est réservée au responsable du site.</p>`}
                 </div>
               </div>
             </div>`;
@@ -4382,6 +4632,7 @@
                             <button class="active" onclick="window.mobileGoTo('dashboard-top')"><i data-lucide="house"></i>Accueil</button>
                             <button onclick="window.mobileGoTo('services-section')"><i data-lucide="layout-grid"></i>Mes services</button>
                             <button onclick="window.mobileGoTo('client-payments')"><i data-lucide="credit-card"></i>Paiements</button>
+                            <button onclick="window.openTelePrimeClientPurchase()"><i data-lucide="key-round"></i>Licence Télé Prime4K</button>
                             <button onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i>Actualités${unreadNewsCount ? `<span class="ml-auto rounded-full bg-purple-600 px-2 py-0.5 text-[9px] text-white">${unreadNewsCount}</span>` : ''}</button>
                             <button onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i>Groupe Sésame</button>
                             <button onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i>Support</button>
@@ -4423,6 +4674,7 @@
                             </div></section>
                             <div class="client-quick-grid">
                                 <button class="client-quick" onclick="window.mobileGoTo('client-support')"><span><i data-lucide="headphones"></i></span><span><b>Contacter le support</b><small>Notre équipe est disponible.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-quick" onclick="window.openTelePrimeClientPurchase()"><span><i data-lucide="key-round"></i></span><span><b>Licence Télé Prime4K</b><small>Acheter une licence de 1 à 5 ans ou À vie.</small></span><i data-lucide="chevron-right"></i></button>
                                 <button class="client-quick" onclick="window.openClientMobileRenewalServices()"><span><i data-lucide="refresh-cw"></i></span><span><b>Renouvellement</b><small>${clientRenewalCount ? `${clientRenewalCount} service${clientRenewalCount > 1 ? 's' : ''} à renouveler` : 'Aucun renouvellement nécessaire'}</small></span><i data-lucide="chevron-right"></i></button>
                             </div>
                             <div id="billing-rules-dashboard-slot" class="client-billing-slot">
