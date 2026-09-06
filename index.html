@@ -8041,24 +8041,69 @@
         };
 
         // TÉLÉ PRIME4K — Attribution d'une licence officielle par l'Admin.
+        // Le bouton « Licence TP4K » de la liste Clients ouvre une vraie fenêtre dédiée
+        // avec le bon client déjà sélectionné, puis choix de la durée et attribution.
+        window.closeAdminTelePrimeLicenseModal = () => {
+            document.getElementById('admin-teleprime-license-modal')?.remove();
+            document.body.style.overflow = '';
+        };
+
         window.openAdminTelePrimeLicense = (clientId) => {
             if (!window.appState.isAdmin) return;
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile) && profile.authVerified === true);
+            if (!client) return window.showToast('Client introuvable ou non vérifié.', 'error');
+
             window.appState.selectedTelePrimeLicenseClientId = clientId;
-            renderApp();
-            setTimeout(() => {
-                const target = document.getElementById('admin-teleprime-license');
-                target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 30);
+            window.closeAdminTelePrimeLicenseModal();
+
+            const clientName = window.getClientName(client.email);
+            const modal = document.createElement('div');
+            modal.id = 'admin-teleprime-license-modal';
+            modal.className = 'fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-slate-950/90';
+            modal.innerHTML = `
+                <div class="w-full max-w-xl overflow-hidden rounded-2xl border border-purple-500/40 bg-[#07111f] shadow-2xl">
+                    <div class="flex items-start justify-between gap-4 border-b border-slate-800 bg-[#0b1628] p-4 sm:p-5">
+                        <div>
+                            <div class="flex items-center gap-2 text-purple-300"><i data-lucide="key-round" class="h-5 w-5"></i><span class="text-[10px] font-black uppercase tracking-widest">Licence officielle Télé Prime4K</span></div>
+                            <h3 class="mt-2 text-lg font-black text-white">Attribuer une licence au client</h3>
+                        </div>
+                        <button type="button" onclick="window.closeAdminTelePrimeLicenseModal()" class="grid h-10 w-10 place-items-center rounded-xl border border-slate-700 text-slate-300 hover:border-red-500/50 hover:text-white"><i data-lucide="x" class="h-5 w-5"></i></button>
+                    </div>
+                    <div class="grid gap-4 p-4 sm:p-5">
+                        <div class="rounded-xl border border-cyan-500/20 bg-cyan-950/15 p-4">
+                            <span class="block text-[9px] font-bold uppercase text-slate-500">Client sélectionné</span>
+                            <strong class="mt-1 block text-sm text-white">${window.escapeHTML(clientName)}</strong>
+                            <span class="mt-1 block text-[11px] text-cyan-300">${window.escapeHTML(client.email || '')}</span>
+                        </div>
+                        <input id="teleprime-license-modal-client-id" type="hidden" value="${window.escapeHTML(clientId)}">
+                        <label class="block">
+                            <span class="mb-2 block text-[10px] font-bold uppercase text-slate-400">Choisir la durée</span>
+                            <select id="teleprime-license-modal-type-select" class="w-full min-h-[48px] rounded-xl border border-purple-500/30 bg-slate-950 px-4 text-sm font-bold text-white outline-none focus:border-purple-400">
+                                ${TELEPRIME_LICENSE_OFFERS.map(o => `<option value="${o.id}">${o.label} — ${o.price}</option>`).join('')}
+                            </select>
+                        </label>
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3 text-[10px] leading-relaxed text-slate-400">
+                            La durée démarre à la première activation dans Télé Prime4K. <b class="text-cyan-300">1 licence = 1 appareil.</b> Après attribution, la clé apparaîtra dans l'espace du client, rubrique <b class="text-purple-300">Licence Télé Prime4K</b>.
+                        </div>
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            <button type="button" onclick="window.closeAdminTelePrimeLicenseModal()" class="min-h-[46px] rounded-xl border border-slate-700 bg-slate-900 px-4 text-xs font-bold text-slate-300">Annuler</button>
+                            <button id="teleprime-license-modal-grant-button" type="button" onclick="window.adminGrantTelePrimeLicense()" class="min-h-[46px] rounded-xl bg-gradient-to-r from-purple-600 to-cyan-600 px-4 text-xs font-black uppercase text-white hover:brightness-110 disabled:opacity-50">Attribuer la licence</button>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => lucide.createIcons({ root: modal }));
         };
 
         window.adminGrantTelePrimeLicense = async () => {
             if (!window.appState.isAdmin) return;
-            const clientId = String(document.getElementById('teleprime-license-client-select')?.value || window.appState.selectedTelePrimeLicenseClientId || '');
-            const licenseType = String(document.getElementById('teleprime-license-type-select')?.value || '1y');
+            const clientId = String(document.getElementById('teleprime-license-modal-client-id')?.value || document.getElementById('teleprime-license-client-select')?.value || window.appState.selectedTelePrimeLicenseClientId || '');
+            const licenseType = String(document.getElementById('teleprime-license-modal-type-select')?.value || document.getElementById('teleprime-license-type-select')?.value || '1y');
             const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile) && profile.authVerified === true);
             const offer = TELEPRIME_LICENSE_OFFERS.find(item => item.id === licenseType);
             if (!client || !offer) return window.showToast('Choisissez un client et une durée de licence.', 'error');
-            const button = document.getElementById('teleprime-license-grant-button');
+            const button = document.getElementById('teleprime-license-modal-grant-button') || document.getElementById('teleprime-license-grant-button');
             const clientName = window.getClientName(client.email);
             window.showCyberConfirm(`Attribuer une licence Télé Prime4K ${offer.label} à ${clientName} ?`, async () => {
                 try {
@@ -8101,6 +8146,7 @@
                         window.showToast(`Licence créée : ${clientLicense.licenseKey}, mais l'ajout au profil client a échoué. Copiez cette clé.`, 'error');
                         return;
                     }
+                    window.closeAdminTelePrimeLicenseModal();
                     window.showToast(`Licence ${offer.label} attribuée à ${clientName} : ${clientLicense.licenseKey}`);
                     renderApp();
                 } catch (error) {
