@@ -9678,16 +9678,31 @@ async function adminToken() {
 
 async function api(path, options = {}) {
   const token = await adminToken();
-  const response = await fetch(`${apiBase()}${path}`, {
-    ...options,
-    headers: {
-      'content-type': 'application/json',
-      'authorization': `Bearer ${token}`,
-      ...(options.headers || {})
-    }
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload?.error || payload?.message || `HTTP ${response.status}`);
+  const endpoint = `${apiBase()}${path}`;
+  let response;
+  try {
+    response = await fetch(endpoint, {
+      ...options,
+      mode: 'cors',
+      cache: 'no-store',
+      headers: {
+        'content-type': 'application/json',
+        'authorization': `Bearer ${token}`,
+        ...(options.headers || {})
+      }
+    });
+  } catch (networkError) {
+    console.error('Télé Prime4K API fetch error:', endpoint, networkError);
+    throw new Error(`Connexion au Worker impossible (${networkError?.message || 'erreur réseau'})`);
+  }
+
+  const raw = await response.text();
+  let payload = {};
+  try { payload = raw ? JSON.parse(raw) : {}; } catch { payload = {}; }
+
+  if (!response.ok) {
+    throw new Error(payload?.error || payload?.message || `HTTP ${response.status}`);
+  }
   return payload;
 }
 
