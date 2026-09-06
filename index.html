@@ -1100,6 +1100,7 @@
 
         const ADMIN_SESSION_ENDPOINT = "https://icy-snow-93d1.teleprime4k.workers.dev/api/admin-session";
         const CLOUDFLARE_AI_ASSISTANT_ENDPOINT = "https://icy-snow-93d1.teleprime4k.workers.dev/api/ai-assistant";
+        const TELEPRIME_DEVICE_LINK_ENDPOINT = "https://teleprime4k-licences-api.teleprime4k.workers.dev/v1/device-link/complete-client";
         const PROTOTYPE_CLIENT_ID = "__admin_client_prototype__";
         const CLIENT_DATA_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
         const retentionCleanupInProgress = new Set();
@@ -4330,6 +4331,7 @@
             const activeCredClient = window.appState.selectedCredClientId === PROTOTYPE_CLIENT_ID
                 ? prototypeProfile
                 : window.appState.allProfiles.find(p => p.id === window.appState.selectedCredClientId);
+            const activeCredServer = activeCredClient?.credentials?.serverUrl || "";
             const activeCredId = activeCredClient?.credentials?.identifier || "";
             const activeCredPass = activeCredClient?.credentials?.password || "";
             const activeCredExtra = activeCredClient?.credentials?.extra || "";
@@ -4864,6 +4866,29 @@
                             </button>
                         </div>` : ''}
                     </div>
+                </div>
+                ` : ''}
+
+                ${!isAdmin && profile?.credentials?.serverUrl && profile?.credentials?.identifier && profile?.credentials?.password ? `
+                <div id="teleprime-device-link-panel" class="relative bg-gradient-to-r from-indigo-950/40 to-cyan-950/25 border border-indigo-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(99,102,241,0.12)] overflow-hidden z-10 w-full">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="tv" class="w-4 h-4 text-indigo-300"></i>
+                                <h4 class="text-xs font-bold text-white uppercase tracking-wider font-mono">Connecter Télé Prime4K</h4>
+                            </div>
+                            <p class="text-[10px] text-slate-400 leading-relaxed">Sur la TV, choisissez <strong class="text-indigo-300">CONNEXION DEPUIS SÉSAME</strong>, puis saisissez ici l’ID appareil et la clé temporaire affichés par Télé Prime4K.</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-[1fr_140px_auto] gap-2 w-full lg:w-auto">
+                            <input id="tp-device-code" maxlength="11" autocomplete="off" spellcheck="false" placeholder="TP4K-ABC123" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'').slice(0,11)" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-xs text-white font-mono uppercase focus:outline-none focus:border-indigo-400 min-h-[42px]" />
+                            <input id="tp-pairing-code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="Clé 6 chiffres" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)" class="bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-xs text-white font-mono text-center tracking-widest focus:outline-none focus:border-indigo-400 min-h-[42px]" />
+                            <button id="tp-link-button" type="button" onclick="window.connectTelePrimeDevice()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-wait rounded-lg text-white text-[10px] uppercase font-black tracking-wider min-h-[42px] flex items-center justify-center gap-2">
+                                <i data-lucide="link" class="w-4 h-4"></i> Connecter la TV
+                            </button>
+                        </div>
+                    </div>
+                    <p class="mt-2 text-[9px] text-slate-500">La clé affichée par l’application est temporaire. Les identifiants Xtream enregistrés dans votre compte Sésame sont transmis uniquement après validation de cette association.</p>
                 </div>
                 ` : ''}
 
@@ -5662,6 +5687,10 @@
                                                 <option value="👑 King Prime" ${activeCredSubscriptionName.includes('King Prime') ? 'selected' : ''}>👑 King Prime</option>
                                                 <option value="💎 Gold Vibe" ${activeCredSubscriptionName.includes('Gold Vibe') ? 'selected' : ''}>💎 Gold Vibe</option>
                                             </select>
+                                        </div>
+                                        <div>
+                                            <input type="url" id="cred-server-url" placeholder="URL serveur Xtream (ex : http://serveur:8080)" value="${activeCredServer}"
+                                                class="w-full bg-slate-950 border border-cyan-900/60 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-700 min-h-[34px]" />
                                         </div>
                                         <div>
                                             <input type="text" id="cred-identifier" placeholder="Identifiant" value="${activeCredId}"
@@ -8796,13 +8825,80 @@
             }
         };
 
+        // Association sécurisée d'une TV Télé Prime4K depuis l'espace client Sésame.
+        // Le Worker vérifie le jeton Firebase du client connecté avant de livrer
+        // les informations Xtream à la session temporaire créée par la télévision.
+        window.connectTelePrimeDevice = async () => {
+            if (window.appState.isAdmin || !auth.currentUser || !window.appState.profile) return;
+            const credentials = window.appState.profile.credentials || {};
+            const deviceInput = document.getElementById('tp-device-code');
+            const pairingInput = document.getElementById('tp-pairing-code');
+            const button = document.getElementById('tp-link-button');
+            const deviceCode = String(deviceInput?.value || '').trim().toUpperCase();
+            const pairingCode = String(pairingInput?.value || '').replace(/\D/g, '').slice(0, 6);
+
+            if (!/^TP4K-[A-Z0-9]{6}$/.test(deviceCode)) {
+                window.showToast("Saisissez l’ID appareil affiché sur Télé Prime4K (ex : TP4K-ABC123).", "error");
+                deviceInput?.focus();
+                return;
+            }
+            if (!/^\d{6}$/.test(pairingCode)) {
+                window.showToast("Saisissez la clé à 6 chiffres affichée sur la TV.", "error");
+                pairingInput?.focus();
+                return;
+            }
+            if (!credentials.serverUrl || !credentials.identifier || !credentials.password) {
+                window.showToast("Vos identifiants Télé Prime4K ne sont pas encore complètement configurés. Contactez l’administrateur.", "error");
+                return;
+            }
+
+            if (button) {
+                button.disabled = true;
+                button.dataset.originalHtml = button.innerHTML;
+                button.innerHTML = '<span class="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span> Association…';
+            }
+            try {
+                const idToken = await auth.currentUser.getIdToken(true);
+                const response = await fetch(TELEPRIME_DEVICE_LINK_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        deviceCode,
+                        pairingCode,
+                        server: credentials.serverUrl,
+                        username: credentials.identifier,
+                        password: credentials.password
+                    })
+                });
+                let result = {};
+                try { result = await response.json(); } catch (_) {}
+                if (!response.ok) throw new Error(result.message || result.error || "Impossible d’associer cette TV.");
+                if (deviceInput) deviceInput.value = '';
+                if (pairingInput) pairingInput.value = '';
+                window.showToast("Télé Prime4K est connecté. La TV va ouvrir votre abonnement automatiquement.");
+            } catch (error) {
+                console.error('Télé Prime4K Device Link:', error);
+                window.showToast(error.message || "Connexion Télé Prime4K impossible.", "error");
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = button.dataset.originalHtml || '<i data-lucide="link" class="w-4 h-4"></i> Connecter la TV';
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
+        };
+
         // L'administrateur enregistre ou modifie les identifiants d'un client
         window.adminSaveCredentials = async () => {
+            const serverInput = document.getElementById('cred-server-url');
             const idInput = document.getElementById('cred-identifier');
             const passInput = document.getElementById('cred-password');
             const extraInput = document.getElementById('cred-extra');
             const subscriptionNameInput = document.getElementById('cred-subscription-name');
-            if(!idInput || !passInput || !extraInput || !subscriptionNameInput) return;
+            if(!serverInput || !idInput || !passInput || !extraInput || !subscriptionNameInput) return;
             
             const clientId = window.appState.selectedCredClientId;
             if(!clientId) {
@@ -8816,9 +8912,21 @@
                 return;
             }
 
+            const serverUrl = serverInput.value.trim().replace(/\/+$/, '');
+            if (!serverUrl) {
+                window.showToast("Renseignez l’URL serveur Xtream pour permettre la connexion Télé Prime4K à distance.", "error");
+                serverInput.focus();
+                return;
+            }
+            if (!/^https?:\/\//i.test(serverUrl)) {
+                window.showToast("L’URL serveur Xtream doit commencer par http:// ou https://", "error");
+                serverInput.focus();
+                return;
+            }
+
             if (clientId === PROTOTYPE_CLIENT_ID) {
                 const prototype = window.getAdminPrototypeClient();
-                prototype.credentials = { subscriptionName: selectedSubscriptionName, identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
+                prototype.credentials = { subscriptionName: selectedSubscriptionName, serverUrl, identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
                 prototype.supportMessages = prototype.supportMessages || [];
                 prototype.supportMessages.push({ id: `prototype-credentials-${Date.now()}`, sender: 'admin', text: `Vos identifiants de connexion ${selectedSubscriptionName} sont maintenant disponibles dans votre espace client.`, timestamp: Date.now(), readByClient: false, notificationType: 'credentials_transmitted', simulation: true });
                 window.addAdminPrototypeEvent('credentials', '', 'Identifiants de simulation mis à jour');
@@ -8833,6 +8941,7 @@
                 await updateDoc(clientRef, {
                     credentials: {
                         subscriptionName: selectedSubscriptionName,
+                        serverUrl,
                         identifier: idInput.value.trim(),
                         password: passInput.value.trim(),
                         extra: extraInput.value.trim()
