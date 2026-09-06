@@ -1100,7 +1100,6 @@
 
         const ADMIN_SESSION_ENDPOINT = "https://icy-snow-93d1.teleprime4k.workers.dev/api/admin-session";
         const CLOUDFLARE_AI_ASSISTANT_ENDPOINT = "https://icy-snow-93d1.teleprime4k.workers.dev/api/ai-assistant";
-        const TELEPRIME_DEVICE_LINK_ENDPOINT = "https://teleprime4k-licences-api.teleprime4k.workers.dev/v1/device-link/complete-client";
         const PROTOTYPE_CLIENT_ID = "__admin_client_prototype__";
         const CLIENT_DATA_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
         const retentionCleanupInProgress = new Set();
@@ -4325,18 +4324,17 @@
                 : defaultAvatarHTML;
 
             // Résoudre les valeurs des identifiants attribués à ce client
-            const hasCredentials = !isAdmin && profile && profile.credentials && (profile.credentials.subscriptionName || profile.credentials.serverUrl || profile.credentials.identifier || profile.credentials.password || profile.credentials.extra);
-            const clientXtreamServer = String(profile?.credentials?.serverUrl || profile?.credentials?.extra || "").trim();
-            const canConnectTelePrime = !isAdmin && Boolean(clientXtreamServer && profile?.credentials?.identifier && profile?.credentials?.password);
+            const hasCredentials = !isAdmin && profile && profile.credentials && (profile.credentials.subscriptionName || profile.credentials.identifier || profile.credentials.password || profile.credentials.extra);
             
             // Résoudre les identifiants pour l'affichage de l'Admin en mode édition réactive
             const activeCredClient = window.appState.selectedCredClientId === PROTOTYPE_CLIENT_ID
                 ? prototypeProfile
                 : window.appState.allProfiles.find(p => p.id === window.appState.selectedCredClientId);
-            const activeCredServer = activeCredClient?.credentials?.serverUrl || "";
             const activeCredId = activeCredClient?.credentials?.identifier || "";
             const activeCredPass = activeCredClient?.credentials?.password || "";
-            const activeCredExtra = activeCredClient?.credentials?.extra || "";
+            const activeCredRawExtra = activeCredClient?.credentials?.extra || "";
+            const activeCredServerUrl = activeCredClient?.credentials?.serverUrl || (/^https?:\/\//i.test(activeCredRawExtra) ? activeCredRawExtra : "");
+            const activeCredExtra = activeCredClient?.credentials?.serverUrl ? activeCredRawExtra : (/^https?:\/\//i.test(activeCredRawExtra) ? "" : activeCredRawExtra);
             const activeCredSubscriptionName = activeCredClient?.credentials?.subscriptionName || "";
 
             // Calcul du Chiffre d'Affaires Global (CA) de l'Admin
@@ -4818,7 +4816,6 @@
 
                 <!-- BANNIÈRE D'IDENTIFIANTS SÉCURISÉS DU CLIENT -->
                 ${hasCredentials ? `
-                <div id="client-credentials-wrapper" class="relative z-10 w-full flex flex-col gap-3 sm:gap-4">
                 <div id="client-credentials-banner" class="relative bg-gradient-to-r from-cyan-950/30 to-purple-950/30 border border-cyan-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.15)] flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 overflow-hidden z-10 animate-fadeIn w-full">
                     <div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
                     <div class="flex items-center gap-3">
@@ -4836,6 +4833,11 @@
                         <div class="flex items-center justify-between gap-3 bg-slate-950/80 border border-purple-500/25 rounded-lg px-2.5 py-1.5 min-w-0">
                             <div class="truncate"><span class="text-purple-300 text-[8px] block uppercase">Nom de l’abonnement</span><span class="text-white truncate font-bold block">${window.escapeHTML(profile.credentials.subscriptionName)}</span></div>
                         </div>` : ''}
+                        ${(() => { const server = profile.credentials.serverUrl || (/^https?:\/\//i.test(profile.credentials.extra || '') ? profile.credentials.extra : ''); return server ? `
+                        <div class="flex items-center justify-between gap-3 bg-slate-950/80 border border-cyan-500/25 rounded-lg px-2.5 py-1.5 min-w-0">
+                            <div class="truncate"><span class="text-cyan-300 text-[8px] block uppercase">URL serveur</span><span class="text-white truncate font-bold block">${window.escapeHTML(server)}</span></div>
+                            <button onclick="window.copyToClipboard('${server.replace(/'/g, "\\'")}')" class="p-1 hover:bg-slate-900 rounded text-cyan-400 shrink-0 min-h-[30px] min-w-[30px] flex items-center justify-center" title="Copier l’URL serveur"><i data-lucide="copy" class="w-4.5 h-4.5"></i></button>
+                        </div>` : ''; })()}
                         ${profile.credentials.identifier ? `
                         <div class="flex items-center justify-between gap-3 bg-slate-950/80 border border-slate-800 rounded-lg px-2.5 py-1.5 min-w-0">
                             <div class="truncate">
@@ -4871,27 +4873,6 @@
                     </div>
                 </div>
                 ` : ''}
-
-                ${canConnectTelePrime ? `
-                <section id="teleprime-device-link-card" class="relative z-10 w-full rounded-2xl border border-cyan-500/35 bg-gradient-to-r from-[#071525] via-[#08182b] to-[#171134] p-4 sm:p-5 shadow-[0_0_24px_rgba(34,211,238,.10)]">
-                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div class="flex items-start gap-3 lg:max-w-md">
-                            <div class="p-2.5 rounded-xl bg-cyan-950/70 border border-cyan-500/25 text-cyan-300 shrink-0"><i data-lucide="tv" class="w-5 h-5"></i></div>
-                            <div>
-                                <h3 class="text-sm sm:text-base font-black text-white">Connecter Télé Prime4K</h3>
-                                <p class="mt-1 text-[10px] sm:text-[11px] leading-relaxed text-slate-400">Sur votre TV, ouvrez Télé Prime4K puis choisissez <b class="text-cyan-300">CONNEXION DEPUIS SÉSAME</b>. Saisissez ensuite ici l’ID appareil et la clé affichés sur la TV.</p>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-[1fr_150px_auto] gap-2 flex-1">
-                            <input id="teleprime-device-code" type="text" maxlength="11" autocomplete="off" spellcheck="false" placeholder="ID APPAREIL · TP4K-ABC123" class="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950/90 px-3 text-sm font-mono font-bold uppercase text-white outline-none focus:border-cyan-400" />
-                            <input id="teleprime-pairing-code" type="text" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="CLÉ · 000000" class="min-h-[44px] w-full rounded-xl border border-slate-700 bg-slate-950/90 px-3 text-sm font-mono font-bold tracking-[.18em] text-white outline-none focus:border-purple-400" />
-                            <button id="teleprime-connect-button" type="button" onclick="window.connectTelePrimeDevice()" class="min-h-[44px] rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 px-5 text-[11px] font-black uppercase tracking-wider text-white hover:brightness-110 disabled:opacity-50">Connecter la TV</button>
-                        </div>
-                    </div>
-                    <p id="teleprime-device-link-status" class="mt-3 text-[10px] text-slate-500">Le code affiché sur la TV est temporaire et expire après environ 10 minutes.</p>
-                </section>
-                ` : ''}
-                </div>
 
                 <!-- SECTION DES KPI FINANCIERS -->
                 <section id="overview-section" aria-label="Indicateurs du tableau de bord" ${isAdmin ? 'hidden aria-hidden="true" style="display:none !important"' : ''} class="mobile-anchor mobile-kpi-strip kpi-auto-carousel relative z-10 w-full">
@@ -5690,19 +5671,20 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <input type="url" id="cred-server-url" placeholder="URL serveur Xtream (ex : http://serveur:8080)" value="${activeCredServer}"
+                                            <label for="cred-server-url" class="block text-[9px] text-cyan-300 uppercase mb-1">URL serveur Xtream :</label>
+                                            <input type="url" id="cred-server-url" placeholder="http://serveur:8080" value="${window.escapeHTML(activeCredServerUrl)}"
                                                 class="w-full bg-slate-950 border border-cyan-900/60 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500 placeholder:text-slate-700 min-h-[34px]" />
                                         </div>
                                         <div>
-                                            <input type="text" id="cred-identifier" placeholder="Identifiant" value="${activeCredId}"
+                                            <input type="text" id="cred-identifier" placeholder="Identifiant" value="${window.escapeHTML(activeCredId)}"
                                                 class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 min-h-[34px]" />
                                         </div>
                                         <div>
-                                            <input type="text" id="cred-password" placeholder="Mot de passe" value="${activeCredPass}"
+                                            <input type="text" id="cred-password" placeholder="Mot de passe" value="${window.escapeHTML(activeCredPass)}"
                                                 class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 min-h-[34px]" />
                                         </div>
                                         <div>
-                                            <input type="text" id="cred-extra" placeholder="Note / Info Supp." value="${activeCredExtra}"
+                                            <input type="text" id="cred-extra" placeholder="Note complémentaire (facultatif)" value="${window.escapeHTML(activeCredExtra)}"
                                                 class="w-full bg-slate-950 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 placeholder:text-slate-700 min-h-[34px]" />
                                         </div>
                                     </div>
@@ -6611,11 +6593,118 @@
         };
 
         window.openClientMobileCredentials = () => {
-            window.openClientMobileFocusedElement(
-                document.getElementById('client-credentials-wrapper'),
-                'Identifiants confidentiels',
-                'Aucun identifiant confidentiel ne vous a encore été transmis.'
-            );
+            if (window.appState.isAdmin || !window.appState.profile) return;
+            const profile = window.appState.profile;
+            const credentials = profile.credentials || {};
+            const subscriptionName = String(credentials.subscriptionName || '').trim();
+            const identifier = String(credentials.identifier || '').trim();
+            const password = String(credentials.password || '').trim();
+            const rawExtra = String(credentials.extra || '').trim();
+            const serverUrl = String(credentials.serverUrl || (/^https?:\/\//i.test(rawExtra) ? rawExtra : '')).trim();
+            const extra = credentials.serverUrl ? rawExtra : (/^https?:\/\//i.test(rawExtra) ? '' : rawExtra);
+
+            const clientHome = document.getElementById('client-home');
+            const clientOverview = document.getElementById('client-overview');
+            const clientWorkspace = document.getElementById('client-workspace');
+            const clientWorkspaceBody = document.getElementById('client-workspace-body');
+            const clientWorkspaceTitle = document.getElementById('client-workspace-title');
+            if (!clientWorkspace || !clientWorkspaceBody) return;
+
+            const previousPlacements = Array.isArray(window.clientWorkspacePlacements) ? window.clientWorkspacePlacements : [];
+            previousPlacements.forEach(previous => {
+                if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
+                    previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
+                    previous.placeholder.remove();
+                }
+            });
+            window.clientWorkspacePlacements = [];
+
+            const panel = document.createElement('div');
+            panel.className = 'grid gap-4';
+
+            const entries = [
+                ['Nom de l’abonnement', subscriptionName, 'purple'],
+                ['URL serveur', serverUrl, 'cyan'],
+                ['Identifiant', identifier, 'slate'],
+                ['Mot de passe', password, 'slate'],
+                ['Note', extra, 'slate']
+            ].filter(([, value]) => value);
+
+            if (!entries.length) {
+                panel.innerHTML = `<div class="rounded-2xl border border-dashed border-slate-700 bg-[#0b182b] px-5 py-10 text-center"><i data-lucide="key-round" class="mx-auto mb-3 h-8 w-8 text-slate-600"></i><strong class="block text-sm text-slate-300">Information indisponible</strong><span class="mt-2 block text-[10px] text-slate-500">Aucun identifiant confidentiel ne vous a encore été transmis.</span></div>`;
+            } else {
+                const cards = entries.map(([label, value, tone]) => {
+                    const border = tone === 'purple' ? 'border-purple-500/30' : tone === 'cyan' ? 'border-cyan-500/30' : 'border-slate-700';
+                    const labelColor = tone === 'purple' ? 'text-purple-300' : tone === 'cyan' ? 'text-cyan-300' : 'text-slate-500';
+                    const safe = window.escapeHTML(value);
+                    return `<div class="flex items-center justify-between gap-3 rounded-xl border ${border} bg-slate-950/85 px-3 py-3 min-w-0"><div class="min-w-0"><span class="${labelColor} text-[8px] block uppercase font-bold">${label}</span><span class="text-white break-all font-bold block text-[11px] mt-1">${safe}</span></div><button type="button" data-copy-credential="${encodeURIComponent(value)}" class="p-2 hover:bg-slate-900 rounded text-cyan-400 shrink-0 min-h-[34px] min-w-[34px] flex items-center justify-center" title="Copier"><i data-lucide="copy" class="w-4 h-4"></i></button></div>`;
+                }).join('');
+
+                const canPair = Boolean(serverUrl && identifier && password);
+                panel.innerHTML = `
+                    <section class="relative overflow-hidden rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/30 to-purple-950/30 p-4 shadow-[0_0_20px_rgba(6,182,212,.12)]">
+                        <div class="absolute left-0 top-0 h-full w-1 bg-cyan-500"></div>
+                        <div class="mb-4 flex items-center gap-3"><span class="rounded-lg border border-cyan-500/20 bg-cyan-950 p-2 text-cyan-400"><i data-lucide="key" class="h-5 w-5"></i></span><span><strong class="block text-sm uppercase text-white">Identifiants confidentiels</strong><small class="text-[10px] text-slate-400">Vos accès transmis par l’administrateur Sésame.</small></span></div>
+                        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">${cards}</div>
+                    </section>
+                    <section class="rounded-2xl border ${canPair ? 'border-purple-500/40' : 'border-slate-700'} bg-[#0b182b] p-4">
+                        <div class="flex items-start gap-3"><span class="rounded-xl border border-purple-500/30 bg-purple-950/50 p-2 text-purple-300"><i data-lucide="tv" class="h-5 w-5"></i></span><div><strong class="block text-sm text-white">Connecter Télé Prime4K</strong><p class="mt-1 text-[10px] leading-relaxed text-slate-400">Sur votre télévision, ouvrez Télé Prime4K puis choisissez <b class="text-cyan-300">CONNEXION DEPUIS SÉSAME</b>. Saisissez ici l’ID appareil et la clé affichés par la TV.</p></div></div>
+                        ${canPair ? `<div class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-[1fr_180px_auto]"><input id="tp4k-device-code" type="text" autocomplete="off" spellcheck="false" maxlength="11" placeholder="TP4K-ABC123" class="min-h-[44px] rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm font-bold uppercase text-white outline-none focus:border-cyan-500"><input id="tp4k-pairing-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="min-h-[44px] rounded-xl border border-slate-700 bg-slate-950 px-3 text-center text-sm font-bold tracking-[.25em] text-white outline-none focus:border-purple-500"><button id="tp4k-connect-button" type="button" onclick="window.connectTelePrimeDevice()" class="min-h-[44px] rounded-xl bg-gradient-to-r from-cyan-600 to-purple-600 px-5 text-xs font-black uppercase text-white hover:brightness-110">Connecter la TV</button></div><p id="tp4k-pairing-status" class="mt-2 text-[10px] text-slate-500">Le code est temporaire et généré par votre application Télé Prime4K.</p>` : `<div class="mt-4 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3 text-[10px] text-amber-200">L’administrateur doit renseigner l’URL serveur Xtream, l’identifiant et le mot de passe avant de pouvoir connecter une TV.</div>`}
+                    </section>`;
+            }
+
+            clientWorkspaceBody.replaceChildren(panel);
+            clientOverview?.classList.add('hidden');
+            clientWorkspace.classList.remove('hidden');
+            window.appState.clientActiveTool = 'client-credentials-focus';
+            if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = 'Identifiants confidentiels';
+            clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.remove('active'));
+            panel.querySelectorAll('[data-copy-credential]').forEach(button => button.addEventListener('click', () => window.copyToClipboard(decodeURIComponent(button.dataset.copyCredential || ''))));
+            requestAnimationFrame(() => { lucide.createIcons({ root: clientWorkspace }); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        };
+
+        window.connectTelePrimeDevice = async () => {
+            const profile = window.appState.profile || {};
+            const credentials = profile.credentials || {};
+            const rawExtra = String(credentials.extra || '').trim();
+            const serverUrl = String(credentials.serverUrl || (/^https?:\/\//i.test(rawExtra) ? rawExtra : '')).trim();
+            const identifier = String(credentials.identifier || '').trim();
+            const password = String(credentials.password || '').trim();
+            const deviceInput = document.getElementById('tp4k-device-code');
+            const pairingInput = document.getElementById('tp4k-pairing-code');
+            const button = document.getElementById('tp4k-connect-button');
+            const status = document.getElementById('tp4k-pairing-status');
+            const deviceCode = String(deviceInput?.value || '').trim().toUpperCase();
+            const pairingCode = String(pairingInput?.value || '').replace(/\D/g, '').slice(0, 6);
+
+            if (!/^TP4K-[A-Z0-9]{6}$/.test(deviceCode)) { window.showToast('ID appareil invalide. Exemple : TP4K-ABC123.', 'error'); deviceInput?.focus(); return; }
+            if (!/^\d{6}$/.test(pairingCode)) { window.showToast('La clé doit contenir exactement 6 chiffres.', 'error'); pairingInput?.focus(); return; }
+            if (!serverUrl || !identifier || !password) { window.showToast('Les identifiants Xtream sont incomplets.', 'error'); return; }
+            const currentUser = auth.currentUser;
+            if (!currentUser) { window.showToast('Votre session Sésame a expiré. Reconnectez-vous.', 'error'); return; }
+
+            try {
+                if (button) button.disabled = true;
+                if (status) status.textContent = 'Connexion de la TV en cours…';
+                const idToken = await currentUser.getIdToken(true);
+                const response = await fetch('https://teleprime4k-licences-api.teleprime4k.workers.dev/v1/device-link/complete-client', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                    body: JSON.stringify({ deviceCode, pairingCode, server: serverUrl, username: identifier, password })
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || !result?.ok) throw new Error(result?.message || 'Association impossible.');
+                if (status) status.textContent = 'Télé Prime4K connectée. La TV va terminer la connexion automatiquement.';
+                if (deviceInput) deviceInput.value = '';
+                if (pairingInput) pairingInput.value = '';
+                window.showToast('Télé Prime4K connectée avec succès !');
+            } catch (error) {
+                console.error('Télé Prime4K pairing error:', error);
+                if (status) status.textContent = error?.message || 'Impossible de connecter la TV.';
+                window.showToast(error?.message || 'Impossible de connecter la TV.', 'error');
+            } finally {
+                if (button) button.disabled = false;
+            }
         };
 
         window.openClientMobileManagedService = (serviceId) => {
@@ -8826,72 +8915,14 @@
             }
         };
 
-        // Connexion sécurisée d'une installation Télé Prime4K depuis l'espace client Sésame
-        window.connectTelePrimeDevice = async () => {
-            const deviceInput = document.getElementById('teleprime-device-code');
-            const pairingInput = document.getElementById('teleprime-pairing-code');
-            const statusEl = document.getElementById('teleprime-device-link-status');
-            const button = document.getElementById('teleprime-connect-button');
-            const profile = window.appState?.profile;
-            const deviceCode = String(deviceInput?.value || '').trim().toUpperCase();
-            const pairingCode = String(pairingInput?.value || '').replace(/\D/g, '').slice(0, 6);
-            const server = String(profile?.credentials?.serverUrl || profile?.credentials?.extra || '').trim();
-            const username = String(profile?.credentials?.identifier || '').trim();
-            const password = String(profile?.credentials?.password || '').trim();
-
-            if (!/^TP4K-[A-Z0-9]{6}$/.test(deviceCode)) {
-                window.showToast('ID appareil invalide. Exemple : TP4K-ABC123', 'error');
-                deviceInput?.focus();
-                return;
-            }
-            if (!/^\d{6}$/.test(pairingCode)) {
-                window.showToast('La clé doit contenir exactement 6 chiffres.', 'error');
-                pairingInput?.focus();
-                return;
-            }
-            if (!server || !username || !password) {
-                window.showToast('Vos identifiants Xtream sont incomplets. Contactez l’administrateur.', 'error');
-                return;
-            }
-            const user = auth.currentUser;
-            if (!user) {
-                window.showToast('Votre session Sésame a expiré. Reconnectez-vous.', 'error');
-                return;
-            }
-
-            try {
-                if (button) { button.disabled = true; button.textContent = 'Connexion…'; }
-                if (statusEl) { statusEl.textContent = 'Vérification de l’appareil et transmission sécurisée…'; statusEl.className = 'mt-3 text-[10px] text-cyan-300'; }
-                const idToken = await user.getIdToken(true);
-                const response = await fetch(TELEPRIME_DEVICE_LINK_ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
-                    body: JSON.stringify({ deviceCode, pairingCode, server, username, password })
-                });
-                let result = {};
-                try { result = await response.json(); } catch (_) {}
-                if (!response.ok || result?.ok !== true) throw new Error(result?.message || 'Connexion impossible. Vérifiez le code affiché sur la TV.');
-                if (statusEl) { statusEl.textContent = 'TV connectée avec succès. Télé Prime4K va poursuivre automatiquement la connexion.'; statusEl.className = 'mt-3 text-[10px] font-bold text-emerald-400'; }
-                if (deviceInput) deviceInput.value = '';
-                if (pairingInput) pairingInput.value = '';
-                window.showToast('Télé Prime4K connectée avec succès !');
-            } catch (error) {
-                console.error('Connexion Télé Prime4K :', error);
-                if (statusEl) { statusEl.textContent = error?.message || 'Connexion impossible.'; statusEl.className = 'mt-3 text-[10px] font-bold text-red-400'; }
-                window.showToast(error?.message || 'Connexion Télé Prime4K impossible.', 'error');
-            } finally {
-                if (button) { button.disabled = false; button.textContent = 'Connecter la TV'; }
-            }
-        };
-
         // L'administrateur enregistre ou modifie les identifiants d'un client
         window.adminSaveCredentials = async () => {
-            const serverInput = document.getElementById('cred-server-url');
             const idInput = document.getElementById('cred-identifier');
             const passInput = document.getElementById('cred-password');
             const extraInput = document.getElementById('cred-extra');
+            const serverUrlInput = document.getElementById('cred-server-url');
             const subscriptionNameInput = document.getElementById('cred-subscription-name');
-            if(!serverInput || !idInput || !passInput || !extraInput || !subscriptionNameInput) return;
+            if(!idInput || !passInput || !extraInput || !serverUrlInput || !subscriptionNameInput) return;
             
             const clientId = window.appState.selectedCredClientId;
             if(!clientId) {
@@ -8904,16 +8935,24 @@
                 subscriptionNameInput.focus();
                 return;
             }
-            const serverUrl = serverInput.value.trim();
-            if (serverUrl && !/^https?:\/\//i.test(serverUrl)) {
-                window.showToast("L’URL serveur Xtream doit commencer par http:// ou https://", "error");
-                serverInput.focus();
+            const serverUrl = serverUrlInput.value.trim().replace(/\/+$/, '');
+            const identifier = idInput.value.trim();
+            const password = passInput.value.trim();
+            const extra = extraInput.value.trim();
+            if (!/^https?:\/\//i.test(serverUrl)) {
+                window.showToast("Renseignez une URL serveur Xtream valide commençant par http:// ou https://.", "error");
+                serverUrlInput.focus();
+                return;
+            }
+            if (!identifier || !password) {
+                window.showToast("L’identifiant et le mot de passe sont obligatoires.", "error");
+                (!identifier ? idInput : passInput).focus();
                 return;
             }
 
             if (clientId === PROTOTYPE_CLIENT_ID) {
                 const prototype = window.getAdminPrototypeClient();
-                prototype.credentials = { subscriptionName: selectedSubscriptionName, serverUrl, identifier: idInput.value.trim(), password: passInput.value.trim(), extra: extraInput.value.trim() };
+                prototype.credentials = { subscriptionName: selectedSubscriptionName, serverUrl, identifier, password, extra };
                 prototype.supportMessages = prototype.supportMessages || [];
                 prototype.supportMessages.push({ id: `prototype-credentials-${Date.now()}`, sender: 'admin', text: `Vos identifiants de connexion ${selectedSubscriptionName} sont maintenant disponibles dans votre espace client.`, timestamp: Date.now(), readByClient: false, notificationType: 'credentials_transmitted', simulation: true });
                 window.addAdminPrototypeEvent('credentials', '', 'Identifiants de simulation mis à jour');
@@ -8929,12 +8968,14 @@
                     credentials: {
                         subscriptionName: selectedSubscriptionName,
                         serverUrl,
-                        identifier: idInput.value.trim(),
-                        password: passInput.value.trim(),
-                        extra: extraInput.value.trim()
+                        identifier,
+                        password,
+                        extra
                     }
                 });
                 const client = window.appState.allProfiles.find(item => item.id === clientId);
+                if (client) client.credentials = { subscriptionName: selectedSubscriptionName, serverUrl, identifier, password, extra };
+                if (window.appState.profile?.id === clientId) window.appState.profile.credentials = { subscriptionName: selectedSubscriptionName, serverUrl, identifier, password, extra };
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
                     userId: clientId, userEmail: client?.email || '',
                     text: `Vos identifiants de connexion ${selectedSubscriptionName} sont maintenant disponibles dans votre espace client.`,
