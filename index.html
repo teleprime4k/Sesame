@@ -4489,6 +4489,8 @@
                 { id: 'services-section', icon: 'layout-grid', label: 'Services' },
                 { id: 'client-support', icon: 'headphones', label: 'Support' },
                 { id: 'client-payments', icon: 'history', label: 'Paiements' },
+                { action: 'teleprime-license', icon: 'key-round', label: 'Licence Télé Prime4K' },
+                { action: 'teleprime-connect', icon: 'tv', label: 'Connecter Télé Prime4K' },
                 { id: 'client-referrals', icon: 'gift', label: 'Parrainages' },
                 { id: 'billing-rules', icon: 'file-text', label: 'Règles de facturation' },
                 { id: 'news-section', icon: 'newspaper', label: 'Actualités' },
@@ -4635,6 +4637,7 @@
                             <button onclick="window.mobileGoTo('services-section')"><i data-lucide="layout-grid"></i>Mes services</button>
                             <button onclick="window.mobileGoTo('client-payments')"><i data-lucide="credit-card"></i>Paiements</button>
                             <button onclick="window.openTelePrimeClientPurchase()"><i data-lucide="key-round"></i>Licence Télé Prime4K</button>
+                            <button onclick="window.openTelePrimeDeviceLink()"><i data-lucide="tv"></i>Connecter Télé Prime4K</button>
                             <button onclick="window.mobileGoTo('news-section')"><i data-lucide="newspaper"></i>Actualités${unreadNewsCount ? `<span class="ml-auto rounded-full bg-purple-600 px-2 py-0.5 text-[9px] text-white">${unreadNewsCount}</span>` : ''}</button>
                             <button onclick="window.mobileGoTo('community-section')"><i data-lucide="users"></i>Groupe Sésame</button>
                             <button onclick="window.mobileGoTo('client-support')"><i data-lucide="headphones"></i>Support</button>
@@ -4677,6 +4680,7 @@
                             <div class="client-quick-grid">
                                 <button class="client-quick" onclick="window.mobileGoTo('client-support')"><span><i data-lucide="headphones"></i></span><span><b>Contacter le support</b><small>Notre équipe est disponible.</small></span><i data-lucide="chevron-right"></i></button>
                                 <button class="client-quick" onclick="window.openTelePrimeClientPurchase()"><span><i data-lucide="key-round"></i></span><span><b>Licence Télé Prime4K</b><small>Acheter une licence de 1 à 5 ans ou À vie.</small></span><i data-lucide="chevron-right"></i></button>
+                                <button class="client-quick" onclick="window.openTelePrimeDeviceLink()"><span><i data-lucide="tv"></i></span><span><b>Connecter Télé Prime4K</b><small>Connecter votre télévision avec l’ID appareil et la clé temporaire.</small></span><i data-lucide="chevron-right"></i></button>
                                 <button class="client-quick" onclick="window.openClientMobileRenewalServices()"><span><i data-lucide="refresh-cw"></i></span><span><b>Renouvellement</b><small>${clientRenewalCount ? `${clientRenewalCount} service${clientRenewalCount > 1 ? 's' : ''} à renouveler` : 'Aucun renouvellement nécessaire'}</small></span><i data-lucide="chevron-right"></i></button>
                             </div>
                             <div id="billing-rules-dashboard-slot" class="client-billing-slot">
@@ -6147,7 +6151,7 @@
                             <button type="button" onclick="window.closeMobileShortcuts()" class="w-10 h-10 rounded-xl bg-slate-900 text-slate-400 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
                         </div>
                         <div class="mobile-shortcut-grid grid grid-cols-3 gap-2">
-                            ${mobileAllShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; const action = item.action === 'profile' ? 'window.closeMobileShortcuts();window.openMyPersonalInformation()' : item.action === 'logout' ? 'window.closeMobileShortcuts();window.handleLogout()' : `window.mobileGoTo('${item.id}')`; return `<button type="button" onclick="${action}" class="relative p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex flex-col items-center justify-center gap-2 text-center text-[10px] font-bold active:border-cyan-500 active:text-cyan-300">${badgeCount ? `<span class="absolute top-1.5 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] leading-[18px] font-black animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}" class="w-5 h-5 ${item.action === 'logout' ? 'text-red-400' : 'text-cyan-400'}"></i><span>${item.label}</span></button>`; }).join('')}
+                            ${mobileAllShortcuts.map(item => { const badgeCount = item.id === 'news-section' ? unreadNewsCount : item.id === 'community-section' && !isAdmin && communityJoined ? unreadPeerMessages.length : 0; const action = item.action === 'profile' ? 'window.closeMobileShortcuts();window.openMyPersonalInformation()' : item.action === 'logout' ? 'window.closeMobileShortcuts();window.handleLogout()' : item.action === 'teleprime-license' ? 'window.closeMobileShortcuts();window.openTelePrimeClientPurchase()' : item.action === 'teleprime-connect' ? 'window.closeMobileShortcuts();window.openTelePrimeDeviceLink()' : `window.mobileGoTo('${item.id}')`; return `<button type="button" onclick="${action}" class="relative p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex flex-col items-center justify-center gap-2 text-center text-[10px] font-bold active:border-cyan-500 active:text-cyan-300">${badgeCount ? `<span class="absolute top-1.5 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[9px] leading-[18px] font-black animate-pulse">${badgeCount > 99 ? '99+' : badgeCount}</span>` : ''}<i data-lucide="${item.icon}" class="w-5 h-5 ${item.action === 'logout' ? 'text-red-400' : 'text-cyan-400'}"></i><span>${item.label}</span></button>`; }).join('')}
                         </div>
                     </div>
                 </div>
@@ -6640,16 +6644,11 @@
                     return `<div class="flex items-center justify-between gap-3 rounded-xl border ${border} bg-slate-950/85 px-3 py-3 min-w-0"><div class="min-w-0"><span class="${labelColor} text-[8px] block uppercase font-bold">${label}</span><span class="text-white break-all font-bold block text-[11px] mt-1">${safe}</span></div><button type="button" data-copy-credential="${encodeURIComponent(value)}" class="p-2 hover:bg-slate-900 rounded text-cyan-400 shrink-0 min-h-[34px] min-w-[34px] flex items-center justify-center" title="Copier"><i data-lucide="copy" class="w-4 h-4"></i></button></div>`;
                 }).join('');
 
-                const canPair = Boolean(serverUrl && identifier && password);
                 panel.innerHTML = `
                     <section class="relative overflow-hidden rounded-2xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/30 to-purple-950/30 p-4 shadow-[0_0_20px_rgba(6,182,212,.12)]">
                         <div class="absolute left-0 top-0 h-full w-1 bg-cyan-500"></div>
                         <div class="mb-4 flex items-center gap-3"><span class="rounded-lg border border-cyan-500/20 bg-cyan-950 p-2 text-cyan-400"><i data-lucide="key" class="h-5 w-5"></i></span><span><strong class="block text-sm uppercase text-white">Identifiants confidentiels</strong><small class="text-[10px] text-slate-400">Vos accès transmis par l’administrateur Sésame.</small></span></div>
                         <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">${cards}</div>
-                    </section>
-                    <section class="rounded-2xl border ${canPair ? 'border-purple-500/40' : 'border-slate-700'} bg-[#0b182b] p-4">
-                        <div class="flex items-start gap-3"><span class="rounded-xl border border-purple-500/30 bg-purple-950/50 p-2 text-purple-300"><i data-lucide="tv" class="h-5 w-5"></i></span><div><strong class="block text-sm text-white">Connecter Télé Prime4K</strong><p class="mt-1 text-[10px] leading-relaxed text-slate-400">Sur votre télévision, ouvrez Télé Prime4K puis choisissez <b class="text-cyan-300">CONNEXION DEPUIS SÉSAME</b>. Saisissez ici l’ID appareil et la clé affichés par la TV.</p></div></div>
-                        ${canPair ? `<div class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-[1fr_180px_auto]"><input id="tp4k-device-code" type="text" autocomplete="off" spellcheck="false" maxlength="11" placeholder="TP4K-ABC123" class="min-h-[44px] rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm font-bold uppercase text-white outline-none focus:border-cyan-500"><input id="tp4k-pairing-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="min-h-[44px] rounded-xl border border-slate-700 bg-slate-950 px-3 text-center text-sm font-bold tracking-[.25em] text-white outline-none focus:border-purple-500"><button id="tp4k-connect-button" type="button" onclick="window.connectTelePrimeDevice()" class="min-h-[44px] rounded-xl bg-gradient-to-r from-cyan-600 to-purple-600 px-5 text-xs font-black uppercase text-white hover:brightness-110">Connecter la TV</button></div><p id="tp4k-pairing-status" class="mt-2 text-[10px] text-slate-500">Le code est temporaire et généré par votre application Télé Prime4K.</p>` : `<div class="mt-4 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3 text-[10px] text-amber-200">L’administrateur doit renseigner l’URL serveur Xtream, l’identifiant et le mot de passe avant de pouvoir connecter une TV.</div>`}
                     </section>`;
             }
 
@@ -6660,6 +6659,49 @@
             if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = 'Identifiants confidentiels';
             clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.remove('active'));
             panel.querySelectorAll('[data-copy-credential]').forEach(button => button.addEventListener('click', () => window.copyToClipboard(decodeURIComponent(button.dataset.copyCredential || ''))));
+            requestAnimationFrame(() => { lucide.createIcons({ root: clientWorkspace }); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        };
+
+        window.openTelePrimeDeviceLink = () => {
+            if (window.appState.isAdmin || !window.appState.profile) return;
+            const profile = window.appState.profile;
+            const credentials = profile.credentials || {};
+            const rawExtra = String(credentials.extra || '').trim();
+            const serverUrl = String(credentials.serverUrl || (/^https?:\/\//i.test(rawExtra) ? rawExtra : '')).trim();
+            const identifier = String(credentials.identifier || '').trim();
+            const password = String(credentials.password || '').trim();
+            const canPair = Boolean(serverUrl && identifier && password);
+
+            const clientHome = document.getElementById('client-home');
+            const clientOverview = document.getElementById('client-overview');
+            const clientWorkspace = document.getElementById('client-workspace');
+            const clientWorkspaceBody = document.getElementById('client-workspace-body');
+            const clientWorkspaceTitle = document.getElementById('client-workspace-title');
+            if (!clientWorkspace || !clientWorkspaceBody) return;
+
+            const previousPlacements = Array.isArray(window.clientWorkspacePlacements) ? window.clientWorkspacePlacements : [];
+            previousPlacements.forEach(previous => {
+                if (previous?.element?.isConnected && previous?.placeholder?.parentNode) {
+                    previous.placeholder.parentNode.insertBefore(previous.element, previous.placeholder);
+                    previous.placeholder.remove();
+                }
+            });
+            window.clientWorkspacePlacements = [];
+
+            const panel = document.createElement('div');
+            panel.className = 'grid gap-4';
+            panel.innerHTML = `
+                <section class="rounded-2xl border ${canPair ? 'border-purple-500/40' : 'border-slate-700'} bg-[#0b182b] p-4 sm:p-5">
+                    <div class="flex items-start gap-3"><span class="rounded-xl border border-purple-500/30 bg-purple-950/50 p-2 text-purple-300"><i data-lucide="tv" class="h-5 w-5"></i></span><div><strong class="block text-sm text-white">Connecter Télé Prime4K</strong><p class="mt-1 text-[10px] leading-relaxed text-slate-400">Sur votre télévision, ouvrez Télé Prime4K puis choisissez <b class="text-cyan-300">CONNEXION DEPUIS SÉSAME</b>. Saisissez ici l’ID appareil et la clé affichés par la TV.</p></div></div>
+                    ${canPair ? `<div class="mt-4 grid grid-cols-1 gap-2 md:grid-cols-[1fr_180px_auto]"><input id="tp4k-device-code" type="text" autocomplete="off" spellcheck="false" maxlength="11" placeholder="TP4K-ABC123" class="min-h-[44px] rounded-xl border border-slate-700 bg-slate-950 px-3 text-sm font-bold uppercase text-white outline-none focus:border-cyan-500"><input id="tp4k-pairing-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" class="min-h-[44px] rounded-xl border border-slate-700 bg-slate-950 px-3 text-center text-sm font-bold tracking-[.25em] text-white outline-none focus:border-purple-500"><button id="tp4k-connect-button" type="button" onclick="window.connectTelePrimeDevice()" class="min-h-[44px] rounded-xl bg-gradient-to-r from-cyan-600 to-purple-600 px-5 text-xs font-black uppercase text-white hover:brightness-110">Connecter la TV</button></div><p id="tp4k-pairing-status" class="mt-2 text-[10px] text-slate-500">Le code est temporaire et généré par votre application Télé Prime4K.</p>` : `<div class="mt-4 rounded-xl border border-amber-500/25 bg-amber-950/20 p-3 text-[10px] text-amber-200">L’administrateur doit renseigner l’URL serveur Xtream, l’identifiant et le mot de passe avant de pouvoir connecter une TV.</div>`}
+                </section>`;
+
+            clientWorkspaceBody.replaceChildren(panel);
+            clientOverview?.classList.add('hidden');
+            clientWorkspace.classList.remove('hidden');
+            window.appState.clientActiveTool = 'client-teleprime-link';
+            if (clientWorkspaceTitle) clientWorkspaceTitle.textContent = 'Connecter Télé Prime4K';
+            clientHome?.querySelectorAll('.client-nav button').forEach(button => button.classList.toggle('active', button.getAttribute('onclick')?.includes('openTelePrimeDeviceLink')));
             requestAnimationFrame(() => { lucide.createIcons({ root: clientWorkspace }); window.scrollTo({ top: 0, behavior: 'smooth' }); });
         };
 
