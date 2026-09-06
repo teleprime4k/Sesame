@@ -1004,7 +1004,7 @@ img, video, canvas, svg { max-width: 100%; }
 </style>
 
 </head>
-<!-- SésameFlash V6 MOBILE + MESSAGERIE CORRIGÉE -->
+<!-- SésameFlash V6.1 MOBILE + MESSAGERIE + NOTIFICATIONS CLIENT ADMIN -->
 <body class="bg-[#030712] text-slate-300 font-sans overflow-y-auto min-h-screen w-full pb-12" id="app">
     
     <!-- Conteneur Principal -->
@@ -4988,7 +4988,7 @@ img, video, canvas, svg { max-width: 100%; }
 
                 ${showRealClientContent && !profile.retentionNoticeAcknowledgedAt ? `
                 <div id="client-retention-notice" class="relative z-20 w-full bg-slate-900/95 border border-cyan-500/35 p-3 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <span class="flex items-start gap-3"><span class="p-2 bg-cyan-950 rounded-lg shrink-0"><i data-lucide="calendar-clock" class="w-5 h-5 text-cyan-300"></i></span><span><strong class="block text-white text-xs uppercase font-mono">Conservation de vos données : 1 an</strong><span class="block text-[10px] text-slate-300 mt-1">Vos conversations, demandes de devis et suivis sont supprimés automatiquement après un an. Vous pouvez aussi les effacer manuellement à tout moment.</span></span></span>
+                    <span class="flex items-start gap-3"><span class="p-2 bg-cyan-950 rounded-lg shrink-0"><i data-lucide="calendar-clock" class="w-5 h-5 text-cyan-300"></i></span><span><strong class="block text-white text-xs uppercase font-mono">Conservation de vos données : 1 an</strong><span class="block text-[10px] text-slate-300 mt-1">Vos conversations, demandes de devis et suivis sont conservés selon les règles du service. Dans la messagerie support, vous pouvez rectifier vos propres messages, mais vous ne pouvez plus supprimer la conversation ni les messages.</span></span></span>
                     <button onclick="window.acknowledgeRetentionNotice()" class="px-3 py-2 rounded-lg bg-cyan-700 hover:bg-cyan-600 text-white text-[9px] uppercase font-bold shrink-0">J’ai compris</button>
                 </div>` : ''}
 
@@ -8276,6 +8276,39 @@ img, video, canvas, svg { max-width: 100%; }
             });
         };
 
+
+        // =========================================================
+        // V6.1 — NOTIFICATIONS CLIENT POUR LES ACTIONS ADMIN
+        // Utilise la messagerie existante : la notification reste
+        // non lue jusqu'à ce que le client ouvre la notification.
+        // =========================================================
+        window.notifyClientAdminAction = async (clientId, text, notificationType = 'admin_action', extra = {}) => {
+            if (!window.appState.isAdmin || !clientId || clientId === PROTOTYPE_CLIENT_ID) return;
+            const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+            if (!client) {
+                console.warn('Notification client ignorée : profil introuvable', clientId);
+                return;
+            }
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {
+                    userId: clientId,
+                    userEmail: client.email || '',
+                    text: String(text || '').slice(0, 2000),
+                    sender: 'admin',
+                    senderName: 'Administrateur Sésame',
+                    readByAdmin: true,
+                    readByClient: false,
+                    timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now(),
+                    notificationType,
+                    systemAdminAction: true,
+                    ...extra
+                });
+            } catch (error) {
+                // L'action Admin principale reste valide même si la notification échoue.
+                console.error('Notification client impossible :', error);
+            }
+        };
+
         // TÉLÉ PRIME4K — Gestion complète des licences par l'Admin.
         // Attribution, récupération, réattribution, renommage du titulaire et suppression.
         // "Supprimer" révoque d'abord la clé côté serveur officiel, puis la retire de Sésame.
@@ -8437,6 +8470,12 @@ img, video, canvas, svg { max-width: 100%; }
                     await window.adminTelePrimeServerAction(license.licenseKey, 'rename-holder', { holder_name: holderName, holder_email: license.holderEmail || client.email || '' });
                     licenses[licenseIndex] = { ...license, holderName, holderUpdatedAt: Date.now() };
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses: licenses });
+                    await window.notifyClientAdminAction(
+                        clientId,
+                        `✏️ Le titulaire de votre licence Télé Prime4K ${license.licenseKey} a été renommé : ${holderName}.`,
+                        'teleprime_holder_renamed',
+                        { licenseKey: license.licenseKey }
+                    );
                 }
                 document.getElementById('admin-teleprime-holder-modal')?.remove();
                 window.showToast(`Titulaire renommé : ${holderName}`);
@@ -8467,6 +8506,12 @@ img, video, canvas, svg { max-width: 100%; }
                         const licenses = [...client.telePrimeLicenses];
                         licenses.splice(licenseIndex, 1);
                         await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses: licenses });
+                        await window.notifyClientAdminAction(
+                            clientId,
+                            `⛔ Votre licence Télé Prime4K ${license.licenseKey} a été supprimée et révoquée par l’administrateur.`,
+                            'teleprime_license_revoked',
+                            { licenseKey: license.licenseKey }
+                        );
                     }
                     window.showToast(`Licence ${license.licenseKey} supprimée et révoquée.`);
                     await window.openAdminTelePrimeLicense(window.appState.selectedTelePrimeLicenseClientId || clientId);
@@ -8488,6 +8533,12 @@ img, video, canvas, svg { max-width: 100%; }
                     licenses.splice(licenseIndex, 1);
                     await window.saveAdminTelePrimeLicensePool(pool);
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses: licenses });
+                    await window.notifyClientAdminAction(
+                        clientId,
+                        `↩️ La licence Télé Prime4K ${license.licenseKey} a été récupérée par l’administrateur et n’est plus attribuée à votre compte.`,
+                        'teleprime_license_recovered',
+                        { licenseKey: license.licenseKey }
+                    );
                     window.showToast(`Licence ${license.licenseKey} récupérée dans la réserve Admin.`);
                     window.closeAdminTelePrimeLicenseModal();
                     renderApp();
@@ -8516,6 +8567,12 @@ img, video, canvas, svg { max-width: 100%; }
                     });
                     pool.splice(index, 1);
                     await window.saveAdminTelePrimeLicensePool(pool);
+                    await window.notifyClientAdminAction(
+                        clientId,
+                        `🔑 Une licence Télé Prime4K ${reassigned.licenseKey} vient d’être attribuée à votre compte.`,
+                        'teleprime_license_assigned',
+                        { licenseKey: reassigned.licenseKey, licenseType: reassigned.licenseType || '' }
+                    );
                     window.showToast(`Licence ${reassigned.licenseKey} attribuée à ${newHolderName}.`);
                     window.closeAdminTelePrimeLicenseModal();
                     renderApp();
@@ -8547,6 +8604,12 @@ img, video, canvas, svg { max-width: 100%; }
                     const license = result.license, assignedAt = Date.now();
                     const clientLicense = { licenseKey:String(license.license_key||''), licenseType:String(license.license_type||licenseType), status:String(license.status||'pending'), activatedAt:license.activated_at||null, expiresAt:license.expires_at||null, deviceName:license.device_name||null, holderName:String(license.holder_name||clientName), holderEmail:String(client.email||''), assignedAt, origin:'admin', assignedBy:currentUser.email||'Administrateur Sésame' };
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses:arrayUnion(clientLicense), telePrimeLicenseNotification:{ type:'assigned', licenseKey:clientLicense.licenseKey, createdAt:assignedAt, readAt:null } });
+                    await window.notifyClientAdminAction(
+                        clientId,
+                        `🔑 Une nouvelle licence Télé Prime4K ${offer.label} vient d’être créée et attribuée à votre compte : ${clientLicense.licenseKey}.`,
+                        'teleprime_license_created',
+                        { licenseKey: clientLicense.licenseKey, licenseType }
+                    );
                     window.closeAdminTelePrimeLicenseModal();
                     window.showToast(`Licence ${offer.label} attribuée à ${clientName} : ${clientLicense.licenseKey}`);
                     renderApp();
@@ -8608,6 +8671,14 @@ img, video, canvas, svg { max-width: 100%; }
             }
             try {
                 await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), update);
+                await window.notifyClientAdminAction(
+                    clientId,
+                    points >= 5
+                        ? `🎉 Vos points de parrainage viennent d’être mis à jour : ${points}/5. Vous avez atteint la récompense d’1 an gratuit de ${rewardService.name}.`
+                        : `⭐ Vos points de parrainage viennent d’être mis à jour : ${points}/5.`,
+                    'referral_points_updated',
+                    { referralPoints: points, rewardServiceId: rewardService.id }
+                );
                 window.showToast(`${points} point${points > 1 ? 's' : ''} enregistré${points > 1 ? 's' : ''} pour ${window.getClientName(target.email)}.`);
             } catch (error) {
                 console.error(error);
@@ -8643,6 +8714,12 @@ img, video, canvas, svg { max-width: 100%; }
                 }
                 try {
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), update);
+                    await window.notifyClientAdminAction(
+                        clientId,
+                        `🎁 Votre année gratuite de ${rewardService.name} a été ajoutée à votre compte par l’administrateur.`,
+                        'referral_reward_granted',
+                        { serviceId: rewardServiceId }
+                    );
                     window.showToast(`1 an gratuit ajouté au compte de ${window.getClientName(target.email)}.`);
                 } catch (error) {
                     console.error(error);
@@ -9421,6 +9498,13 @@ img, video, canvas, svg { max-width: 100%; }
                     correctedByAdminAt: Date.now()
                 };
                 await updateDoc(clientRef, { services });
+                const service = SERVICES_DATA.find(item => item.id === serviceId);
+                await window.notifyClientAdminAction(
+                    clientId,
+                    `📅 L’administrateur a corrigé la durée de ${service?.name || 'votre service'} : ${days} jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}.`,
+                    'service_days_updated',
+                    { serviceId, days }
+                );
                 window.showToast(`Durée corrigée : ${days} jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}.`);
             } catch (err) {
                 console.error(err);
@@ -9744,6 +9828,16 @@ img, video, canvas, svg { max-width: 100%; }
                     status: 'proposed',
                     price: price
                 });
+                const quote = window.appState.allQuotes.find(item => item.id === quoteId);
+                if (quote?.userId) {
+                    const service = SERVICES_DATA.find(item => item.id === quote.serviceId);
+                    await window.notifyClientAdminAction(
+                        quote.userId,
+                        `💶 L’administrateur vous a transmis une proposition de devis${service ? ` pour ${service.name}` : ''} : ${price.toFixed(2)} €.`,
+                        'quote_proposed',
+                        { quoteId, serviceId: quote.serviceId || '', price }
+                    );
+                }
                 window.showToast("Proposition commerciale de tarif transmise au client.");
             } catch(e) {
                 console.error(e);
@@ -9769,6 +9863,21 @@ img, video, canvas, svg { max-width: 100%; }
             try {
                 const quoteRef = doc(db, 'artifacts', appId, 'public', 'data', 'quotes', quoteId);
                 await updateDoc(quoteRef, { status: nextStatus });
+                const quote = window.appState.allQuotes.find(item => item.id === quoteId);
+                if (quote?.userId) {
+                    const service = SERVICES_DATA.find(item => item.id === quote.serviceId);
+                    const statusText = nextStatus === 'rejected'
+                        ? 'a refusé votre demande de devis'
+                        : nextStatus === 'accepted'
+                            ? 'a accepté votre demande de devis'
+                            : `a mis à jour votre demande de devis (${nextStatus})`;
+                    await window.notifyClientAdminAction(
+                        quote.userId,
+                        `📄 L’administrateur ${statusText}${service ? ` pour ${service.name}` : ''}.`,
+                        'quote_status_updated',
+                        { quoteId, serviceId: quote.serviceId || '', quoteStatus: nextStatus }
+                    );
+                }
                 window.showToast("Demande de devis traitée.");
             } catch(e) {
                 console.error(e);
