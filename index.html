@@ -780,7 +780,231 @@
         }
 
     </style>
+
+<style id="sesame-v6-mobile-fixes">
+/* =========================================================
+   SÉSAMEFLASH V6 — MOBILE / SUPPORT / CONSOLE LICENCES
+   ========================================================= */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, video, canvas, svg { max-width: 100%; }
+
+/* Prevent long content from breaking mobile cards */
+.break-all { overflow-wrap:anywhere; word-break:break-word; }
+#admin-support, #client-support, #admin-teleprime-licenses { max-width:100%; }
+
+/* Client support: more usable height on phones */
+@media (max-width: 767px) {
+  #client-support {
+    height: calc(100dvh - 150px) !important;
+    min-height: 500px !important;
+    padding: 12px !important;
+    gap: 10px !important;
+  }
+  #client-chat-box {
+    min-height: 0 !important;
+    padding: 10px !important;
+  }
+  #client-chat-box > div > div {
+    max-width: 92% !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  #client-support form {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    background: #0b1322;
+    padding-top: 8px;
+  }
+  #client-support #chat-input {
+    min-width: 0 !important;
+    font-size: 16px !important; /* évite le zoom automatique iPhone */
+  }
+
+  /* Admin support: one-column layout on mobile */
+  #admin-support {
+    padding: 12px !important;
+    gap: 10px !important;
+    overflow: hidden !important;
+  }
+  #admin-support.fixed {
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom)) !important;
+  }
+  #admin-support > .grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    display: grid !important;
+    gap: 8px !important;
+    min-height: 0 !important;
+    height: auto !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
+  #admin-support > .grid > div:first-child {
+    grid-column: 1 / -1 !important;
+    border-right: 0 !important;
+    border-bottom: 1px solid rgba(51,65,85,.8) !important;
+    padding: 0 0 8px 0 !important;
+    display: flex !important;
+    gap: 7px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-height: 78px !important;
+    min-height: 58px !important;
+    scrollbar-width: thin;
+  }
+  #admin-support > .grid > div:first-child > span {
+    display: none !important;
+  }
+  #admin-support > .grid > div:first-child > button {
+    min-width: 145px !important;
+    width: 145px !important;
+    flex: 0 0 145px !important;
+    min-height: 52px !important;
+  }
+  #admin-support > .grid > div:nth-child(2) {
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+  #admin-chat-box {
+    min-height: 180px !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+  #admin-chat-box > div > div {
+    max-width: 92% !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+  }
+  #admin-support form {
+    display: grid !important;
+    grid-template-columns: minmax(0,1fr) auto auto !important;
+    gap: 6px !important;
+    position: sticky;
+    bottom: 0;
+    z-index: 8;
+    background: #06171b;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  #admin-chat-input {
+    min-width: 0 !important;
+    font-size: 16px !important;
+    min-height: 42px !important;
+  }
+  #admin-support summary,
+  #admin-support details button {
+    touch-action: manipulation;
+  }
+
+  /* Admin cards / tools: never overflow the phone */
+  #admin-console .standalone-admin-tool,
+  #admin-console .request-center-tool,
+  #admin-console .service-tools-relocated {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+  #admin-console input, #admin-console select, #admin-console textarea {
+    max-width: 100% !important;
+  }
+
+  /* Télé Prime4K console: table becomes cards on mobile */
+  #admin-teleprime-licenses {
+    padding: 12px !important;
+    border-radius: 12px !important;
+    gap: 12px !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table-wrap {
+    border: 0 !important;
+    overflow: visible !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    display: block !important;
+    background: transparent !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table thead {
+    display: none !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table tbody {
+    display: grid !important;
+    gap: 10px !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table tr {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    background: #07111f !important;
+    border: 1px solid #1d3047 !important;
+    border-radius: 12px !important;
+    padding: 10px !important;
+    overflow: hidden !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table td {
+    display: grid !important;
+    grid-template-columns: 105px minmax(0,1fr) !important;
+    gap: 8px !important;
+    align-items: start !important;
+    border-bottom: 1px solid #17283c !important;
+    padding: 8px 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table td:last-child {
+    border-bottom: 0 !important;
+    grid-template-columns: 1fr !important;
+    padding-bottom: 0 !important;
+  }
+  #admin-teleprime-licenses .tp-lic-table td:nth-child(1)::before { content:"Clé"; }
+  #admin-teleprime-licenses .tp-lic-table td:nth-child(2)::before { content:"Titulaire"; }
+  #admin-teleprime-licenses .tp-lic-table td:nth-child(3)::before { content:"Durée"; }
+  #admin-teleprime-licenses .tp-lic-table td:nth-child(4)::before { content:"État"; }
+  #admin-teleprime-licenses .tp-lic-table td:nth-child(5)::before { content:"Appareil"; }
+  #admin-teleprime-licenses .tp-lic-table td:nth-child(6)::before { content:"Activation"; }
+  #admin-teleprime-licenses .tp-lic-table td::before {
+    color:#7890ad;
+    font-size:8px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  #admin-teleprime-licenses .tp-lic-actions {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:7px !important;
+  }
+  #admin-teleprime-licenses .tp-lic-actions button {
+    width:100% !important;
+    min-height:40px !important;
+    font-size:9px !important;
+    white-space:normal !important;
+  }
+  #admin-teleprime-licenses .tp-lic-head,
+  #admin-teleprime-licenses .tp-lic-toolbar {
+    align-items:stretch !important;
+  }
+  #admin-teleprime-licenses .tp-lic-toolbar button {
+    min-height:42px !important;
+  }
+  #admin-teleprime-licenses .tp-lic-modal {
+    padding:10px !important;
+    align-items:flex-end !important;
+  }
+  #admin-teleprime-licenses .tp-lic-modal-card {
+    max-height:90dvh !important;
+    overflow-y:auto !important;
+    border-radius:16px 16px 8px 8px !important;
+  }
+}
+</style>
+
 </head>
+<!-- SésameFlash V6 MOBILE + MESSAGERIE CORRIGÉE -->
 <body class="bg-[#030712] text-slate-300 font-sans overflow-y-auto min-h-screen w-full pb-12" id="app">
     
     <!-- Conteneur Principal -->
@@ -3233,43 +3457,43 @@
             }
         };
 
-        window.clientClearSupportConversation = () => {
-            if (window.appState.isAdmin || !window.appState.user) return;
-            const messages = window.appState.allMessages.filter(message => message.userId === window.appState.user.uid);
-            if (!messages.length) return;
-            window.showCyberConfirm("Effacer toute votre conversation de support ? Elle sera masquée uniquement dans votre espace et restera accessible à l’administrateur.", async () => {
-                try {
-                    const hiddenAt = Date.now();
-                    await Promise.all(messages.map(message => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', message.id), {
-                        hiddenByClient: true,
-                        hiddenByClientAt: hiddenAt
-                    })));
-                    await window.recordClientDeletionHistory('messages', messages.length, 'Conversation complète');
-                    window.showToast("Conversation masquée dans votre espace client. Elle reste conservée pour l’administrateur.");
-                } catch (error) {
-                    console.error(error);
-                    window.showToast("Impossible d’effacer cette conversation.", "error");
-                }
-            });
+
+        window.clientEditSupportMessage = async (messageId) => {
+            if (window.appState.isAdmin || !window.appState.user || !messageId) return;
+            const message = window.appState.allMessages.find(item =>
+                item.id === messageId &&
+                item.userId === window.appState.user.uid &&
+                item.sender === 'user'
+            );
+            if (!message) return window.showToast("Vous pouvez uniquement rectifier vos propres messages.", "error");
+
+            const corrected = window.prompt("Rectifiez votre message :", String(message.text || ""));
+            if (corrected === null) return;
+            const text = corrected.trim();
+            if (!text) return window.showToast("Le message ne peut pas être vide.", "error");
+            if (text === String(message.text || "").trim()) return;
+
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId), {
+                    text: text.slice(0, 2000),
+                    editedByClient: true,
+                    editedAt: Date.now()
+                });
+                window.showToast("Message rectifié.");
+            } catch (error) {
+                console.error(error);
+                window.showToast("Impossible de rectifier ce message.", "error");
+            }
         };
 
-        window.clientDeleteSupportMessage = (messageId) => {
-            if (window.appState.isAdmin || !window.appState.user) return;
-            const message = window.appState.allMessages.find(item => item.id === messageId && item.userId === window.appState.user.uid);
-            if (!message) return;
-            window.showCyberConfirm("Effacer ce message de votre espace ? Il restera accessible à l’administrateur.", async () => {
-                try {
-                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', messageId), {
-                        hiddenByClient: true,
-                        hiddenByClientAt: Date.now()
-                    });
-                    await window.recordClientDeletionHistory('messages', 1, 'Message individuel');
-                    window.showToast("Message masqué dans votre espace client. Il reste accessible à l’administrateur.");
-                } catch (error) {
-                    console.error(error);
-                    window.showToast("Impossible d’effacer ce message.", "error");
-                }
-            });
+        // Depuis V6, le client ne peut plus effacer les messages ni la conversation.
+        // Ces deux fonctions restent neutralisées pour éviter tout ancien bouton/cache.
+        window.clientClearSupportConversation = () => {
+            if (!window.appState.isAdmin) window.showToast("La conversation est conservée. Vous pouvez uniquement rectifier vos messages envoyés.", "error");
+        };
+
+        window.clientDeleteSupportMessage = () => {
+            if (!window.appState.isAdmin) window.showToast("La suppression des messages n’est plus disponible. Utilisez « Rectifier » sur votre message.", "error");
         };
 
         window.clientClearQuoteHistory = () => {
@@ -5170,7 +5394,7 @@
                         ${!isAdmin ? `
                         <!-- WIDGET 2 : TCHAT CLIENT RÉEL (MASQUÉ POUR L'ADMIN) -->
                         <div id="client-support" class="mobile-anchor mobile-compact-section bg-[#0b1322]/90 border border-[#1e293b]/70 p-4 sm:p-5 rounded-2xl flex flex-col gap-4 h-[350px] shadow-[0_4px_25px_rgba(0,0,0,0.3)] w-full">
-                            <div class="border-b border-slate-800/80 pb-2 flex items-center justify-between gap-2"><h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i> Support & Messagerie</h3>${clientMessages.length ? `<button type="button" onclick="window.clientClearSupportConversation()" class="text-[9px] text-red-400 hover:text-red-300 uppercase font-bold shrink-0">Effacer la conversation</button>` : ''}</div>
+                            <div class="border-b border-slate-800/80 pb-2 flex items-center justify-between gap-2"><h3 class="text-xs font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-cyan-400"></i> Support & Messagerie</h3><span class="text-[8px] sm:text-[9px] text-slate-500 font-mono text-right">Messages conservés · rectification possible</span></div>
                             <div class="flex items-center gap-2 -mt-2 px-1 text-[10px] font-mono ${isUserOnline('admin') ? 'text-emerald-400' : 'text-slate-500'}">
                                 <span class="relative flex w-2.5 h-2.5"><span class="absolute inset-0 rounded-full ${isUserOnline('admin') ? 'bg-emerald-400 animate-ping opacity-40' : ''}"></span><span class="relative w-2.5 h-2.5 rounded-full ${isUserOnline('admin') ? 'bg-emerald-500' : 'bg-slate-600'}"></span></span>
                                 <span>Administrateur Sésame · ${isUserOnline('admin') ? 'Connecté' : 'Déconnecté'}</span>
@@ -5184,14 +5408,15 @@
                                     : clientMessages.map(m => `
                                         <div class="flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}">
                                             <span class="text-[8px] text-slate-500 mb-0.5 font-mono">${m.sender === 'user' ? `Vous (${window.getClientName(user.email)})` : 'Administrateur Sésame'} - ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                                            <div class="p-2.5 rounded-lg max-w-[85%] leading-relaxed ${m.sender === 'user' ? 'bg-cyan-950/60 text-cyan-200 border border-cyan-500/20' : 'bg-purple-950/60 text-purple-200 border border-purple-500/20'}">
-                                                ${m.text}
+                                            <div class="p-2.5 rounded-lg max-w-[85%] leading-relaxed whitespace-pre-wrap break-words ${m.sender === 'user' ? 'bg-cyan-950/60 text-cyan-200 border border-cyan-500/20' : 'bg-purple-950/60 text-purple-200 border border-purple-500/20'}">
+                                                ${window.escapeHTML(m.text || '')}
                                             </div>
-                                            <button type="button" onclick="window.clientDeleteSupportMessage('${m.id}')" class="mt-1 text-[8px] text-red-500 hover:text-red-300 uppercase">Effacer ce message</button>
+                                            ${m.editedAt ? `<span class="mt-1 text-[8px] text-slate-600 italic">Rectifié</span>` : ''}
+                                            ${m.sender === 'user' ? `<button type="button" onclick="window.clientEditSupportMessage('${m.id}')" class="mt-1 inline-flex items-center gap-1 text-[8px] text-cyan-400 hover:text-cyan-300 uppercase font-bold"><i data-lucide="pencil" class="w-3 h-3"></i>Rectifier</button>` : ''}
                                         </div>
                                     `).join('')}
                             </div>
-                            <form onsubmit="window.submitChat(event)" class="flex gap-2 shrink-0">
+                            <form onsubmit="window.submitChat(event)" class="flex gap-2 shrink-0 items-stretch">
                                 <input id="chat-input" type="text" value="${window.escapeHTML(window.appState.clientSupportDraft || '')}" placeholder="Écrivez un message au support..." autocomplete="off" spellcheck="true" lang="fr" autocorrect="on" autocapitalize="sentences" enterkeyhint="send"
                                     oninput="window.appState.clientSupportDraft = this.value"
                                     class="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-cyan-500 text-white font-mono min-h-[38px]" />
@@ -5628,8 +5853,8 @@
                                                 .map(m => `
                                                 <div class="flex flex-col ${m.sender === 'admin' ? 'items-end' : 'items-start'}">
                                                     <span class="text-[8px] text-slate-500">${m.sender === 'admin' ? 'Vous — Administrateur Sésame' : `${window.getClientName(m.userEmail)} — Client`}</span>
-                                                    <div class="p-2 rounded bg-slate-900 text-slate-200 mt-0.5 max-w-[90%] break-all">
-                                                        ${m.text}
+                                                    <div class="p-2 rounded bg-slate-900 text-slate-200 mt-0.5 max-w-[90%] whitespace-pre-wrap break-words">
+                                                        ${window.escapeHTML(m.text || '')}
                                                         ${(() => {
                                                             if (m.notificationType !== 'service_expired' || !ADMIN_EXPIRY_REACTIVATION_IDS.has(m.serviceId)) return '';
                                                             const targetProfile = window.appState.allProfiles.find(p => p.id === m.userId);
@@ -7297,9 +7522,13 @@
             const targetUserId = window.appState.adminSelectedClient;
             if(!input || !targetUserId) return;
 
-            const text = input.value.trim();
+            const text = String(input.value || window.appState.adminSupportDrafts[targetUserId] || '').trim();
             if(!text) return;
 
+            // IMPORTANT : vider AVANT addDoc. Le listener Firebase peut relancer renderApp()
+            // pendant l'envoi ; si le brouillon n'est pas déjà supprimé, l'ancien texte revient.
+            delete window.appState.adminSupportDrafts[targetUserId];
+            input.value = '';
             input.disabled = true;
 
             try {
@@ -7312,15 +7541,22 @@
                     senderName: 'Administrateur Sésame',
                     readByAdmin: true,
                     readByClient: false,
-                    timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now() 
+                    timestamp: window.getVirtualTimestamp ? window.getVirtualTimestamp() : Date.now()
                 });
-                delete window.appState.adminSupportDrafts[targetUserId];
-                input.value = '';
-            } catch(e) {
+            } catch(error) {
+                console.error(error);
+                // Seulement en cas d'échec, remettre le texte pour ne rien perdre.
+                window.appState.adminSupportDrafts[targetUserId] = text;
+                const restored = document.getElementById('admin-chat-input');
+                if (restored) restored.value = text;
                 window.showToast("Erreur d'envoi", "error");
             } finally {
-                input.disabled = false;
-                input.focus();
+                const currentInput = document.getElementById('admin-chat-input');
+                if (currentInput) {
+                    currentInput.disabled = false;
+                    currentInput.value = window.appState.adminSupportDrafts[targetUserId] || '';
+                    currentInput.focus();
+                }
             }
         };
 
