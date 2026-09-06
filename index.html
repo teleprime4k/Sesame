@@ -4818,6 +4818,7 @@
 
                 <!-- BANNIÈRE D'IDENTIFIANTS SÉCURISÉS DU CLIENT -->
                 ${hasCredentials ? `
+                <div id="client-credentials-wrapper" class="relative z-10 w-full flex flex-col gap-3 sm:gap-4">
                 <div id="client-credentials-banner" class="relative bg-gradient-to-r from-cyan-950/30 to-purple-950/30 border border-cyan-500/40 p-3 sm:p-4 rounded-2xl shadow-[0_0_20px_rgba(6,182,212,0.15)] flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 sm:gap-4 overflow-hidden z-10 animate-fadeIn w-full">
                     <div class="absolute top-0 left-0 w-1 h-full bg-cyan-500"></div>
                     <div class="flex items-center gap-3">
@@ -4890,6 +4891,7 @@
                     <p id="teleprime-device-link-status" class="mt-3 text-[10px] text-slate-500">Le code affiché sur la TV est temporaire et expire après environ 10 minutes.</p>
                 </section>
                 ` : ''}
+                </div>
 
                 <!-- SECTION DES KPI FINANCIERS -->
                 <section id="overview-section" aria-label="Indicateurs du tableau de bord" ${isAdmin ? 'hidden aria-hidden="true" style="display:none !important"' : ''} class="mobile-anchor mobile-kpi-strip kpi-auto-carousel relative z-10 w-full">
@@ -6610,7 +6612,7 @@
 
         window.openClientMobileCredentials = () => {
             window.openClientMobileFocusedElement(
-                document.getElementById('client-credentials-banner'),
+                document.getElementById('client-credentials-wrapper'),
                 'Identifiants confidentiels',
                 'Aucun identifiant confidentiel ne vous a encore été transmis.'
             );
