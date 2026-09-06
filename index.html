@@ -3818,7 +3818,7 @@
                 const key = window.escapeHTML(item.licenseKey || '');
                 return `<article style="margin-top:14px;padding:16px;border:1px solid rgba(34,211,238,.28);border-radius:16px;background:rgba(6,182,212,.06)">
                     <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap"><div><strong style="color:#fff">✓ Votre licence Télé Prime4K</strong><div style="margin-top:7px;font-family:monospace;font-size:15px;color:#67e8f9;font-weight:900">${key}</div></div><span style="padding:5px 9px;border-radius:999px;border:1px solid rgba(52,211,153,.3);color:#6ee7b7;font-size:10px;font-weight:800">${statusLabel}</span></div>
-                    <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;color:#94a3b8;font-size:11px"><span><b style="color:#e2e8f0">Durée :</b> ${window.escapeHTML(typeLabel[item.licenseType] || item.licenseType || '')}</span><span><b style="color:#e2e8f0">Expiration :</b> ${window.escapeHTML(expiryLabel)}</span><span><b style="color:#e2e8f0">Appareil :</b> ${deviceLabel}</span><span><b style="color:#e2e8f0">Origine :</b> ${originLabel}</span></div>
+                    <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;color:#94a3b8;font-size:11px"><span><b style="color:#e2e8f0">Titulaire :</b> ${window.escapeHTML(item.holderName || window.getClientName(window.appState.user?.email || '') || 'Client Sésame')}</span><span><b style="color:#e2e8f0">Durée :</b> ${window.escapeHTML(typeLabel[item.licenseType] || item.licenseType || '')}</span><span><b style="color:#e2e8f0">Expiration :</b> ${window.escapeHTML(expiryLabel)}</span><span><b style="color:#e2e8f0">Appareil :</b> ${deviceLabel}</span><span><b style="color:#e2e8f0">Origine :</b> ${originLabel}</span></div>
                     <button type="button" class="tp-public-action" style="margin-top:12px" onclick="navigator.clipboard.writeText('${key}').then(()=>window.showToast('Clé de licence copiée.')).catch(()=>window.showToast('Impossible de copier la clé.','error'))">Copier la clé</button>
                 </article>`;
             }).join('');
@@ -8040,13 +8040,14 @@
             });
         };
 
-        // TÉLÉ PRIME4K — Attribution, récupération et réattribution des licences officielles par l'Admin.
-        // Une licence récupérée est retirée du profil du client mais n'est PAS supprimée :
-        // elle est placée dans une réserve Admin Firestore et peut être réattribuée à un autre client.
+        // TÉLÉ PRIME4K — Gestion complète des licences par l'Admin.
+        // Attribution, récupération, réattribution, renommage du titulaire et suppression.
+        // "Supprimer" révoque d'abord la clé côté serveur officiel, puis la retire de Sésame.
         const TELEPRIME_LICENSE_POOL_DOC = () => doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'teleprimeLicensePool');
 
         window.closeAdminTelePrimeLicenseModal = () => {
             document.getElementById('admin-teleprime-license-modal')?.remove();
+            document.getElementById('admin-teleprime-holder-modal')?.remove();
             document.body.style.overflow = '';
         };
 
@@ -8069,6 +8070,20 @@
             }, { merge: true });
         };
 
+        window.adminTelePrimeServerAction = async (licenseKey, action, extra = {}) => {
+            const currentUser = auth.currentUser;
+            if (!currentUser) throw new Error('Session administrateur expirée.');
+            const idToken = await currentUser.getIdToken(true);
+            const response = await fetch('https://teleprime4k-licences-api.teleprime4k.workers.dev/api/v1/admin/licenses/action', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                body: JSON.stringify({ license_key: licenseKey, action, ...extra })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result?.ok) throw new Error(result?.message || 'Action refusée par le serveur Télé Prime4K.');
+            return result;
+        };
+
         window.openAdminTelePrimeLicense = async (clientId) => {
             if (!window.appState.isAdmin) return;
             const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile) && profile.authVerified === true);
@@ -8081,13 +8096,26 @@
             const clientName = window.getClientName(client.email);
             const typeLabel = { '1y':'1 an', '2y':'2 ans', '3y':'3 ans', '4y':'4 ans', '5y':'5 ans', 'lifetime':'À vie ♾️' };
             const poolOptions = pool.length
-                ? pool.map((lic, i) => `<option value="${i}">${window.escapeHTML(lic.licenseKey || '')} — ${window.escapeHTML(typeLabel[lic.licenseType] || lic.licenseType || '')}</option>`).join('')
+                ? pool.map((lic, i) => `<option value="${i}">${window.escapeHTML(lic.licenseKey || '')} — ${window.escapeHTML(typeLabel[lic.licenseType] || lic.licenseType || '')} — ${window.escapeHTML(lic.holderName || 'Sans titulaire')}</option>`).join('')
                 : '<option value="">Aucune licence récupérée disponible</option>';
             const currentLicensesHTML = clientLicenses.length ? clientLicenses.map((lic, i) => `
-                <div class="flex flex-col gap-2 rounded-xl border border-slate-800 bg-slate-950/70 p-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="min-w-0"><strong class="block truncate text-xs text-white">${window.escapeHTML(lic.licenseKey || '')}</strong><span class="text-[10px] text-slate-400">${window.escapeHTML(typeLabel[lic.licenseType] || lic.licenseType || '')} · ${lic.deviceName ? 'Appareil associé' : 'Appareil non associé'}</span></div>
-                    <button type="button" onclick="window.adminRecoverTelePrimeLicense('${window.escapeHTML(clientId)}', ${i})" class="min-h-[36px] shrink-0 rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 text-[9px] font-black uppercase text-amber-300 hover:brightness-110">Récupérer la licence</button>
+                <div class="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="min-w-0"><strong class="block truncate text-xs text-white">${window.escapeHTML(lic.licenseKey || '')}</strong><span class="text-[10px] text-slate-400">${window.escapeHTML(typeLabel[lic.licenseType] || lic.licenseType || '')} · ${lic.deviceName ? 'Appareil associé' : 'Appareil non associé'}</span><span class="mt-1 block text-[10px] text-cyan-300">Titulaire : ${window.escapeHTML(lic.holderName || clientName)}</span></div>
+                    </div>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <button type="button" onclick="window.openAdminRenameTelePrimeHolder('${window.escapeHTML(clientId)}', ${i}, 'client')" class="min-h-[36px] rounded-lg border border-cyan-500/40 bg-cyan-950/30 px-3 text-[9px] font-black uppercase text-cyan-300">Renommer titulaire</button>
+                        <button type="button" onclick="window.adminRecoverTelePrimeLicense('${window.escapeHTML(clientId)}', ${i})" class="min-h-[36px] rounded-lg border border-amber-500/40 bg-amber-950/30 px-3 text-[9px] font-black uppercase text-amber-300">Récupérer</button>
+                        <button type="button" onclick="window.adminDeleteTelePrimeLicense('${window.escapeHTML(clientId)}', ${i}, 'client')" class="min-h-[36px] rounded-lg border border-red-500/45 bg-red-950/35 px-3 text-[9px] font-black uppercase text-red-300">Supprimer</button>
+                    </div>
                 </div>`).join('') : '<div class="rounded-xl border border-slate-800 bg-slate-950/50 p-3 text-[10px] text-slate-500">Aucune licence actuellement attribuée à ce client.</div>';
+
+            const poolLicensesHTML = pool.length ? pool.map((lic, i) => `
+                <div class="rounded-xl border border-purple-500/20 bg-slate-950/60 p-3">
+                    <strong class="block text-xs text-white">${window.escapeHTML(lic.licenseKey || '')}</strong>
+                    <span class="mt-1 block text-[10px] text-slate-400">${window.escapeHTML(typeLabel[lic.licenseType] || lic.licenseType || '')} · Titulaire : ${window.escapeHTML(lic.holderName || 'Sans titulaire')}</span>
+                    <div class="mt-2 flex flex-wrap gap-2"><button type="button" onclick="window.openAdminRenameTelePrimeHolder('', ${i}, 'pool')" class="min-h-[34px] rounded-lg border border-cyan-500/35 bg-cyan-950/25 px-3 text-[9px] font-black uppercase text-cyan-300">Renommer titulaire</button><button type="button" onclick="window.adminDeleteTelePrimeLicense('', ${i}, 'pool')" class="min-h-[34px] rounded-lg border border-red-500/40 bg-red-950/30 px-3 text-[9px] font-black uppercase text-red-300">Supprimer</button></div>
+                </div>`).join('') : '<div class="text-[10px] text-slate-500">La réserve Admin est vide.</div>';
 
             const modal = document.createElement('div');
             modal.id = 'admin-teleprime-license-modal';
@@ -8104,17 +8132,18 @@
 
                         <section class="rounded-xl border border-slate-800 bg-[#091426] p-4">
                             <h4 class="text-xs font-black uppercase text-white">Licences déjà attribuées à ce client</h4>
-                            <p class="mt-1 text-[10px] text-slate-500">Tu peux récupérer une licence attribuée par erreur. Elle retournera dans la réserve Admin.</p>
+                            <p class="mt-1 text-[10px] text-slate-500">Récupérer remet la licence dans la réserve. Supprimer la révoque définitivement puis la retire de Sésame.</p>
                             <div class="mt-3 grid gap-2">${currentLicensesHTML}</div>
                         </section>
 
                         <section class="rounded-xl border border-purple-500/25 bg-purple-950/10 p-4">
                             <h4 class="text-xs font-black uppercase text-purple-200">Attribuer une licence déjà créée</h4>
-                            <p class="mt-1 text-[10px] text-slate-500">Choisis une licence récupérée dans la réserve Admin. La même clé sera attribuée au client.</p>
+                            <p class="mt-1 text-[10px] text-slate-500">Choisis une licence récupérée dans la réserve Admin. La même clé sera attribuée au client et son titulaire sera mis à jour.</p>
                             <div class="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
                                 <select id="teleprime-existing-license-select" class="min-h-[44px] w-full rounded-lg border border-purple-500/30 bg-slate-950 px-3 text-xs text-white" ${pool.length ? '' : 'disabled'}>${poolOptions}</select>
                                 <button type="button" onclick="window.adminAssignExistingTelePrimeLicense()" class="min-h-[44px] rounded-lg bg-purple-700 px-4 text-[9px] font-black uppercase text-white disabled:opacity-40" ${pool.length ? '' : 'disabled'}>Attribuer cette licence</button>
                             </div>
+                            <details class="mt-3 rounded-lg border border-slate-800 bg-slate-950/40 p-3"><summary class="cursor-pointer text-[10px] font-bold text-slate-300">Voir / gérer la réserve Admin (${pool.length})</summary><div class="mt-3 grid gap-2">${poolLicensesHTML}</div></details>
                         </section>
 
                         <section class="rounded-xl border border-cyan-500/20 bg-cyan-950/10 p-4">
@@ -8132,6 +8161,84 @@
             requestAnimationFrame(() => lucide.createIcons({ root: modal }));
         };
 
+        window.openAdminRenameTelePrimeHolder = async (clientId, licenseIndex, source = 'client') => {
+            if (!window.appState.isAdmin) return;
+            let license = null;
+            if (source === 'pool') {
+                const pool = await window.getAdminTelePrimeLicensePool();
+                license = pool[licenseIndex];
+            } else {
+                const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+                license = Array.isArray(client?.telePrimeLicenses) ? client.telePrimeLicenses[licenseIndex] : null;
+            }
+            if (!license?.licenseKey) return window.showToast('Licence introuvable.', 'error');
+            document.getElementById('admin-teleprime-holder-modal')?.remove();
+            const modal = document.createElement('div');
+            modal.id = 'admin-teleprime-holder-modal';
+            modal.className = 'fixed inset-0 z-[170] flex items-center justify-center bg-slate-950/85 p-4';
+            modal.innerHTML = `<div class="w-full max-w-md rounded-2xl border border-cyan-500/35 bg-[#07111f] p-5 shadow-2xl"><h3 class="text-base font-black text-white">Renommer le titulaire</h3><p class="mt-1 text-[10px] text-slate-400">${window.escapeHTML(license.licenseKey)}</p><label class="mt-4 block text-[9px] font-bold uppercase text-slate-500">Nom du titulaire</label><input id="teleprime-holder-name-input" maxlength="150" value="${window.escapeHTML(license.holderName || '')}" class="mt-2 min-h-[44px] w-full rounded-xl border border-cyan-500/30 bg-slate-950 px-3 text-sm text-white outline-none focus:border-cyan-400"><div class="mt-4 grid grid-cols-2 gap-2"><button type="button" onclick="document.getElementById('admin-teleprime-holder-modal')?.remove()" class="min-h-[42px] rounded-xl border border-slate-700 text-xs font-bold text-slate-300">Annuler</button><button type="button" onclick="window.adminRenameTelePrimeHolder('${window.escapeHTML(clientId)}', ${licenseIndex}, '${source}')" class="min-h-[42px] rounded-xl bg-cyan-700 text-xs font-black uppercase text-white">Enregistrer</button></div></div>`;
+            document.body.appendChild(modal);
+            requestAnimationFrame(() => document.getElementById('teleprime-holder-name-input')?.focus());
+        };
+
+        window.adminRenameTelePrimeHolder = async (clientId, licenseIndex, source = 'client') => {
+            if (!window.appState.isAdmin) return;
+            const holderName = String(document.getElementById('teleprime-holder-name-input')?.value || '').trim().slice(0,150);
+            if (!holderName) return window.showToast('Saisissez le nom du titulaire.', 'error');
+            try {
+                if (source === 'pool') {
+                    const pool = await window.getAdminTelePrimeLicensePool();
+                    const license = pool[licenseIndex];
+                    if (!license?.licenseKey) throw new Error('Licence introuvable.');
+                    await window.adminTelePrimeServerAction(license.licenseKey, 'rename-holder', { holder_name: holderName, holder_email: license.holderEmail || '' });
+                    pool[licenseIndex] = { ...license, holderName, holderUpdatedAt: Date.now() };
+                    await window.saveAdminTelePrimeLicensePool(pool);
+                } else {
+                    const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+                    const licenses = Array.isArray(client?.telePrimeLicenses) ? [...client.telePrimeLicenses] : [];
+                    const license = licenses[licenseIndex];
+                    if (!client || !license?.licenseKey) throw new Error('Licence introuvable.');
+                    await window.adminTelePrimeServerAction(license.licenseKey, 'rename-holder', { holder_name: holderName, holder_email: license.holderEmail || client.email || '' });
+                    licenses[licenseIndex] = { ...license, holderName, holderUpdatedAt: Date.now() };
+                    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses: licenses });
+                }
+                document.getElementById('admin-teleprime-holder-modal')?.remove();
+                window.showToast(`Titulaire renommé : ${holderName}`);
+                await window.openAdminTelePrimeLicense(window.appState.selectedTelePrimeLicenseClientId || clientId);
+            } catch (error) { console.error(error); window.showToast(error?.message || 'Impossible de renommer le titulaire.', 'error'); }
+        };
+
+        window.adminDeleteTelePrimeLicense = async (clientId, licenseIndex, source = 'client') => {
+            if (!window.appState.isAdmin) return;
+            let license = null;
+            let client = null;
+            let pool = null;
+            if (source === 'pool') {
+                pool = await window.getAdminTelePrimeLicensePool();
+                license = pool[licenseIndex];
+            } else {
+                client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
+                license = Array.isArray(client?.telePrimeLicenses) ? client.telePrimeLicenses[licenseIndex] : null;
+            }
+            if (!license?.licenseKey) return window.showToast('Licence introuvable.', 'error');
+            window.showCyberConfirm(`Supprimer définitivement la licence ${license.licenseKey} ? La clé sera révoquée côté Télé Prime4K et ne pourra plus être utilisée.`, async () => {
+                try {
+                    await window.adminTelePrimeServerAction(license.licenseKey, 'revoke');
+                    if (source === 'pool') {
+                        pool.splice(licenseIndex, 1);
+                        await window.saveAdminTelePrimeLicensePool(pool);
+                    } else {
+                        const licenses = [...client.telePrimeLicenses];
+                        licenses.splice(licenseIndex, 1);
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses: licenses });
+                    }
+                    window.showToast(`Licence ${license.licenseKey} supprimée et révoquée.`);
+                    await window.openAdminTelePrimeLicense(window.appState.selectedTelePrimeLicenseClientId || clientId);
+                    renderApp();
+                } catch (error) { console.error(error); window.showToast(error?.message || 'Impossible de supprimer cette licence.', 'error'); }
+            });
+        };
+
         window.adminRecoverTelePrimeLicense = async (clientId, licenseIndex) => {
             if (!window.appState.isAdmin) return;
             const client = window.appState.allProfiles.find(profile => profile.id === clientId && !isAdminProfile(profile));
@@ -8141,7 +8248,7 @@
             window.showCyberConfirm(`Récupérer la licence ${license.licenseKey} de ${window.getClientName(client.email)} ? Elle restera disponible dans la réserve Admin.`, async () => {
                 try {
                     const pool = await window.getAdminTelePrimeLicensePool();
-                    if (!pool.some(item => item.licenseKey === license.licenseKey)) pool.push({ ...license, recoveredAt: Date.now(), recoveredFromClientId: clientId, recoveredFromEmail: client.email || '' });
+                    if (!pool.some(item => item.licenseKey === license.licenseKey)) pool.push({ ...license, holderName: license.holderName || window.getClientName(client.email), holderEmail: license.holderEmail || client.email || '', recoveredAt: Date.now(), recoveredFromClientId: clientId, recoveredFromEmail: client.email || '' });
                     licenses.splice(licenseIndex, 1);
                     await window.saveAdminTelePrimeLicensePool(pool);
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses: licenses });
@@ -8160,10 +8267,12 @@
             const pool = await window.getAdminTelePrimeLicensePool();
             const license = Number.isInteger(index) ? pool[index] : null;
             if (!client || !license?.licenseKey) return window.showToast('Choisissez une licence disponible.', 'error');
-            window.showCyberConfirm(`Attribuer la licence existante ${license.licenseKey} à ${window.getClientName(client.email)} ?`, async () => {
+            const newHolderName = window.getClientName(client.email);
+            window.showCyberConfirm(`Attribuer la licence existante ${license.licenseKey} à ${newHolderName} ?`, async () => {
                 try {
+                    await window.adminTelePrimeServerAction(license.licenseKey, 'rename-holder', { holder_name: newHolderName, holder_email: client.email || '' });
                     const assignedAt = Date.now();
-                    const reassigned = { ...license, assignedAt, origin: 'admin', assignedBy: auth.currentUser?.email || 'Administrateur Sésame' };
+                    const reassigned = { ...license, holderName:newHolderName, holderEmail:client.email || '', assignedAt, origin: 'admin', assignedBy: auth.currentUser?.email || 'Administrateur Sésame' };
                     delete reassigned.recoveredAt; delete reassigned.recoveredFromClientId; delete reassigned.recoveredFromEmail;
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), {
                         telePrimeLicenses: arrayUnion(reassigned),
@@ -8171,10 +8280,10 @@
                     });
                     pool.splice(index, 1);
                     await window.saveAdminTelePrimeLicensePool(pool);
-                    window.showToast(`Licence ${reassigned.licenseKey} attribuée à ${window.getClientName(client.email)}.`);
+                    window.showToast(`Licence ${reassigned.licenseKey} attribuée à ${newHolderName}.`);
                     window.closeAdminTelePrimeLicenseModal();
                     renderApp();
-                } catch (error) { console.error(error); window.showToast('Impossible de réattribuer cette licence.', 'error'); }
+                } catch (error) { console.error(error); window.showToast(error?.message || 'Impossible de réattribuer cette licence.', 'error'); }
             });
         };
 
@@ -8200,7 +8309,7 @@
                     const result = await response.json().catch(() => ({}));
                     if (!response.ok || !result?.ok || !result?.license?.license_key) throw new Error(result?.message || 'Création de licence refusée par le serveur.');
                     const license = result.license, assignedAt = Date.now();
-                    const clientLicense = { licenseKey:String(license.license_key||''), licenseType:String(license.license_type||licenseType), status:String(license.status||'pending'), activatedAt:license.activated_at||null, expiresAt:license.expires_at||null, deviceName:license.device_name||null, assignedAt, origin:'admin', assignedBy:currentUser.email||'Administrateur Sésame' };
+                    const clientLicense = { licenseKey:String(license.license_key||''), licenseType:String(license.license_type||licenseType), status:String(license.status||'pending'), activatedAt:license.activated_at||null, expiresAt:license.expires_at||null, deviceName:license.device_name||null, holderName:String(license.holder_name||clientName), holderEmail:String(client.email||''), assignedAt, origin:'admin', assignedBy:currentUser.email||'Administrateur Sésame' };
                     await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'profiles', clientId), { telePrimeLicenses:arrayUnion(clientLicense), telePrimeLicenseNotification:{ type:'assigned', licenseKey:clientLicense.licenseKey, createdAt:assignedAt, readAt:null } });
                     window.closeAdminTelePrimeLicenseModal();
                     window.showToast(`Licence ${offer.label} attribuée à ${clientName} : ${clientLicense.licenseKey}`);
